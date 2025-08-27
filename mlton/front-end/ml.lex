@@ -260,7 +260,7 @@ val eof: lexarg -> lexresult =
    end
 
 
-%% 
+%%
 %full
 
 %s TEXT TEXT_FMT  BLOCK_COMMENT LINE_COMMENT  LINE_DIR1 LINE_DIR2 LINE_DIR3 LINE_DIR4;
@@ -315,6 +315,7 @@ real=(~?)(({decnum}{frac}?{exp})|({decnum}{frac}{exp}?));
 <INITIAL>"->" => (tok (Tokens.ARROW, yytext, source, yypos));
 <INITIAL>"..." => (tok (Tokens.DOTDOTDOT, yytext, source, yypos));
 <INITIAL>":" => (tok (Tokens.COLON, yytext, source, yypos));
+<INITIAL>":-" => (tok (Tokens.COLONDASH, yytext, source, yypos));
 <INITIAL>":>" => (tok (Tokens.COLONGT, yytext, source, yypos));
 <INITIAL>";" => (tok (Tokens.SEMICOLON, yytext, source, yypos));
 <INITIAL>"=" => (tok (Tokens.EQUALOP, yytext, source, yypos));
@@ -348,6 +349,8 @@ real=(~?)(({decnum}{frac}?{exp})|({decnum}{frac}{exp}?));
 <INITIAL>"infixr" => (tok (Tokens.INFIXR, yytext, source, yypos));
 <INITIAL>"let" => (tok (Tokens.LET, yytext, source, yypos));
 <INITIAL>"local" => (tok (Tokens.LOCAL, yytext, source, yypos));
+<INITIAL>"stack_mode" => (tok (Tokens.STACK, yytext, source, yypos));
+<INITIAL>"heap_mode" => (tok (Tokens.HEAP, yytext, source, yypos));
 <INITIAL>"nonfix" => (tok (Tokens.NONFIX, yytext, source, yypos));
 <INITIAL>"of" => (tok (Tokens.OF, yytext, source, yypos));
 <INITIAL>"op" => (tok (Tokens.OP, yytext, source, yypos));

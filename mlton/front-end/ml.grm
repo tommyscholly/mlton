@@ -255,7 +255,7 @@ type 'a whereAndEqns = WhereEquation.t list * 'a list
                radix: StringCvt.radix,
                yytext: string}
     | ABSTYPE | AND | ANDALSO | ARROW | AS | ASTERISK | BAR | CASE | COLON
-    | COLONGT | COMMA | DATATYPE | DOTDOTDOT | ELSE | END | EOF | EQUALOP
+    | COLONGT | (* modes *) COLONDASH | STACK | HEAP | COMMA | DATATYPE | DOTDOTDOT | ELSE | END | EOF | EQUALOP
     | EQTYPE | EXCEPTION | DO | DARROW | FN | FUN | FUNCTOR | HANDLE | HASH
     | HASHLBRACKET | IF | IN | INCLUDE | INFIX | INFIXR | LBRACE | LBRACKET | LET
     | LOCAL | LPAREN | NONFIX | ORELSE | OF | OP | OPEN | OVERLOAD | RAISE
@@ -263,8 +263,8 @@ type 'a whereAndEqns = WhereEquation.t list * 'a list
     | STRUCT | STRUCTURE | THEN | TYPE | VAL | WHERE | WHILE | WILD | WITH
     | WITHTYPE
       (* Extensions *)
-    | BUILD_CONST | COMMAND_LINE_CONST | CONST 
-    | ADDRESS | EXPORT | IMPORT | SYMBOL 
+    | BUILD_CONST | COMMAND_LINE_CONST | CONST
+    | ADDRESS | EXPORT | IMPORT | SYMBOL
     | PRIM
     | SHOW_BASIS of File.t
 
@@ -342,6 +342,8 @@ type 'a whereAndEqns = WhereEquation.t list * 'a list
        | longvidNoEqual of Longvid.t
        | longvidands of Longvid.t list
        | match of Match.t
+       | mode of Mode.t
+       | mode_constraint of Mode.t option
        | numericField of int
        | opaspat of Pat.t option
        | opcon of Con.t
@@ -446,7 +448,7 @@ type 'a whereAndEqns = WhereEquation.t list * 'a list
 %nonassoc WITHTYPE
 %right AND
 %right ARROW
-%right DARROW 
+%right DARROW
 %left DO
 %left ELSE
 %left RAISE
@@ -458,14 +460,14 @@ type 'a whereAndEqns = WhereEquation.t list * 'a list
 
 %name ML
 
-%keyword ABSTYPE AND AS CASE DATATYPE DOTDOTDOT ELSE END 
+%keyword ABSTYPE AND AS CASE DATATYPE DOTDOTDOT ELSE END
   EQTYPE EXCEPTION  DO  DARROW  FN  FUN  FUNCTOR  HANDLE
   IF IN INCLUDE  INFIX  INFIXR  LET  LOCAL  NONFIX  OF  OP
   OPEN OVERLOAD  RAISE  REC  SHARING  SIG  SIGNATURE  STRUCT
   STRUCTURE THEN TYPE VAL WHILE WHERE WITH WITHTYPE
-  ORELSE ANDALSO
+  ORELSE ANDALSO STACK HEAP
 
-%change -> VAL | -> THEN | -> ELSE | -> LPAREN | -> SEMICOLON | 
+%change -> VAL | -> THEN | -> ELSE | -> LPAREN | -> SEMICOLON |
         DARROW -> EQUALOP | EQUALOP -> DARROW | AND -> ANDALSO | COLON -> OF |
         SEMICOLON -> COMMA | COMMA -> SEMICOLON |
         -> IN SHORTALPHANUMID END | -> ELSE SHORTALPHANUMID
@@ -747,7 +749,7 @@ decs :                  (Dec.makeRegion' (Dec.SeqDec (Vector.new0 ()),
 
 dec : decnode (Dec.makeRegion' (decnode, decnodeleft, decnoderight))
 
-decnode : decnolocal              (decnolocal) 
+decnode : decnolocal              (decnolocal)
         | LOCAL decs IN decs END  (Dec.Local (decs1,decs2))
 
 decnolocal
@@ -769,7 +771,7 @@ decnolocal
         | fixity vids           (Dec.Fix {fixity = fixity,
                                           ops = Vector.fromList vids})
         | OVERLOAD priority vid COLON ty AS longvidands
-                                (Dec.Overload (priority, 
+                                (Dec.Overload (priority,
                                                Vid.toVar vid,
                                                Vector.new0 (),
                                                ty,
@@ -801,6 +803,12 @@ rvalbind : REC rvalbind                (rvalbind)
 
 constraint :                    (NONE)
            | COLON ty           (SOME ty)
+
+mode_constraint :                 (NONE)
+                | COLONDASH mode (SOME mode)
+
+mode : STACK                    (Mode.Stack)
+     | HEAP                     (Mode.Heap)
 
 funs    : clausesTop               ([clausesTop])
         | clausesTop AND funs      (clausesTop :: funs)
@@ -894,7 +902,7 @@ digit : INT
           then valOf (Int.fromString digits)
        else let
                open Layout
-               val _ = 
+               val _ =
                   Control.error (reg (INTleft, INTright),
                                  str "invalid digit in infix declaration",
                                  empty)
@@ -1139,6 +1147,7 @@ cpat : cpatnode (Pat.makeRegion' (cpatnode, cpatnodeleft, cpatnoderight))
 
 cpatnode : cpat AS cpat   (Pat.makeAs (cpat1, cpat2))
          | cpat COLON ty  (Pat.Constraint (cpat, ty))
+         | cpat COLONDASH mode (Pat.ModeConstraint (cpat, mode))
          | apats          (Pat.FlatApp (Vector.fromList apats))
 
 apats : apat        ([apat])

@@ -7,12 +7,12 @@
  * See the file MLton-LICENSE for details.
  *)
 
-signature AST_CORE_STRUCTS = 
+signature AST_CORE_STRUCTS =
    sig
       include AST_ATOMS
    end
 
-signature AST_CORE = 
+signature AST_CORE =
    sig
       include AST_CORE_STRUCTS
 
@@ -30,6 +30,11 @@ signature AST_CORE =
             datatype t = Op | None
          end
 
+      structure Mode:
+         sig
+            datatype t = Stack | Heap
+         end
+
       structure Pat:
          sig
             type t
@@ -39,7 +44,7 @@ signature AST_CORE =
                   type pat
                   datatype t =
                      Field of pat
-                   | Vid of Vid.t * Type.t option * pat option 
+                   | Vid of Vid.t * Type.t option * pat option
                      (* vid <:ty> <as pat> *)
                end
             sharing type Item.pat = t
@@ -48,6 +53,7 @@ signature AST_CORE =
                App of {con: Longcon.t, arg: t, wasInfix: bool}
              | Const of Const.t
              | Constraint of t * Type.t
+             | ModeConstraint of t * Mode.t
              | FlatApp of t vector
              | Layered of {constraint: Type.t option,
                            fixop: Fixop.t,
@@ -100,25 +106,25 @@ signature AST_CORE =
                Address of {attributes: SymbolAttribute.t list,
                            name: string,
                            ty: Type.t}
-             | BuildConst of {name: string, 
+             | BuildConst of {name: string,
                               ty: Type.t}
-             | CommandLineConst of {name: string, 
+             | CommandLineConst of {name: string,
                                     ty: Type.t,
                                     value: Const.t}
-             | Const of {name: string, 
+             | Const of {name: string,
                          ty: Type.t}
-             | Export of {attributes: ImportExportAttribute.t list, 
+             | Export of {attributes: ImportExportAttribute.t list,
                           name: string,
                           ty: Type.t}
              | IImport of {attributes: ImportExportAttribute.t list,
                            ty: Type.t}
-             | Import of {attributes: ImportExportAttribute.t list, 
+             | Import of {attributes: ImportExportAttribute.t list,
                           name: string,
                           ty: Type.t}
              | ISymbol of {ty: Type.t}
-             | Prim of {name: string, 
+             | Prim of {name: string,
                         ty: Type.t}
-             | Symbol of {attributes: SymbolAttribute.t list, 
+             | Symbol of {attributes: SymbolAttribute.t list,
                           name: string,
                           ty: Type.t}
          end
@@ -215,8 +221,8 @@ signature AST_CORE =
              | Local of t * t
              | Open of Longstrid.t vector
              | Overload of Priority.t *
-                           Var.t * 
-                           Tyvar.t vector * Type.t * 
+                           Var.t *
+                           Tyvar.t vector * Type.t *
                            Longvid.t vector
              | SeqDec of t vector
              | Type of TypBind.t

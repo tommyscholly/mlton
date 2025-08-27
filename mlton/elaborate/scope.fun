@@ -129,7 +129,8 @@ fun ('down, 'up)
                  | Tuple ps => visits (ps, visit)
                  | Var _ => initUp
                  | Vector ps => visits (ps, visit)
-                 | Wild => initUp)
+                 | Wild => initUp
+                 | ModeConstraint _ => raise Fail "loopPat: ModeConstraint")
             and visitOpt opt =
                (case opt of
                    NONE => initUp

@@ -63,6 +63,9 @@ val ELSE:  'a * 'a -> (svalue,'a) token
 val DOTDOTDOT:  'a * 'a -> (svalue,'a) token
 val DATATYPE:  'a * 'a -> (svalue,'a) token
 val COMMA:  'a * 'a -> (svalue,'a) token
+val HEAP:  'a * 'a -> (svalue,'a) token
+val STACK:  'a * 'a -> (svalue,'a) token
+val COLONDASH:  'a * 'a -> (svalue,'a) token
 val COLONGT:  'a * 'a -> (svalue,'a) token
 val COLON:  'a * 'a -> (svalue,'a) token
 val CASE:  'a * 'a -> (svalue,'a) token

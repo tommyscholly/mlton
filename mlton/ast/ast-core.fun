@@ -7,7 +7,7 @@
  * See the file MLton-LICENSE for details.
  *)
 
-functor AstCore (S: AST_CORE_STRUCTS): AST_CORE = 
+functor AstCore (S: AST_CORE_STRUCTS): AST_CORE =
 struct
 
 open S Layout
@@ -61,6 +61,15 @@ fun layoutLongvid x =
         end)
 
 (*---------------------------------------------------*)
+(*                     Modes                         *)
+(*---------------------------------------------------*)
+
+structure Mode =
+   struct
+      datatype t = Stack | Heap
+   end
+
+(*---------------------------------------------------*)
 (*                     Patterns                      *)
 (*---------------------------------------------------*)
 
@@ -71,6 +80,7 @@ structure Pat =
          App of {con: Longcon.t, arg: t, wasInfix: bool}
        | Const of Const.t
        | Constraint of t * Type.t
+       | ModeConstraint of t * Mode.t
        | FlatApp of t vector
        | Layered of {fixop: Fixop.t,
                      var: Var.t,
@@ -167,6 +177,7 @@ structure Pat =
              | Var {name, fixop} => seq [Fixop.layout fixop, layoutLongvid name]
              | Vector ps => vector (Vector.map (ps, layoutT))
              | Wild => str "_"
+             | ModeConstraint _ => raise Fail "layout: ModeConstraint"
          end
       and layoutF p = layout (p, false)
       and layoutT p = layout (p, true)
@@ -212,6 +223,7 @@ structure Pat =
              | Var _ => ()
              | Vector ps => Vector.foreach (ps, c)
              | Wild => ()
+             | ModeConstraint _ => raise Fail "checkSyntax: ModeConstraint"
          end
    end
 
@@ -284,25 +296,25 @@ structure PrimKind =
          Address of {attributes: SymbolAttribute.t list,
                      name: string,
                      ty: Type.t}
-       | BuildConst of {name: string, 
+       | BuildConst of {name: string,
                         ty: Type.t}
-       | CommandLineConst of {name: string, 
+       | CommandLineConst of {name: string,
                               ty: Type.t,
                               value: Const.t}
-       | Const of {name: string, 
+       | Const of {name: string,
                    ty: Type.t}
-       | Export of {attributes: ImportExportAttribute.t list, 
+       | Export of {attributes: ImportExportAttribute.t list,
                     name: string,
                     ty: Type.t}
        | IImport of {attributes: ImportExportAttribute.t list,
                      ty: Type.t}
-       | Import of {attributes: ImportExportAttribute.t list, 
+       | Import of {attributes: ImportExportAttribute.t list,
                     name: string,
                     ty: Type.t}
        | ISymbol of {ty: Type.t}
-       | Prim of {name: string, 
+       | Prim of {name: string,
                   ty: Type.t}
-       | Symbol of {attributes: SymbolAttribute.t list, 
+       | Symbol of {attributes: SymbolAttribute.t list,
                     name: string,
                     ty: Type.t}
 
@@ -372,8 +384,8 @@ and decNode =
                   resultType: Type.t option} vector vector}
   | Local of dec * dec
   | Open of Longstrid.t vector
-  | Overload of Priority.t * Var.t * 
-                Tyvar.t vector * Type.t * 
+  | Overload of Priority.t * Var.t *
+                Tyvar.t vector * Type.t *
                 Longvid.t vector
   | SeqDec of dec vector
   | Type of TypBind.t
