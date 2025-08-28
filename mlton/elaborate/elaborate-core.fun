@@ -1010,7 +1010,7 @@ val elaboratePat:
                       end
                  | Apat.Wild =>
                       Cpat.make (Cpat.Wild, Type.new ())
-                 | Apat.ModeConstraint _ => raise Fail "loopPat: ModeConstraint"
+                 | Apat.ModeConstraint (pat, _) => loop pat (* TODO: LOWER MODE *)
              end) arg
          val p' = loop p
          val xts = Vector.fromList (!xts)

@@ -130,7 +130,7 @@ fun ('down, 'up)
                  | Var _ => initUp
                  | Vector ps => visits (ps, visit)
                  | Wild => initUp
-                 | ModeConstraint _ => raise Fail "loopPat: ModeConstraint")
+                 | ModeConstraint (p, _) => visit p) (* TODO: do we need to check the mode? *)
             and visitOpt opt =
                (case opt of
                    NONE => initUp

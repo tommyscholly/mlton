@@ -67,6 +67,10 @@ fun layoutLongvid x =
 structure Mode =
    struct
       datatype t = Stack | Heap
+
+      val layout =
+         fn Stack => str "stack"
+          | Heap => str "heap"
    end
 
 (*---------------------------------------------------*)
@@ -177,7 +181,7 @@ structure Pat =
              | Var {name, fixop} => seq [Fixop.layout fixop, layoutLongvid name]
              | Vector ps => vector (Vector.map (ps, layoutT))
              | Wild => str "_"
-             | ModeConstraint _ => raise Fail "layout: ModeConstraint"
+             | ModeConstraint (p, m) => delimit (seq [layoutF p, str " :- ", Mode.layout m])
          end
       and layoutF p = layout (p, false)
       and layoutT p = layout (p, true)
@@ -223,7 +227,7 @@ structure Pat =
              | Var _ => ()
              | Vector ps => Vector.foreach (ps, c)
              | Wild => ()
-             | ModeConstraint _ => raise Fail "checkSyntax: ModeConstraint"
+             | ModeConstraint (p, _) => c p (* I don't think we need to check the mode syntax *)
          end
    end
 
