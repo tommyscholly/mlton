@@ -30,6 +30,7 @@ signature ATOMS' =
       structure Handler: HANDLER
       structure IntSize: INT_SIZE
       structure Label: LABEL
+      structure Mode: MODE
       structure Prim: PRIM
       structure Prod: PROD
       structure ProfileExp: PROFILE_EXP

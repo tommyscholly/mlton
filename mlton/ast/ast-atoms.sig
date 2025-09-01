@@ -12,6 +12,7 @@ signature AST_ATOMS_STRUCTS =
       structure AdmitsEquality: ADMITS_EQUALITY
       structure CharSize: CHAR_SIZE
       structure IntSize: INT_SIZE
+      structure Mode: MODE
       structure RealSize: REAL_SIZE
       structure Mode: MODE
       structure Record: RECORD

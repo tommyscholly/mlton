@@ -11,8 +11,6 @@ local
    ../../lib/mlton/sources.mlb
    ../../lib/mlyacc-lib/mlyacc-lib.mlb
    ../ast/sources.mlb
-   ../atoms/mode.sig
-   ../atoms/mode.fun
    ../control/sources.mlb
 
    ann "warnUnused false"
