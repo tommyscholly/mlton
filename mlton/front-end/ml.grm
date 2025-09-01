@@ -44,7 +44,12 @@ structure Type =
       fun arrow (t1, t2) = Con (Longtycon.arrow, Vector.new2 (t1, t2))
    end
 
-structure DatBind =
+structure Mode =
+   struct
+      open Mode
+   end
+
+structure DatBind = 
    struct
       open DatBind
 
@@ -343,7 +348,6 @@ type 'a whereAndEqns = WhereEquation.t list * 'a list
        | longvidands of Longvid.t list
        | match of Match.t
        | mode of Mode.t
-       | mode_constraint of Mode.t option
        | numericField of int
        | opaspat of Pat.t option
        | opcon of Con.t
@@ -803,9 +807,6 @@ rvalbind : REC rvalbind                (rvalbind)
 
 constraint :                    (NONE)
            | COLON ty           (SOME ty)
-
-mode_constraint :                 (NONE)
-                | COLONDASH mode (SOME mode)
 
 mode : STACK                    (Mode.Stack)
      | HEAP                     (Mode.Heap)

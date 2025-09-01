@@ -49,7 +49,7 @@ signature CORE_ML =
              | Vector of t vector
              | Wild
 
-            val dest: t -> node * Type.t
+            val dest: t -> node * Type.t * Mode.t
             val falsee: t
             val foreachVar: t * (Var.t -> unit) -> unit
             (* true if pattern contains a constant, constructor or variable *)
@@ -57,9 +57,9 @@ signature CORE_ML =
             val isUnit: t -> bool
             val isWild: t -> bool
             val layout: t -> Layout.t
-            val make: node * Type.t -> t
+            val make: node * Type.t * Mode.t -> t
             val node: t -> node
-            val var: Var.t * Type.t -> t
+            val var: Var.t * Type.t * Mode.t -> t
             val truee: t
             val tuple: t vector -> t
             val ty: t -> Type.t
@@ -119,7 +119,7 @@ signature CORE_ML =
                                 pat: Pat.t,
                                 regionPat: Region.t} vector,
                         test: t} -> t
-            val dest: t -> node * Type.t
+            val dest: t -> node * Type.t * Mode.t
             val iff: t * t * t -> t
             val falsee: t
             val foreachVar: t * (Var.t -> unit) -> unit
@@ -128,14 +128,14 @@ signature CORE_ML =
             val lambda: lambda -> t
             val layout: t -> Layout.t
             val layoutWithType: t -> Layout.t
-            val make: node * Type.t -> t
+            val make: node * Type.t * Mode.t -> t
             val node: t -> node
             val orElse: t * t -> t
             val truee: t
             val tuple: t vector -> t
             val ty: t -> Type.t
             val unit: t
-            val var: Var.t * Type.t -> t
+            val var: Var.t * Type.t * Mode.t -> t
             val whilee: {expr: t, test: t} -> t
          end
 

@@ -672,7 +672,8 @@ fun defunctorize (CoreML.Program.T {decs}) =
          loopExp (#body (Clambda.dest l))
       fun loopPat (p: Cpat.t): NestedPat.t =
          let
-            val (p, t) = Cpat.dest p
+            (* TODO: check the mode *)
+            val (p, t, _) = Cpat.dest p
             val t' = loopTy t
             datatype z = datatype Cpat.node
             val p = 
@@ -931,7 +932,8 @@ fun defunctorize (CoreML.Program.T {decs}) =
          List.foldr (ds, e, fn (d, e) => loopDec (d, e, t))
       and loopExp (e: Cexp.t): Xexp.t * Xtype.t =
          let
-            val (n, ty) = Cexp.dest e
+            (* TODO: erasing mode here, need to carry it through *)
+            val (n, ty, _) = Cexp.dest e
             val ty = loopTy ty
             fun conApp {arg, con, targs, ty} =
                if Con.equals (con, Con.reff)

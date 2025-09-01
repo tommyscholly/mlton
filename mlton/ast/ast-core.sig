@@ -30,13 +30,6 @@ signature AST_CORE =
             datatype t = Op | None
          end
 
-      structure Mode:
-         sig
-            datatype t = Stack | Heap
-
-            val layout: t -> Layout.t
-         end
-
       structure Pat:
          sig
             type t

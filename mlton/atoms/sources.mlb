@@ -90,6 +90,8 @@ local
    type-ops.fun
    hash-type.sig
    hash-type.fun
+   mode.sig
+   mode.fun
 in
    signature ADMITS_EQUALITY
    signature ATOMS
@@ -118,6 +120,7 @@ in
    signature WORD_X_VECTOR
  
    structure LayoutPretty
+   structure Mode
 
    functor PrimCons
    functor PrimTycons

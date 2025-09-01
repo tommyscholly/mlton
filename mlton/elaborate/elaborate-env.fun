@@ -4362,7 +4362,8 @@ fun transparentCut (E: t, S: Structure.t, I: Interface.t,
                    fun addDec (name: string, n: Exp.node): Vid.t =
                       let
                          val x = Var.newString name
-                         val e = Exp.make (n, strType)
+                         (* TODO: analyze mode here, right now defaulting to Heap *)
+                         val e = Exp.make (n, strType, Mode.Heap)
                          val _ =
                             List.push
                             (decs,
@@ -4376,7 +4377,8 @@ fun transparentCut (E: t, S: Structure.t, I: Interface.t,
                                               exp = e,
                                               layPat = fn _ => Layout.empty,
                                               nest = [],
-                                              pat = Pat.var (x, strType),
+                                              (* TODO: check the mode *)
+                                              pat = Pat.var (x, strType, Mode.Heap),
                                               regionPat = Region.bogus})})
                       in
                          Vid.Var x

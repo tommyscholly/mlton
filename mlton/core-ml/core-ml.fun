@@ -36,7 +36,8 @@ fun layoutTargs (ts: Type.t vector) =
 structure Pat =
    struct
       datatype t = T of {node: node,
-                         ty: Type.t}
+                         ty: Type.t,
+                         mode: Mode.t}
       and node =
          Con of {arg: t option,
                  con: Con.t,
@@ -53,16 +54,19 @@ structure Pat =
       local
          fun make f (T r) = f r
       in
-         val dest = make (fn {node, ty} => (node, ty))
+         val dest = make (fn {node, ty, mode} => (node, ty, mode))
          val node = make #node
          val ty = make #ty
+         val mode = make #mode
       end
 
-      fun make (n, t) = T {node = n, ty = t}
+      fun make (n, t, m) = T {node = n, ty = t, mode = m}
 
       fun layout p =
          let
             val t = ty p
+            (* TODO: add mode *)
+            val m = mode p
             open Layout
          in
             case node p of
@@ -72,7 +76,7 @@ structure Pat =
                        case arg of
                           NONE => empty
                         | SOME p => seq [str " ", layout p]]
-             | Const f => Const.layout (f ())
+             | Const f => seq [Const.layout (f ()), str " :- ", Mode.layout m]
              | Layered (x, p) =>
                   seq [maybeConstrain (Var.layout x, t), str " as ", layout p]
              | List ps => list (Vector.toListMap (ps, layout))
@@ -96,18 +100,23 @@ structure Pat =
              | Wild => str "_"
          end
 
-      fun wild t = make (Wild, t)
+      fun wild t = make (Wild, t, Mode.Heap)
 
-      fun var (x, t) = make (Var x, t)
+      fun var (x, t, m) = make (Var x, t, m)
 
       fun tuple ps =
          if 1 = Vector.length ps
             then Vector.first ps
-            else make (Record (Record.tuple ps), Type.tuple (Vector.map (ps, ty)))
+            (* TODO: check the mode *)
+            else make (
+                Record (Record.tuple ps), 
+                Type.tuple (Vector.map (ps, ty)), 
+                Mode.Heap
+            )
 
       local
          fun bool c = make (Con {arg = NONE, con = c, targs = Vector.new0 ()},
-                            Type.bool)
+                            Type.bool, Mode.Heap)
       in
          val falsee: t = bool Con.falsee
          val truee: t = bool Con.truee
@@ -183,7 +192,8 @@ datatype dec =
                  pat: Pat.t,
                  regionPat: Region.t} vector}
 and exp = Exp of {node: expNode,
-                  ty: Type.t}
+                  ty: Type.t,
+                  mode: Mode.t}
 and expNode =
    App of exp * exp
   | Case of {ctxt: unit -> Layout.t,
@@ -345,7 +355,8 @@ structure Lambda =
       val bogus = make {arg = Var.newNoname (),
                         argType = Type.unit,
                         body = Exp {node = Seq (Vector.new0 ()),
-                                    ty = Type.unit},
+                                    ty = Type.unit,
+                                    mode = Mode.Heap},
                         mayInline = true}
    end
 
@@ -364,16 +375,18 @@ structure Exp =
       local
          fun make f (Exp r) = f r
       in
-         val dest = make (fn {node, ty} => (node, ty))
+         val dest = make (fn {node, ty, mode} => (node, ty, mode))
          val node = make #node
          val ty = make #ty
+         val mode = make #mode
       end
 
-      fun make (n, t) = Exp {node = n,
-                             ty = t}
+      fun make (n, t, m) = Exp {node = n,
+                             ty = t,
+                             mode = m}
 
-      fun var (x: Var.t, ty: Type.t): t =
-         make (Var (fn () => x, fn () => Vector.new0 ()), ty)
+      fun var (x: Var.t, ty: Type.t, mode: Mode.t): t =
+         make (Var (fn () => x, fn () => Vector.new0 ()), ty, mode)
 
       fun isExpansive (e: t): bool =
          case node e of
@@ -399,25 +412,34 @@ structure Exp =
       fun tuple es =
          if 1 = Vector.length es
             then Vector.first es
+         (* TODO: analyze mode here, right now defaulting to Heap *)
          else make (Record (Record.tuple es),
-                    Type.tuple (Vector.map (es, ty)))
+                    Type.tuple (Vector.map (es, ty)), Mode.Heap)
 
       val unit = tuple (Vector.new0 ())
 
       local
-         fun bool c = make (Con (c, Vector.new0 ()), Type.bool)
+         (* TODO: analyze mode here, right now defaulting to Heap *)
+         (* Personally, an "aggressive" optimization could default all bools to
+         * stack *)
+         fun bool c = make (Con (c, Vector.new0 ()), Type.bool, Mode.Heap)
       in
          val falsee: t = bool Con.falsee
          val truee: t = bool Con.truee
       end
 
       fun lambda (l as Lam {argType, body, ...}) =
-         make (Lambda l, Type.arrow (argType, ty body))
+         (* TODO: lambdas should probably always be heap allocated, but still
+         * need to review *)
+         make (Lambda l, Type.arrow (argType, ty body), Mode.Heap)
 
       fun casee (z as {rules, ...}) =
          if Vector.isEmpty rules
             then Error.bug "CoreML.Exp.casee"
-         else make (Case z, ty (#exp (Vector.first rules)))
+         else 
+            (* TODO: analyze mode here, right now defaulting to Heap *)
+            (* the mode possibly constrainted within the pattern should be used *)
+            make (Case z, ty (#exp (Vector.first rules)), Mode.Heap)
 
       fun iff (test, thenCase, elseCase): t =
          casee {ctxt = fn () => Layout.empty,
@@ -446,23 +468,28 @@ structure Exp =
          let
             val loop = Var.newNoname ()
             val loopTy = Type.arrow (Type.unit, Type.unit)
-            val call = make (App (var (loop, loopTy), unit), Type.unit)
+            (* TODO: analyze mode here, right now defaulting to Heap *)
+            (* i think i need to understand more of what is happening here, but
+             * initially i dont see how this could ever be stack allocated *)
+            val call = make (App (var (loop, loopTy, Mode.Heap), unit), Type.unit, Mode.Heap)
             val lambda =
                Lambda.make
                {arg = Var.newNoname (),
                 argType = Type.unit,
                 body = iff (test,
+                            (* TODO: same as above *)
                             make (Seq (Vector.new2 (expr, call)),
-                                  Type.unit),
+                                  Type.unit, Mode.Heap),
                             unit),
                 mayInline = true}
          in
+            (* TODO: same as above *)
             make
             (Let (Vector.new1 (Fun {decs = Vector.new1 {lambda = lambda,
                                                         var = loop},
                                     tyvars = fn () => Vector.new0 ()}),
                   call),
-             Type.unit)
+             Type.unit, Mode.Heap)
          end
 
       fun foreachVar (e: t, f: Var.t -> unit): unit =
@@ -510,7 +537,11 @@ structure Dec =
          let
             fun loopExp e =
                let
-                  fun mk node = Exp.make (node, Exp.ty e)
+                  (* TODO: eventually replace all mkMode with mk that takes in a
+                  * mode *)
+                  fun mk node = Exp.make (node, Exp.ty e, Mode.Heap)
+
+                  fun mkMode node m = Exp.make (node, Exp.ty e, m)
                in
                   case Exp.node e of
                      App (e1, e2) => mk (App (loopExp e1, loopExp e2))

@@ -163,6 +163,11 @@ structure Tyvar =
       open TypeEnv.TyvarExt
    end
 
+fun patModeConstraint (p: Apat.t): Mode.t =
+   case Apat.node p of
+      Apat.ModeConstraint (p, mode) => mode
+    | _ => Mode.Heap
+
 fun matchDiagsFromNoMatch noMatch =
    case noMatch of
       Cexp.Impossible =>
@@ -749,13 +754,14 @@ val elaboratePat:
                                 Cpat.make (Cpat.Con {arg = SOME p,
                                                      con = con,
                                                      targs = args},
-                                           resultType)
+                                           (* TODO: check the mode *)
+                                           resultType, Mode.Heap)
                              end)
                  | Apat.Const c =>
                       elabConst
                       (c,
                        {layoutPrettyType = #1 o layoutPrettyType},
-                       fn (resolve, ty) => Cpat.make (Cpat.Const resolve, ty),
+                       fn (resolve, ty) => Cpat.make (Cpat.Const resolve, ty, Mode.Heap),
                        {false = Cpat.falsee,
                         true = Cpat.truee})
                  | Apat.Constraint (p, t) =>
@@ -795,7 +801,8 @@ val elaboratePat:
                          val _ =
                             unifyPatternConstraint (Cpat.ty pat', t)
                       in
-                         Cpat.make (Cpat.Layered (x, pat'), t)
+                         (* TODO: check the mode *)
+                         Cpat.make (Cpat.Layered (x, pat'), t, Mode.Heap)
                       end
                  | Apat.List ps =>
                       let
@@ -805,7 +812,7 @@ val elaboratePat:
                                     unifyList
                                     (Vector.map2 (ps, ps', fn (p, p') =>
                                                   (Cpat.ty p', Apat.region p)),
-                                     unify))
+                                     unify), Mode.Heap)
                       end
                  | Apat.Or ps =>
                       let
@@ -890,7 +897,8 @@ val elaboratePat:
                                    end)
                          val _ = xts := xtsMerge
                       in
-                         Cpat.make (Cpat.Or ps', t)
+                         (* TODO: check the mode *)
+                         Cpat.make (Cpat.Or ps', t, Mode.Heap)
                       end
                  | Apat.Paren p => loop p
                  | Apat.Record {flexible, items} =>
@@ -943,9 +951,10 @@ val elaboratePat:
                             else
                                Type.record r
                       in
+                         (* TODO: check the mode *)
                          Cpat.make
                          (Cpat.Record (Record.fromVector (Vector.zip (fs, ps))),
-                          ty)
+                          ty, Mode.Heap)
                       end
                  | Apat.Tuple ps =>
                       Cpat.tuple (Vector.map (ps, loop))
@@ -956,7 +965,8 @@ val elaboratePat:
                             let
                                val (x, t) = bind (Ast.Vid.toVar x)
                             in
-                               Cpat.make (Cpat.Var x, t)
+                               (* TODO: check the mode *)
+                               Cpat.make (Cpat.Var x, t, Mode.Heap)
                             end
                       in
                          case Env.peekLongcon (E, Ast.Longvid.toLongcon name) of
@@ -972,7 +982,8 @@ val elaboratePat:
                                               Ast.Longvid.layout name],
                                          empty)
                                   in
-                                     Cpat.make (Cpat.Wild, Type.new ())
+                                     (* TODO: check the mode *)
+                                     Cpat.make (Cpat.Wild, Type.new (), Mode.Heap)
                                   end
                           | SOME (c, s) =>
                                if List.isEmpty strids andalso isRvb
@@ -994,7 +1005,8 @@ val elaboratePat:
                                           (Cpat.Con {arg = NONE,
                                                      con = c,
                                                      targs = args ()},
-                                           instance)
+                                           (* TODO: check the mode *)
+                                           instance, Mode.Heap)
                                     end
                       end
                  | Apat.Vector ps =>
@@ -1006,11 +1018,19 @@ val elaboratePat:
                                     unifyVector
                                     (Vector.map2 (ps, ps', fn (p, p') =>
                                                   (Cpat.ty p', Apat.region p)),
-                                     unify))
+                                     (* TODO: check the mode *)
+                                     unify), Mode.Heap)
                       end
                  | Apat.Wild =>
-                      Cpat.make (Cpat.Wild, Type.new ())
-                 | Apat.ModeConstraint (pat, _) => loop pat (* TODO: LOWER MODE *)
+                       (* TODO: check the mode *)
+                      Cpat.make (Cpat.Wild, Type.new (), Mode.Heap)
+                 | Apat.ModeConstraint (pat, mode) =>
+                      let
+                         val p' = loop pat
+                         (* TODO: constrain to modes *)
+                      in
+                         p'
+                      end
              end) arg
          val p' = loop p
          val xts = Vector.fromList (!xts)
@@ -1406,22 +1426,24 @@ fun primApp {args, prim, result: Type.t} =
       Cexp.make (Cexp.PrimApp {args = args,
                                prim = prim,
                                targs = targs},
-                 result)
+                 (* TODO: primApp probably needs to take in a mode *)
+                 result, Mode.Heap)
    end
 
 local
+   (* TODO: analyze all of these *)
    val zeroExpBool =
       Cexp.make (Cexp.Const
                  (fn () => Const.word (WordX.zero WordSize.bool)),
-                 Type.word WordSize.bool)
+                 Type.word WordSize.bool, Mode.Heap)
    val oneExpBool =
       Cexp.make (Cexp.Const
                  (fn () => Const.word (WordX.one WordSize.bool)),
-                 Type.word WordSize.bool)
+                 Type.word WordSize.bool, Mode.Heap)
    fun zeroExpPtrdiff () =
       Cexp.make (Cexp.Const
                  (fn () => Const.word (WordX.zero (WordSize.cptrdiff ()))),
-                 Type.word (WordSize.cptrdiff ()))
+                 Type.word (WordSize.cptrdiff ()), Mode.Heap)
 
    fun mkAddress {expandedPtrTy: Type.t,
                   name: string,
@@ -1431,7 +1453,7 @@ local
                  (fn () => Const.csymbol (CSymbol.T {name = name,
                                                      cty = cty,
                                                      symbolScope = symbolScope})),
-                 expandedPtrTy)
+                 expandedPtrTy, Mode.Heap)
 
    fun mkFetch {ctypeCbTy, isBool,
                 expandedCbTy,
@@ -1488,7 +1510,8 @@ local
            body = mkStore {ctypeCbTy = ctypeCbTy,
                            isBool = isBool,
                            ptrExp = ptrExp,
-                           valueExp = Cexp.var (setArg, expandedCbTy)},
+                           (* TODO: analyze mode here, right now defaulting to Heap *)
+                           valueExp = Cexp.var (setArg, expandedCbTy, Mode.Heap)},
            mayInline = true})
       end
 
@@ -1563,9 +1586,10 @@ in
                        name = name,
                        symbolScope = symbolScope,
                        cty = NONE}
-         fun wrap (e, t) = Cexp.make (Cexp.node e, t)
+         fun wrap (e, t, m) = Cexp.make (Cexp.node e, t, m)
       in
-         wrap (addrExp, elabedTy)
+         (* TODO: analyze mode here, right now defaulting to Heap *)
+         wrap (addrExp, elabedTy, Mode.Heap)
       end
 
    fun symbolDirect {attributes: SymbolAttribute.t list,
@@ -1664,9 +1688,10 @@ in
             mkSymbol {ctypeCbTy = ctypeCbTy,
                       expandedCbTy = expandedCbTy,
                       ptrExp = addrExp}
-         fun wrap (e, t) = Cexp.make (Cexp.node e, t)
+         fun wrap (e, t, m) = Cexp.make (Cexp.node e, t, m)
       in
-         wrap (symExp, elabedTy)
+         (* TODO: analyze mode here, right now defaulting to Heap *)
+         wrap (symExp, elabedTy, Mode.Heap)
       end
 
    fun symbolIndirect {elabedTy: Type.t,
@@ -1729,19 +1754,22 @@ in
                NONE => (invalidType (); ())
              | SOME _ => ()
          val ptrArg = Var.newNoname ()
-         val ptrExp = Cexp.var (ptrArg, expandedPtrTy)
+         (* TODO: analyze mode here, right now defaulting to Heap *)
+         (* ptrs could probably always be stack allocated? *)
+         val ptrExp = Cexp.var (ptrArg, expandedPtrTy, Mode.Heap)
          val symExp =
             mkSymbol {ctypeCbTy = ctypeCbTy,
                       expandedCbTy = expandedCbTy,
                       ptrExp = ptrExp}
-         fun wrap (e, t) = Cexp.make (Cexp.node e, t)
+         fun wrap (e, t, m) = Cexp.make (Cexp.node e, t, m)
       in
+         (* TODO: analyze mode here, right now defaulting to Heap *)
          wrap ((Cexp.lambda o Lambda.make)
                {arg = ptrArg,
                 argType = expandedPtrTy,
                 body = symExp,
                 mayInline = true},
-               elabedTy)
+               elabedTy, Mode.Heap)
       end
 end
 
@@ -1918,7 +1946,9 @@ structure Cexp =
             (* Don't create the source info if we're profiling some IL. *)
             orelse !Control.profileIL <> Control.ProfileSource
             then e
-         else make (EnterLeave (e, si ()), ty e)
+         (* TODO: analyze mode here, right now defaulting to Heap *)
+         (* also understand what enterLeave does *)
+         else make (EnterLeave (e, si ()), ty e, Mode.Heap)
    end
 
 (* This property must be outside of elaborateDec, since we don't want it to
@@ -2279,7 +2309,8 @@ fun elaborateDec (d, {env = E, nest}) =
                       let
                          val _ = check (ElabControl.allowDoDecls, "do declarations", Adec.region d)
                          val {unify, ...} = DiagUtils.make E
-                         val exp' = elabExp (exp, nest, NONE)
+                         (* TODO: check the mode *)
+                         val exp' = elabExp (exp, nest, NONE, Mode.Heap)
                          val _ =
                             unify
                             (Cexp.ty exp', Type.unit, fn (l1, _) =>
@@ -2577,7 +2608,8 @@ fun elaborateDec (d, {env = E, nest}) =
                                                  Env.extendVar
                                                  (E, x, x', Scheme.fromType ty,
                                                   {isRebind = false}))
-                                                ; elabExp (body, nest, NONE)))
+                                                  (* TODO: check the mode *)
+                                                ; elabExp (body, nest, NONE, Mode.Heap)))
                                            val body =
                                               Cexp.enterLeave
                                               (body,
@@ -2625,7 +2657,8 @@ fun elaborateDec (d, {env = E, nest}) =
                                     val args =
                                        Vector.map
                                        (argTys, fn argTy =>
-                                        (Var.newNoname (), argTy))
+                                         (* TODO: analyze mode here, right now defaulting to Heap *)
+                                        (Var.newNoname (), argTy, Mode.Heap))
                                     fun check () =
                                        unify
                                        (Vector.foldr (argTys, resTy, Type.arrow), funTy, fn (l1, l2) =>
@@ -2653,17 +2686,13 @@ fun elaborateDec (d, {env = E, nest}) =
                                         SourceInfo.function
                                         {name = nest,
                                          region = regionFb})
-                                    val lambda =
-                                       Vector.foldr
-                                       (args, body, fn ((arg, argTy), body) =>
+                                    val lambda = Vector.foldr (args, body, fn ((arg, argTy, mode), body) =>
                                         Cexp.make
-                                        (Cexp.Lambda
-                                         (Lambda.make
-                                          {arg = arg,
-                                           argType = argTy,
-                                           body = body,
-                                           mayInline = true}),
-                                         Type.arrow (argTy, Cexp.ty body)))
+                                            ( Cexp.Lambda (Lambda.make
+                                                {arg = arg, argType = argTy, body = body, mayInline = true}),
+                                                Type.arrow (argTy, Cexp.ty body),
+                                                mode
+                                            ))
                                     val lambda =
                                        case Cexp.node lambda of
                                           Cexp.Lambda lambda => lambda
@@ -2822,7 +2851,8 @@ fun elaborateDec (d, {env = E, nest}) =
                                     fun layPat () = Apat.layout pat
                                     val regionPat = Apat.region pat
                                     val regionExp = Aexp.region exp
-                                    val exp = elabExp (exp, nest, Apat.getName pat)
+                                    val patMode = patModeConstraint pat
+                                    val exp = elabExp (exp, nest, Apat.getName pat, patMode)
                                     val exp =
                                        Cexp.enterLeave
                                        (exp,
@@ -2951,7 +2981,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                                     noMatch = Cexp.RaiseMatch,
                                                     region = region,
                                                     rules = rules,
-                                                    test = Cexp.var (arg, argType)},
+                                                    test = Cexp.var (arg, argType, Mode.Heap)},
                                         profileBody,
                                         fn () => SourceInfo.function {name = nest,
                                                                       region = region})
@@ -3050,18 +3080,20 @@ fun elaborateDec (d, {env = E, nest}) =
           in
              decs
           end) arg
-      and elabExp (arg: Aexp.t * Nest.t * string option) : Cexp.t =
+      and elabExp (arg: Aexp.t * Nest.t * string option * Mode.t) : Cexp.t =
          Trace.traceInfo
          (elabExpInfo,
-          Layout.tuple3
+          Layout.tuple4
           (Aexp.layout,
            Nest.layout,
-           Option.layout String.layout),
+           Option.layout String.layout,
+           Mode.layout),
           Cexp.layoutWithType,
           Trace.assertTrue)
-         (fn (e: Aexp.t, nest, maybeName) =>
+
+         (fn (e: Aexp.t, nest, maybeName, modeConstraint: Mode.t) =>
           let
-             fun elab e = elabExp (e, nest, NONE)
+             fun elab e = elabExp (e, nest, NONE, modeConstraint)
              val {layoutPrettyType, layoutPrettyTycon, layoutPrettyTyvar, unify} =
                 DiagUtils.make E
              val layoutPrettyTypeBracket = fn ty =>
@@ -3097,7 +3129,9 @@ fun elaborateDec (d, {env = E, nest}) =
                       val cer = doit (er, "right")
                       val e = Cexp.andAlso (cel, cer)
                    in
-                      Cexp.make (Cexp.node e, Type.bool)
+                      (* TODO: if both left and right sub exps are stack
+                      * allocated, should this be stack allocated? *)
+                      Cexp.make (Cexp.node e, Type.bool, Mode.Heap)
                    end
               | Aexp.App {func = ef, arg = ea, ...} =>
                    let
@@ -3135,7 +3169,8 @@ fun elaborateDec (d, {env = E, nest}) =
                            align [seq [str "expects: ", l1],
                                   seq [str "but got: ", l2]]))
                    in
-                      Cexp.make (Cexp.App (cef, cea), resultType)
+                      (* TODO: check the mode *)
+                      Cexp.make (Cexp.App (cef, cea), resultType, Mode.Heap)
                    end
               | Aexp.Case (e, m) =>
                    let
@@ -3162,7 +3197,8 @@ fun elaborateDec (d, {env = E, nest}) =
                    elabConst
                    (c,
                     {layoutPrettyType = #1 o layoutPrettyType},
-                    fn (resolve, ty) => Cexp.make (Cexp.Const resolve, ty),
+                    (* TODO: check the mode *)
+                    fn (resolve, ty) => Cexp.make (Cexp.Const resolve, ty, modeConstraint),
                     {false = Cexp.falsee,
                      true = Cexp.truee})
               | Aexp.Constraint (e, t') =>
@@ -3177,7 +3213,8 @@ fun elaborateDec (d, {env = E, nest}) =
                            align [seq [str "expression: ", l1],
                                   seq [str "constraint: ", l2]]))
                    in
-                      Cexp.make (Cexp.node e, t')
+                      (* TODO: check the mode *)
+                      Cexp.make (Cexp.node e, t', Mode.Heap)
                    end
               | Aexp.FlatApp items => elab (Parse.parseExp (items, E, ctxt))
               | Aexp.Fn match =>
@@ -3201,7 +3238,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                                            argType = argType,
                                                            body = body,
                                                            mayInline = true}),
-                                 Type.arrow (argType, Cexp.ty body))
+                                 Type.arrow (argType, Cexp.ty body), Mode.Heap)
                    end
               | Aexp.Handle (try, match) =>
                    let
@@ -3224,10 +3261,11 @@ fun elaborateDec (d, {env = E, nest}) =
                            str "handler match argument not of type exn",
                            seq [str "argument: ", l1]))
                    in
+                      (* TODO: check the mode *)
                       Cexp.make (Cexp.Handle {catch = (arg, Type.exn),
                                               handler = body,
                                               try = try},
-                                 Cexp.ty try)
+                                 Cexp.ty try, Mode.Heap)
                    end
               | Aexp.If (a, b, c) =>
                    let
@@ -3308,7 +3346,8 @@ fun elaborateDec (d, {env = E, nest}) =
                                          ty
                                       end
                           in
-                             Cexp.make (Cexp.Let (d', e'), ty)
+                             (* TODO: check the mode *)
+                             Cexp.make (Cexp.Let (d', e'), ty, Mode.Heap)
                           end)
                    in
                       res
@@ -3317,11 +3356,12 @@ fun elaborateDec (d, {env = E, nest}) =
                    let
                       val es' = Vector.map (es, elab)
                    in
+                      (* TODO: check the mode *)
                       Cexp.make (Cexp.List es',
                                  unifyList
                                  (Vector.map2 (es, es', fn (e, e') =>
                                                (Cexp.ty e', Aexp.region e)),
-                                  unify))
+                                  unify), Mode.Heap)
                    end
               | Aexp.Orelse (el, er) =>
                    let
@@ -3343,7 +3383,8 @@ fun elaborateDec (d, {env = E, nest}) =
                       val cer = doit (er, "right")
                       val e = Cexp.orElse (cel, cer)
                    in
-                      Cexp.make (Cexp.node e, Type.bool)
+                      (* TODO: check the mode *)
+                      Cexp.make (Cexp.node e, Type.bool, Mode.Heap)
                    end
               | Aexp.Paren e => elab e
               | Aexp.Prim kind =>
@@ -3366,7 +3407,7 @@ fun elaborateDec (d, {env = E, nest}) =
                        * final expression be ty, because that is what the rest
                        * of the code expects to see.
                        *)
-                      fun wrap (e, t) = Cexp.make (Cexp.node e, t)
+                      fun wrap (e, t, m) = Cexp.make (Cexp.node e, t, m)
                       fun etaExtraNoWrap {expandedTy,
                                           extra,
                                           prim: Type.t Prim.t}: Cexp.t =
@@ -3385,13 +3426,14 @@ fun elaborateDec (d, {env = E, nest}) =
                                      case Type.deTupleOpt argType of
                                         NONE =>
                                            app (Vector.new1
-                                                (Cexp.var (arg, argType)))
+                                                (* TODO: check the mode *)
+                                                (Cexp.var (arg, argType, Mode.Heap)))
                                       | SOME ts =>
                                            let
                                               val vars =
                                                  Vector.map
                                                  (ts, fn t =>
-                                                  (Var.newNoname (), t))
+                                                  (Var.newNoname (), t, Mode.Heap))
                                            in
                                               Cexp.casee
                                               {ctxt = fn _ => empty,
@@ -3408,7 +3450,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                                               (Vector.map
                                                                (vars, Cpat.var)),
                                                         regionPat = Region.bogus},
-                                               test = Cexp.var (arg, argType)}
+                                               test = Cexp.var (arg, argType, Mode.Heap)}
                                            end
                                in
                                   (Cexp.lambda o Lambda.make)
@@ -3424,9 +3466,10 @@ fun elaborateDec (d, {env = E, nest}) =
                                          prim = prim}
                       fun eta {elabedTy, expandedTy,
                                prim: Type.t Prim.t} : Cexp.t =
+                         (* TODO: check the mode *)
                          wrap (etaNoWrap {expandedTy = expandedTy,
                                           prim = prim},
-                               elabedTy)
+                               elabedTy, Mode.Heap)
                       val lookConst = fn {default, elabedTy, expandedTy, name} =>
                          let
                             val finish =
@@ -3435,7 +3478,8 @@ fun elaborateDec (d, {env = E, nest}) =
                                           name = name,
                                           region = region}
                          in
-                            Cexp.make (Cexp.Const finish, elabedTy)
+                            (* TODO: check the mode *)
+                            Cexp.make (Cexp.Const finish, elabedTy, Mode.Heap)
                          end
                       val check = fn (c, n) => check (c, n, region)
                       datatype z = datatype Ast.PrimKind.t
@@ -3561,7 +3605,8 @@ fun elaborateDec (d, {env = E, nest}) =
                                     align [seq [str "inferred: ", l1],
                                            seq [str "expanded: ", l2]]))
                             in
-                               wrap (exp, elabedExportTy)
+                               (* TODO: check the mode *)
+                               wrap (exp, elabedExportTy, Mode.Heap)
                             end
                        | IImport {attributes, ty} =>
                             let
@@ -3593,7 +3638,8 @@ fun elaborateDec (d, {env = E, nest}) =
                                      NONE => (error (); ())
                                    | SOME _ => ()
                                val fptr = Var.newNoname ()
-                               val fptrArg = Cexp.var (fptr, expandedFPtrTy)
+                               (* TODO: check the mode *)
+                               val fptrArg = Cexp.var (fptr, expandedFPtrTy, Mode.Heap)
                             in
                                wrap
                                ((Cexp.lambda o Lambda.make)
@@ -3609,7 +3655,8 @@ fun elaborateDec (d, {env = E, nest}) =
                                                                 expandedTy = expandedCfTy,
                                                                 layoutPrettyType = #1 o layoutPrettyType}},
                                  mayInline = true},
-                                elabedTy)
+                                 (* TODO: check the mode *)
+                                elabedTy, Mode.Heap)
                             end
                        | Import {attributes, name, ty} =>
                             let
@@ -3689,7 +3736,8 @@ fun elaborateDec (d, {env = E, nest}) =
                       val resultType = Type.new ()
                    in
                       Cexp.enterLeave
-                      (Cexp.make (Cexp.Raise exn, resultType),
+                      (* TODO: check the mode *)
+                      (Cexp.make (Cexp.Raise exn, resultType, Mode.Heap),
                        profileBody andalso !Control.profileRaise,
                        fn () => SourceInfo.function {name = "<raise>" :: nest,
                                                      region = region})
@@ -3702,7 +3750,8 @@ fun elaborateDec (d, {env = E, nest}) =
                          (SortedRecord.fromVector
                           (Record.toVector (Record.map (r, Cexp.ty))))
                    in
-                      Cexp.make (Cexp.Record r, ty)
+                      (* TODO: check the mode *)
+                      Cexp.make (Cexp.Record r, ty, Mode.Heap)
                    end
               | Aexp.Selector f => elab (Aexp.selector (f, region))
               | Aexp.Seq es =>
@@ -3736,12 +3785,14 @@ fun elaborateDec (d, {env = E, nest}) =
                              | Control.Elaborate.DiagEIW.Warn => doit Control.warning
                          end
                    in
-                      Cexp.make (Cexp.Seq es', Cexp.ty (Vector.sub (es', last)))
+                      (* TODO: check the mode *)
+                      Cexp.make (Cexp.Seq es', Cexp.ty (Vector.sub (es', last)), Mode.Heap)
                    end
               | Aexp.Var {name = id, ...} =>
                    let
                       fun dontCare () =
-                         Cexp.var (Var.newNoname (), Type.new ())
+                         (* TODO: check the mode *)
+                         Cexp.var (Var.newNoname (), Type.new (), Mode.Heap)
                    in
                       case Env.lookupLongvid (E, id) of
                          NONE => dontCare ()
@@ -3801,7 +3852,8 @@ fun elaborateDec (d, {env = E, nest}) =
                                                      NONE => args
                                                    | SOME f => f)
                             in
-                               Cexp.make (e, instance)
+                               (* TODO: check the mode *)
+                               Cexp.make (e, instance, Mode.Heap)
                             end
                    end
               | Aexp.Vector es =>
@@ -3813,7 +3865,9 @@ fun elaborateDec (d, {env = E, nest}) =
                                  unifyVector
                                  (Vector.map2 (es, es', fn (e, e') =>
                                                (Cexp.ty e', Aexp.region e)),
-                                  unify))
+                                  unify), 
+                                 (* TODO: check the mode *)
+                                  Mode.Heap)
                    end
               | Aexp.While {expr, test} =>
                    let
@@ -3865,7 +3919,7 @@ fun elaborateDec (d, {env = E, nest}) =
                            noMatch = noMatch,
                            region = region,
                            rules = rules,
-                           test = Cexp.var (arg, argType)}
+                           test = Cexp.var (arg, argType, Mode.Heap)}
          in
            {arg = arg,
             argType = argType,
@@ -3905,7 +3959,8 @@ fun elaborateDec (d, {env = E, nest}) =
                          align [seq [str "pattern:  ", l1],
                                 seq [str "previous: ", l2]]))
                     val expOrig = exp
-                    val exp = elabExp (exp, nest, NONE)
+                    val modeConstraint = patModeConstraint patOrig
+                    val exp = elabExp (exp, nest, NONE, modeConstraint)
                     val _ =
                        unify
                        (Cexp.ty exp, resultType, fn (l1, l2) =>

@@ -51,6 +51,11 @@ structure Type =
       fun arrow (t1, t2) = Con (Longtycon.arrow, Vector.new2 (t1, t2))
    end
 
+structure Mode =
+   struct
+      open Mode
+   end
+
 structure DatBind =
    struct
       open DatBind
@@ -241,7 +246,7 @@ fun 'a augment1 ((strexp: Strexp.t,
 type 'a whereAndEqns = WhereEquation.t list * 'a list
 
   
-(*#line 244.1 "ml.grm.sml"*)
+(*#line 249.1 "ml.grm.sml"*)
 end
 structure LrTable = Token.LrTable
 structure Token = Token
@@ -2294,136 +2299,136 @@ fn (i392,defaultPos,stack,
     (()):arg) =>
 case (i392,stack)
 of  ( 0, ( ( _, ( MlyValue.expsAndTopdecs expsAndTopdecs1, expsAndTopdecs1left, expsAndTopdecs1right)) :: rest671)) => let val  result = MlyValue.program (fn _ => let val  (expsAndTopdecs as expsAndTopdecs1) = expsAndTopdecs1 ()
- in ((*#line 485.26 "ml.grm"*)Program.T expsAndTopdecs(*#line 2296.1 "ml.grm.sml"*)
+ in ((*#line 490.26 "ml.grm"*)Program.T expsAndTopdecs(*#line 2301.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 86, ( result, expsAndTopdecs1left, expsAndTopdecs1right), rest671)
 end
 |  ( 1, ( ( _, ( MlyValue.expsAndTopdecs' expsAndTopdecs'1, _, expsAndTopdecs'1right)) :: ( _, ( MlyValue.exp exp1, exp1left, _)) :: rest671)) => let val  result = MlyValue.expsAndTopdecs (fn _ => let val  (exp as exp1) = exp1 ()
  val  (expsAndTopdecs' as expsAndTopdecs'1) = expsAndTopdecs'1 ()
- in ((*#line 488.26 "ml.grm"*)consTopdec (Topdec.fromExp exp, expsAndTopdecs')(*#line 2302.1 "ml.grm.sml"*)
+ in ((*#line 493.26 "ml.grm"*)consTopdec (Topdec.fromExp exp, expsAndTopdecs')(*#line 2307.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 46, ( result, exp1left, expsAndTopdecs'1right), rest671)
 end
 |  ( 2, ( ( _, ( MlyValue.topdecs topdecs1, topdecs1left, topdecs1right)) :: rest671)) => let val  result = MlyValue.expsAndTopdecs (fn _ => let val  (topdecs as topdecs1) = topdecs1 ()
- in ((*#line 489.14 "ml.grm"*)topdecs(*#line 2309.1 "ml.grm.sml"*)
+ in ((*#line 494.14 "ml.grm"*)topdecs(*#line 2314.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 46, ( result, topdecs1left, topdecs1right), rest671)
 end
-|  ( 3, ( rest671)) => let val  result = MlyValue.expsAndTopdecs' (fn _ => ((*#line 492.8 "ml.grm"*)[](*#line 2315.1 "ml.grm.sml"*)
+|  ( 3, ( rest671)) => let val  result = MlyValue.expsAndTopdecs' (fn _ => ((*#line 497.8 "ml.grm"*)[](*#line 2320.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 47, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 4, ( ( _, ( MlyValue.expsAndTopdecs expsAndTopdecs1, _, expsAndTopdecs1right)) :: ( _, ( _, SEMICOLON1left, _)) :: rest671)) => let val  result = MlyValue.expsAndTopdecs' (fn _ => let val  (expsAndTopdecs as expsAndTopdecs1) = expsAndTopdecs1 ()
- in ((*#line 493.31 "ml.grm"*)[] :: expsAndTopdecs(*#line 2319.1 "ml.grm.sml"*)
+ in ((*#line 498.31 "ml.grm"*)[] :: expsAndTopdecs(*#line 2324.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 47, ( result, SEMICOLON1left, expsAndTopdecs1right), rest671)
 end
 |  ( 5, ( ( _, ( MlyValue.topdecs topdecs1, _, topdecs1right)) :: ( _, ( MlyValue.topdec topdec1, topdec1left, _)) :: rest671)) => let val  result = MlyValue.topdecs (fn _ => let val  (topdec as topdec1) = topdec1 ()
  val  (topdecs as topdecs1) = topdecs1 ()
- in ((*#line 496.21 "ml.grm"*)consTopdec (topdec, topdecs)(*#line 2325.1 "ml.grm.sml"*)
+ in ((*#line 501.21 "ml.grm"*)consTopdec (topdec, topdecs)(*#line 2330.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 137, ( result, topdec1left, topdecs1right), rest671)
 end
 |  ( 6, ( ( _, ( MlyValue.expsAndTopdecs' expsAndTopdecs'1, expsAndTopdecs'1left, expsAndTopdecs'1right)) :: rest671)) => let val  result = MlyValue.topdecs (fn _ => let val  (expsAndTopdecs' as expsAndTopdecs'1) = expsAndTopdecs'1 ()
- in ((*#line 497.22 "ml.grm"*)expsAndTopdecs'(*#line 2332.1 "ml.grm.sml"*)
+ in ((*#line 502.22 "ml.grm"*)expsAndTopdecs'(*#line 2337.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 137, ( result, expsAndTopdecs'1left, expsAndTopdecs'1right), rest671)
 end
 |  ( 7, ( ( _, ( MlyValue.topdecnode topdecnode1, (topdecnodeleft as topdecnode1left), (topdecnoderight as topdecnode1right))) :: rest671)) => let val  result = MlyValue.topdec (fn _ => let val  (topdecnode as topdecnode1) = topdecnode1 ()
- in ((*#line 499.22 "ml.grm"*)Topdec.makeRegion' (topdecnode,
+ in ((*#line 504.22 "ml.grm"*)Topdec.makeRegion' (topdecnode,
                                          topdecnodeleft,
-                                         topdecnoderight)(*#line 2338.1 "ml.grm.sml"*)
+                                         topdecnoderight)(*#line 2343.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 135, ( result, topdecnode1left, topdecnode1right), rest671)
 end
 |  ( 8, ( ( _, ( MlyValue.strdec strdec1, strdec1left, strdec1right)) :: rest671)) => let val  result = MlyValue.topdecnode (fn _ => let val  (strdec as strdec1) = strdec1 ()
- in ((*#line 505.7 "ml.grm"*)Topdec.Strdec strdec(*#line 2346.1 "ml.grm.sml"*)
+ in ((*#line 510.7 "ml.grm"*)Topdec.Strdec strdec(*#line 2351.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 136, ( result, strdec1left, strdec1right), rest671)
 end
 |  ( 9, ( ( _, ( MlyValue.sigbinds sigbinds1, _, sigbinds1right)) :: ( _, ( _, SIGNATURE1left, _)) :: rest671)) => let val  result = MlyValue.topdecnode (fn _ => let val  (sigbinds as sigbinds1) = sigbinds1 ()
- in ((*#line 507.7 "ml.grm"*)let
+ in ((*#line 512.7 "ml.grm"*)let
          val sigbinds = Vector.fromList sigbinds
          val d = Topdec.Signature sigbinds
       in
          d
-      end(*#line 2352.1 "ml.grm.sml"*)
+      end(*#line 2357.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 136, ( result, SIGNATURE1left, sigbinds1right), rest671)
 end
 |  ( 10, ( ( _, ( MlyValue.funbinds funbinds1, _, funbinds1right)) :: ( _, ( _, FUNCTOR1left, _)) :: rest671)) => let val  result = MlyValue.topdecnode (fn _ => let val  (funbinds as funbinds1) = funbinds1 ()
- in ((*#line 514.7 "ml.grm"*)Topdec.Functor (Vector.fromList funbinds)(*#line 2363.1 "ml.grm.sml"*)
+ in ((*#line 519.7 "ml.grm"*)Topdec.Functor (Vector.fromList funbinds)(*#line 2368.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 136, ( result, FUNCTOR1left, funbinds1right), rest671)
 end
 |  ( 11, ( ( _, ( MlyValue.strdecsnode strdecsnode1, (strdecsnodeleft as strdecsnode1left), (strdecsnoderight as strdecsnode1right))) :: rest671)) => let val  result = MlyValue.strdecs (fn _ => let val  (strdecsnode as strdecsnode1) = strdecsnode1 ()
- in ((*#line 520.24 "ml.grm"*)Strdec.makeRegion'
-                       (strdecsnode, strdecsnodeleft, strdecsnoderight)(*#line 2369.1 "ml.grm.sml"*)
+ in ((*#line 525.24 "ml.grm"*)Strdec.makeRegion'
+                       (strdecsnode, strdecsnodeleft, strdecsnoderight)(*#line 2374.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 117, ( result, strdecsnode1left, strdecsnode1right), rest671)
 end
-|  ( 12, ( rest671)) => let val  result = MlyValue.strdecsnode (fn _ => ((*#line 523.35 "ml.grm"*)Strdec.Seq [](*#line 2376.1 "ml.grm.sml"*)
+|  ( 12, ( rest671)) => let val  result = MlyValue.strdecsnode (fn _ => ((*#line 528.35 "ml.grm"*)Strdec.Seq [](*#line 2381.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 118, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 13, ( ( _, ( MlyValue.strdecs strdecs1, _, strdecs1right)) :: ( _, ( _, SEMICOLON1left, _)) :: rest671)) => let val  result = MlyValue.strdecsnode (fn _ => let val  (strdecs as strdecs1) = strdecs1 ()
- in ((*#line 524.35 "ml.grm"*)Strdec.Seq [strdecs](*#line 2380.1 "ml.grm.sml"*)
+ in ((*#line 529.35 "ml.grm"*)Strdec.Seq [strdecs](*#line 2385.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 118, ( result, SEMICOLON1left, strdecs1right), rest671)
 end
 |  ( 14, ( ( _, ( MlyValue.strdecs strdecs1, _, strdecs1right)) :: ( _, ( MlyValue.strdec strdec1, strdec1left, _)) :: rest671)) => let val  result = MlyValue.strdecsnode (fn _ => let val  (strdec as strdec1) = strdec1 ()
  val  (strdecs as strdecs1) = strdecs1 ()
- in ((*#line 525.35 "ml.grm"*)Strdec.Seq [strdec, strdecs](*#line 2386.1 "ml.grm.sml"*)
+ in ((*#line 530.35 "ml.grm"*)Strdec.Seq [strdec, strdecs](*#line 2391.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 118, ( result, strdec1left, strdecs1right), rest671)
 end
 |  ( 15, ( ( _, ( MlyValue.strdecnode strdecnode1, (strdecnodeleft as strdecnode1left), (strdecnoderight as strdecnode1right))) :: rest671)) => let val  result = MlyValue.strdec (fn _ => let val  (strdecnode as strdecnode1) = strdecnode1 ()
- in ((*#line 527.22 "ml.grm"*)Strdec.makeRegion' (strdecnode,
-                                         strdecnodeleft, strdecnoderight)(*#line 2393.1 "ml.grm.sml"*)
+ in ((*#line 532.22 "ml.grm"*)Strdec.makeRegion' (strdecnode,
+                                         strdecnodeleft, strdecnoderight)(*#line 2398.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 115, ( result, strdecnode1left, strdecnode1right), rest671)
 end
 |  ( 16, ( ( _, ( MlyValue.strbinds strbinds1, _, strbinds1right)) :: ( _, ( _, STRUCTURE1left, _)) :: rest671)) => let val  result = MlyValue.strdecnode (fn _ => let val  (strbinds as strbinds1) = strbinds1 ()
- in ((*#line 532.7 "ml.grm"*)let
+ in ((*#line 537.7 "ml.grm"*)let
          val strbinds = Vector.fromList strbinds
          val d = Strdec.Structure strbinds
       in
          d
-      end(*#line 2400.1 "ml.grm.sml"*)
+      end(*#line 2405.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 116, ( result, STRUCTURE1left, strbinds1right), rest671)
 end
 |  ( 17, ( ( _, ( _, _, END1right)) :: ( _, ( MlyValue.strdecs strdecs2, _, _)) :: _ :: ( _, ( MlyValue.strdecs strdecs1, _, _)) :: ( _, ( _, LOCAL1left, _)) :: rest671)) => let val  result = MlyValue.strdecnode (fn _ => let val  strdecs1 = strdecs1 ()
  val  strdecs2 = strdecs2 ()
- in ((*#line 538.37 "ml.grm"*)Strdec.Local (strdecs1, strdecs2)(*#line 2411.1 "ml.grm.sml"*)
+ in ((*#line 543.37 "ml.grm"*)Strdec.Local (strdecs1, strdecs2)(*#line 2416.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 116, ( result, LOCAL1left, END1right), rest671)
 end
 |  ( 18, ( ( _, ( MlyValue.decnolocal decnolocal1, (decnolocalleft as decnolocal1left), (decnolocalright as decnolocal1right))) :: rest671)) => let val  result = MlyValue.strdecnode (fn _ => let val  (decnolocal as decnolocal1) = decnolocal1 ()
- in ((*#line 540.7 "ml.grm"*)Strdec.Core (Dec.makeRegion' (decnolocal,
-                                    decnolocalleft, decnolocalright))(*#line 2418.1 "ml.grm.sml"*)
+ in ((*#line 545.7 "ml.grm"*)Strdec.Core (Dec.makeRegion' (decnolocal,
+                                    decnolocalleft, decnolocalright))(*#line 2423.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 116, ( result, decnolocal1left, decnolocal1right), rest671)
 end
 |  ( 19, ( ( _, ( MlyValue.SHOW_BASIS SHOW_BASIS1, SHOW_BASIS1left, SHOW_BASIS1right)) :: rest671)) => let val  result = MlyValue.strdecnode (fn _ => let val  (SHOW_BASIS as SHOW_BASIS1) = SHOW_BASIS1 ()
- in ((*#line 542.37 "ml.grm"*)Strdec.ShowBasis SHOW_BASIS(*#line 2425.1 "ml.grm.sml"*)
+ in ((*#line 547.37 "ml.grm"*)Strdec.ShowBasis SHOW_BASIS(*#line 2430.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 116, ( result, SHOW_BASIS1left, SHOW_BASIS1right), rest671)
@@ -2431,218 +2436,218 @@ end
 |  ( 20, ( ( _, ( MlyValue.strbinds' strbinds'1, _, strbinds'1right)) :: _ :: ( _, ( MlyValue.sigconst sigconst1, _, _)) :: ( _, ( MlyValue.strid strid1, strid1left, _)) :: rest671)) => let val  result = MlyValue.strbinds (fn _ => let val  (strid as strid1) = strid1 ()
  val  (sigconst as sigconst1) = sigconst1 ()
  val  (strbinds' as strbinds'1) = strbinds'1 ()
- in ((*#line 546.13 "ml.grm"*)let val (def,strbinds) = strbinds'
+ in ((*#line 551.13 "ml.grm"*)let val (def,strbinds) = strbinds'
             in {name = strid, def = def, constraint = sigconst}
                :: strbinds
-            end(*#line 2431.1 "ml.grm.sml"*)
+            end(*#line 2436.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 110, ( result, strid1left, strbinds'1right), rest671)
 end
 |  ( 21, ( ( _, ( MlyValue.strbinds'1 strbinds'11, _, strbinds'11right)) :: ( _, ( MlyValue.strexp1 strexp11, strexp11left, _)) :: rest671)) => let val  result = MlyValue.strbinds' (fn _ => let val  (strexp1 as strexp11) = strexp11 ()
  val  (strbinds'1 as strbinds'11) = strbinds'11 ()
- in ((*#line 551.36 "ml.grm"*)augment1 (strexp1, strbinds'1)(*#line 2442.1 "ml.grm.sml"*)
+ in ((*#line 556.36 "ml.grm"*)augment1 (strexp1, strbinds'1)(*#line 2447.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 111, ( result, strexp11left, strbinds'11right), rest671)
 end
 |  ( 22, ( ( _, ( MlyValue.strbinds'2 strbinds'21, _, strbinds'21right)) :: ( _, ( MlyValue.strexp2 strexp21, strexp21left, _)) :: rest671)) => let val  result = MlyValue.strbinds' (fn _ => let val  (strexp2 as strexp21) = strexp21 ()
  val  (strbinds'2 as strbinds'21) = strbinds'21 ()
- in ((*#line 552.36 "ml.grm"*)(strexp2,strbinds'2)(*#line 2449.1 "ml.grm.sml"*)
+ in ((*#line 557.36 "ml.grm"*)(strexp2,strbinds'2)(*#line 2454.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 111, ( result, strexp21left, strbinds'21right), rest671)
 end
 |  ( 23, ( ( _, ( MlyValue.strbinds'2 strbinds'21, strbinds'21left, strbinds'21right)) :: rest671)) => let val  result = MlyValue.strbinds'1 (fn _ => let val  (strbinds'2 as strbinds'21) = strbinds'21 ()
- in ((*#line 554.43 "ml.grm"*)([], strbinds'2)(*#line 2456.1 "ml.grm.sml"*)
+ in ((*#line 559.43 "ml.grm"*)([], strbinds'2)(*#line 2461.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 112, ( result, strbinds'21left, strbinds'21right), rest671)
 end
 |  ( 24, ( ( _, ( MlyValue.strbinds'1' strbinds'1'1, _, strbinds'1'1right)) :: ( _, ( MlyValue.whereeqn whereeqn1, _, _)) :: ( _, ( _, (WHEREleft as WHERE1left), _)) :: rest671)) => let val  result = MlyValue.strbinds'1 (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
  val  (strbinds'1' as strbinds'1'1) = strbinds'1'1 ()
- in ((*#line 555.43 "ml.grm"*)cons1 (whereeqn WHEREleft, strbinds'1')(*#line 2462.1 "ml.grm.sml"*)
+ in ((*#line 560.43 "ml.grm"*)cons1 (whereeqn WHEREleft, strbinds'1')(*#line 2467.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 112, ( result, WHERE1left, strbinds'1'1right), rest671)
 end
 |  ( 25, ( ( _, ( MlyValue.strbinds'1 strbinds'11, strbinds'11left, strbinds'11right)) :: rest671)) => let val  result = MlyValue.strbinds'1' (fn _ => let val  (strbinds'1 as strbinds'11) = strbinds'11 ()
- in ((*#line 557.42 "ml.grm"*)strbinds'1(*#line 2469.1 "ml.grm.sml"*)
+ in ((*#line 562.42 "ml.grm"*)strbinds'1(*#line 2474.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 113, ( result, strbinds'11left, strbinds'11right), rest671)
 end
 |  ( 26, ( ( _, ( MlyValue.strbinds'1' strbinds'1'1, _, strbinds'1'1right)) :: ( _, ( MlyValue.whereeqn whereeqn1, _, _)) :: ( _, ( _, (ANDleft as AND1left), _)) :: rest671)) => let val  result = MlyValue.strbinds'1' (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
  val  (strbinds'1' as strbinds'1'1) = strbinds'1'1 ()
- in ((*#line 558.42 "ml.grm"*)cons1 (whereeqn ANDleft, strbinds'1')(*#line 2475.1 "ml.grm.sml"*)
+ in ((*#line 563.42 "ml.grm"*)cons1 (whereeqn ANDleft, strbinds'1')(*#line 2480.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 113, ( result, AND1left, strbinds'1'1right), rest671)
 end
-|  ( 27, ( rest671)) => let val  result = MlyValue.strbinds'2 (fn _ => ((*#line 560.29 "ml.grm"*)[](*#line 2482.1 "ml.grm.sml"*)
+|  ( 27, ( rest671)) => let val  result = MlyValue.strbinds'2 (fn _ => ((*#line 565.29 "ml.grm"*)[](*#line 2487.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 114, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 28, ( ( _, ( MlyValue.strbinds strbinds1, _, strbinds1right)) :: ( _, ( _, AND1left, _)) :: rest671)) => let val  result = MlyValue.strbinds'2 (fn _ => let val  (strbinds as strbinds1) = strbinds1 ()
- in ((*#line 561.29 "ml.grm"*)strbinds(*#line 2486.1 "ml.grm.sml"*)
+ in ((*#line 566.29 "ml.grm"*)strbinds(*#line 2491.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 114, ( result, AND1left, strbinds1right), rest671)
 end
 |  ( 29, ( ( _, ( MlyValue.strexpnode strexpnode1, (strexpnodeleft as strexpnode1left), (strexpnoderight as strexpnode1right))) :: rest671)) => let val  result = MlyValue.strexp (fn _ => let val  (strexpnode as strexpnode1) = strexpnode1 ()
- in ((*#line 563.22 "ml.grm"*)Strexp.makeRegion' (strexpnode,
-                                         strexpnodeleft, strexpnoderight)(*#line 2492.1 "ml.grm.sml"*)
+ in ((*#line 568.22 "ml.grm"*)Strexp.makeRegion' (strexpnode,
+                                         strexpnodeleft, strexpnoderight)(*#line 2497.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 122, ( result, strexpnode1left, strexpnode1right), rest671)
 end
 |  ( 30, ( ( _, ( MlyValue.strexp1 strexp11, strexp11left, strexp11right)) :: rest671)) => let val  result = MlyValue.strexpnode (fn _ => let val  (strexp1 as strexp11) = strexp11 ()
- in ((*#line 568.6 "ml.grm"*)let
+ in ((*#line 573.6 "ml.grm"*)let
         val (strexp, sigconst, sigexp) = strexp1
      in
         Strexp.Constrained (strexp, sigconst sigexp)
-     end(*#line 2499.1 "ml.grm.sml"*)
+     end(*#line 2504.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 126, ( result, strexp11left, strexp11right), rest671)
 end
 |  ( 31, ( ( _, ( MlyValue.whereeqns whereeqns1, _, whereeqns1right)) :: ( _, ( MlyValue.strexp1 strexp11, strexp11left, _)) :: rest671)) => let val  result = MlyValue.strexpnode (fn _ => let val  (strexp1 as strexp11) = strexp11 ()
  val  (whereeqns as whereeqns1) = whereeqns1 ()
- in ((*#line 574.6 "ml.grm"*)let
+ in ((*#line 579.6 "ml.grm"*)let
         val (strexp,sigconst,sigexp) = strexp1
         val sigexp = Sigexp.wheree (sigexp, whereeqns)
      in
         Strexp.Constrained
         (strexp, sigconst sigexp)
-     end(*#line 2509.1 "ml.grm.sml"*)
+     end(*#line 2514.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 126, ( result, strexp11left, whereeqns1right), rest671)
 end
 |  ( 32, ( ( _, ( MlyValue.strexp2node strexp2node1, strexp2node1left, strexp2node1right)) :: rest671)) => let val  result = MlyValue.strexpnode (fn _ => let val  (strexp2node as strexp2node1) = strexp2node1 ()
- in ((*#line 582.6 "ml.grm"*)strexp2node(*#line 2522.1 "ml.grm.sml"*)
+ in ((*#line 587.6 "ml.grm"*)strexp2node(*#line 2527.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 126, ( result, strexp2node1left, strexp2node1right), rest671)
 end
 |  ( 33, ( ( _, ( MlyValue.sigexp' sigexp'1, _, sigexp'1right)) :: _ :: ( _, ( MlyValue.strexp strexp1, strexp1left, _)) :: rest671)) => let val  result = MlyValue.strexp1 (fn _ => let val  (strexp as strexp1) = strexp1 ()
  val  (sigexp' as sigexp'1) = sigexp'1 ()
- in ((*#line 584.36 "ml.grm"*)(strexp,SigConst.Transparent,sigexp')(*#line 2528.1 "ml.grm.sml"*)
+ in ((*#line 589.36 "ml.grm"*)(strexp,SigConst.Transparent,sigexp')(*#line 2533.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 123, ( result, strexp1left, sigexp'1right), rest671)
 end
 |  ( 34, ( ( _, ( MlyValue.sigexp' sigexp'1, _, sigexp'1right)) :: _ :: ( _, ( MlyValue.strexp strexp1, strexp1left, _)) :: rest671)) => let val  result = MlyValue.strexp1 (fn _ => let val  (strexp as strexp1) = strexp1 ()
  val  (sigexp' as sigexp'1) = sigexp'1 ()
- in ((*#line 585.36 "ml.grm"*)(strexp,SigConst.Opaque,sigexp')(*#line 2535.1 "ml.grm.sml"*)
+ in ((*#line 590.36 "ml.grm"*)(strexp,SigConst.Opaque,sigexp')(*#line 2540.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 123, ( result, strexp1left, sigexp'1right), rest671)
 end
 |  ( 35, ( ( _, ( MlyValue.strexp2node strexp2node1, (strexp2nodeleft as strexp2node1left), (strexp2noderight as strexp2node1right))) :: rest671)) => let val  result = MlyValue.strexp2 (fn _ => let val  (strexp2node as strexp2node1) = strexp2node1 ()
- in ((*#line 587.24 "ml.grm"*)Strexp.makeRegion'
-                       (strexp2node, strexp2nodeleft, strexp2noderight)(*#line 2542.1 "ml.grm.sml"*)
+ in ((*#line 592.24 "ml.grm"*)Strexp.makeRegion'
+                       (strexp2node, strexp2nodeleft, strexp2noderight)(*#line 2547.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 124, ( result, strexp2node1left, strexp2node1right), rest671)
 end
 |  ( 36, ( ( _, ( MlyValue.longstrid longstrid1, longstrid1left, longstrid1right)) :: rest671)) => let val  result = MlyValue.strexp2node (fn _ => let val  (longstrid as longstrid1) = longstrid1 ()
- in ((*#line 591.39 "ml.grm"*)Strexp.Var longstrid(*#line 2549.1 "ml.grm.sml"*)
+ in ((*#line 596.39 "ml.grm"*)Strexp.Var longstrid(*#line 2554.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 125, ( result, longstrid1left, longstrid1right), rest671)
 end
 |  ( 37, ( ( _, ( _, _, END1right)) :: ( _, ( MlyValue.strdecs strdecs1, _, _)) :: ( _, ( _, STRUCT1left, _)) :: rest671)) => let val  result = MlyValue.strexp2node (fn _ => let val  (strdecs as strdecs1) = strdecs1 ()
- in ((*#line 592.39 "ml.grm"*)Strexp.Struct strdecs(*#line 2555.1 "ml.grm.sml"*)
+ in ((*#line 597.39 "ml.grm"*)Strexp.Struct strdecs(*#line 2560.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 125, ( result, STRUCT1left, END1right), rest671)
 end
 |  ( 38, ( ( _, ( MlyValue.arg_fct arg_fct1, _, arg_fct1right)) :: ( _, ( MlyValue.fctid fctid1, fctid1left, _)) :: rest671)) => let val  result = MlyValue.strexp2node (fn _ => let val  (fctid as fctid1) = fctid1 ()
  val  (arg_fct as arg_fct1) = arg_fct1 ()
- in ((*#line 593.39 "ml.grm"*)Strexp.App (fctid, arg_fct)(*#line 2561.1 "ml.grm.sml"*)
+ in ((*#line 598.39 "ml.grm"*)Strexp.App (fctid, arg_fct)(*#line 2566.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 125, ( result, fctid1left, arg_fct1right), rest671)
 end
 |  ( 39, ( ( _, ( _, _, END1right)) :: ( _, ( MlyValue.strexp strexp1, _, _)) :: _ :: ( _, ( MlyValue.strdecs strdecs1, _, _)) :: ( _, ( _, LET1left, _)) :: rest671)) => let val  result = MlyValue.strexp2node (fn _ => let val  (strdecs as strdecs1) = strdecs1 ()
  val  (strexp as strexp1) = strexp1 ()
- in ((*#line 594.39 "ml.grm"*)Strexp.Let (strdecs, strexp)(*#line 2568.1 "ml.grm.sml"*)
+ in ((*#line 599.39 "ml.grm"*)Strexp.Let (strdecs, strexp)(*#line 2573.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 125, ( result, LET1left, END1right), rest671)
 end
 |  ( 40, ( ( _, ( _, _, (RPARENright as RPAREN1right))) :: ( _, ( MlyValue.strexp strexp1, _, _)) :: ( _, ( _, (LPARENleft as LPAREN1left), _)) :: rest671)) => let val  result = MlyValue.arg_fct (fn _ => let val  (strexp as strexp1) = strexp1 ()
- in ((*#line 596.35 "ml.grm"*)Strexp.makeRegion'
+ in ((*#line 601.35 "ml.grm"*)Strexp.makeRegion'
                                   (Strexp.node strexp,
-                                   LPARENleft, RPARENright)(*#line 2575.1 "ml.grm.sml"*)
+                                   LPARENleft, RPARENright)(*#line 2580.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 5, ( result, LPAREN1left, RPAREN1right), rest671)
 end
 |  ( 41, ( ( _, ( _, _, (RPARENright as RPAREN1right))) :: ( _, ( MlyValue.strdecs strdecs1, _, _)) :: ( _, ( _, (LPARENleft as LPAREN1left), _)) :: rest671)) => let val  result = MlyValue.arg_fct (fn _ => let val  (strdecs as strdecs1) = strdecs1 ()
- in ((*#line 599.35 "ml.grm"*)Strexp.makeRegion'
+ in ((*#line 604.35 "ml.grm"*)Strexp.makeRegion'
                                   (Strexp.Struct strdecs,
-                                   LPARENleft, RPARENright)(*#line 2583.1 "ml.grm.sml"*)
+                                   LPARENleft, RPARENright)(*#line 2588.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 5, ( result, LPAREN1left, RPAREN1right), rest671)
 end
 |  ( 42, ( ( _, ( MlyValue.sigexp' sigexp'1, sigexp'1left, sigexp'1right)) :: rest671)) => let val  result = MlyValue.sigexp (fn _ => let val  (sigexp' as sigexp'1) = sigexp'1 ()
- in ((*#line 608.25 "ml.grm"*)sigexp'(*#line 2591.1 "ml.grm.sml"*)
+ in ((*#line 613.25 "ml.grm"*)sigexp'(*#line 2596.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 101, ( result, sigexp'1left, sigexp'1right), rest671)
 end
 |  ( 43, ( ( _, ( MlyValue.whereeqns whereeqns1, _, whereeqns1right)) :: ( _, ( MlyValue.sigexp' sigexp'1, sigexp'1left, _)) :: rest671)) => let val  result = MlyValue.sigexp (fn _ => let val  (sigexp' as sigexp'1) = sigexp'1 ()
  val  (whereeqns as whereeqns1) = whereeqns1 ()
- in ((*#line 609.25 "ml.grm"*)Sigexp.wheree (sigexp', whereeqns)(*#line 2597.1 "ml.grm.sml"*)
+ in ((*#line 614.25 "ml.grm"*)Sigexp.wheree (sigexp', whereeqns)(*#line 2602.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 101, ( result, sigexp'1left, whereeqns1right), rest671)
 end
 |  ( 44, ( ( _, ( MlyValue.whereeqns' whereeqns'1, whereeqns'1left, whereeqns'1right)) :: rest671)) => let val  result = MlyValue.whereeqns (fn _ => let val  (whereeqns' as whereeqns'1) = whereeqns'1 ()
- in ((*#line 611.25 "ml.grm"*)Vector.fromList whereeqns'(*#line 2604.1 "ml.grm.sml"*)
+ in ((*#line 616.25 "ml.grm"*)Vector.fromList whereeqns'(*#line 2609.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 163, ( result, whereeqns'1left, whereeqns'1right), rest671)
 end
 |  ( 45, ( ( _, ( MlyValue.whereeqn whereeqn1, _, whereeqn1right)) :: ( _, ( _, (WHEREleft as WHERE1left), _)) :: rest671)) => let val  result = MlyValue.whereeqns' (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
- in ((*#line 614.35 "ml.grm"*)[whereeqn WHEREleft](*#line 2610.1 "ml.grm.sml"*)
+ in ((*#line 619.35 "ml.grm"*)[whereeqn WHEREleft](*#line 2615.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 164, ( result, WHERE1left, whereeqn1right), rest671)
 end
 |  ( 46, ( ( _, ( MlyValue.whereeqns' whereeqns'1, _, whereeqns'1right)) :: ( _, ( MlyValue.whereeqn whereeqn1, _, _)) :: ( _, ( _, (WHEREleft as WHERE1left), _)) :: rest671)) => let val  result = MlyValue.whereeqns' (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
  val  (whereeqns' as whereeqns'1) = whereeqns'1 ()
- in ((*#line 615.35 "ml.grm"*)whereeqn WHEREleft :: whereeqns'(*#line 2616.1 "ml.grm.sml"*)
+ in ((*#line 620.35 "ml.grm"*)whereeqn WHEREleft :: whereeqns'(*#line 2621.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 164, ( result, WHERE1left, whereeqns'1right), rest671)
 end
 |  ( 47, ( ( _, ( MlyValue.whereandeqns whereandeqns1, _, whereandeqns1right)) :: ( _, ( MlyValue.whereeqn whereeqn1, _, _)) :: ( _, ( _, (WHEREleft as WHERE1left), _)) :: rest671)) => let val  result = MlyValue.whereeqns' (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
  val  (whereandeqns as whereandeqns1) = whereandeqns1 ()
- in ((*#line 616.35 "ml.grm"*)whereeqn WHEREleft :: whereandeqns(*#line 2623.1 "ml.grm.sml"*)
+ in ((*#line 621.35 "ml.grm"*)whereeqn WHEREleft :: whereandeqns(*#line 2628.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 164, ( result, WHERE1left, whereandeqns1right), rest671)
 end
 |  ( 48, ( ( _, ( MlyValue.whereeqn whereeqn1, _, whereeqn1right)) :: ( _, ( _, (ANDleft as AND1left), _)) :: rest671)) => let val  result = MlyValue.whereandeqns (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
- in ((*#line 619.33 "ml.grm"*)[whereeqn ANDleft](*#line 2630.1 "ml.grm.sml"*)
+ in ((*#line 624.33 "ml.grm"*)[whereeqn ANDleft](*#line 2635.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 161, ( result, AND1left, whereeqn1right), rest671)
 end
 |  ( 49, ( ( _, ( MlyValue.whereandeqns whereandeqns1, _, whereandeqns1right)) :: ( _, ( MlyValue.whereeqn whereeqn1, _, _)) :: ( _, ( _, (ANDleft as AND1left), _)) :: rest671)) => let val  result = MlyValue.whereandeqns (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
  val  (whereandeqns as whereandeqns1) = whereandeqns1 ()
- in ((*#line 620.33 "ml.grm"*)whereeqn ANDleft :: whereandeqns(*#line 2636.1 "ml.grm.sml"*)
+ in ((*#line 625.33 "ml.grm"*)whereeqn ANDleft :: whereandeqns(*#line 2641.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 161, ( result, AND1left, whereandeqns1right), rest671)
 end
 |  ( 50, ( ( _, ( MlyValue.whereeqns' whereeqns'1, _, whereeqns'1right)) :: ( _, ( MlyValue.whereeqn whereeqn1, _, _)) :: ( _, ( _, (ANDleft as AND1left), _)) :: rest671)) => let val  result = MlyValue.whereandeqns (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
  val  (whereeqns' as whereeqns'1) = whereeqns'1 ()
- in ((*#line 621.33 "ml.grm"*)whereeqn ANDleft :: whereeqns'(*#line 2643.1 "ml.grm.sml"*)
+ in ((*#line 626.33 "ml.grm"*)whereeqn ANDleft :: whereeqns'(*#line 2648.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 161, ( result, AND1left, whereeqns'1right), rest671)
@@ -2650,57 +2655,57 @@ end
 |  ( 51, ( ( _, ( MlyValue.sigbinds' sigbinds'1, _, sigbinds'1right)) :: ( _, ( MlyValue.sigexp' sigexp'1, _, _)) :: _ :: ( _, ( MlyValue.sigid sigid1, sigid1left, _)) :: rest671)) => let val  result = MlyValue.sigbinds (fn _ => let val  (sigid as sigid1) = sigid1 ()
  val  (sigexp' as sigexp'1) = sigexp'1 ()
  val  (sigbinds' as sigbinds'1) = sigbinds'1 ()
- in ((*#line 623.45 "ml.grm"*)augment (sigid, sigexp', sigbinds')(*#line 2650.1 "ml.grm.sml"*)
+ in ((*#line 628.45 "ml.grm"*)augment (sigid, sigexp', sigbinds')(*#line 2655.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 97, ( result, sigid1left, sigbinds'1right), rest671)
 end
 |  ( 52, ( ( _, ( MlyValue.sigexp'node sigexp'node1, (sigexp'nodeleft as sigexp'node1left), (sigexp'noderight as sigexp'node1right))) :: rest671)) => let val  result = MlyValue.sigexp' (fn _ => let val  (sigexp'node as sigexp'node1) = sigexp'node1 ()
- in ((*#line 625.24 "ml.grm"*)Sigexp.makeRegion' (sigexp'node,
+ in ((*#line 630.24 "ml.grm"*)Sigexp.makeRegion' (sigexp'node,
                                            sigexp'nodeleft,
-                                           sigexp'noderight)(*#line 2658.1 "ml.grm.sml"*)
+                                           sigexp'noderight)(*#line 2663.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 102, ( result, sigexp'node1left, sigexp'node1right), rest671)
 end
 |  ( 53, ( ( _, ( MlyValue.sigid sigid1, sigid1left, sigid1right)) :: rest671)) => let val  result = MlyValue.sigexp'node (fn _ => let val  (sigid as sigid1) = sigid1 ()
- in ((*#line 629.43 "ml.grm"*)Sigexp.Var sigid(*#line 2666.1 "ml.grm.sml"*)
+ in ((*#line 634.43 "ml.grm"*)Sigexp.Var sigid(*#line 2671.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 103, ( result, sigid1left, sigid1right), rest671)
 end
 |  ( 54, ( ( _, ( _, _, END1right)) :: ( _, ( MlyValue.specs specs1, _, _)) :: ( _, ( _, SIG1left, _)) :: rest671)) => let val  result = MlyValue.sigexp'node (fn _ => let val  (specs as specs1) = specs1 ()
- in ((*#line 630.43 "ml.grm"*)Sigexp.Spec specs(*#line 2672.1 "ml.grm.sml"*)
+ in ((*#line 635.43 "ml.grm"*)Sigexp.Spec specs(*#line 2677.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 103, ( result, SIG1left, END1right), rest671)
 end
-|  ( 55, ( rest671)) => let val  result = MlyValue.sigbinds' (fn _ => ((*#line 632.40 "ml.grm"*)([], [])(*#line 2678.1 "ml.grm.sml"*)
+|  ( 55, ( rest671)) => let val  result = MlyValue.sigbinds' (fn _ => ((*#line 637.40 "ml.grm"*)([], [])(*#line 2683.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 98, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 56, ( ( _, ( MlyValue.sigbinds sigbinds1, _, sigbinds1right)) :: ( _, ( _, AND1left, _)) :: rest671)) => let val  result = MlyValue.sigbinds' (fn _ => let val  (sigbinds as sigbinds1) = sigbinds1 ()
- in ((*#line 633.40 "ml.grm"*)([], sigbinds)(*#line 2682.1 "ml.grm.sml"*)
+ in ((*#line 638.40 "ml.grm"*)([], sigbinds)(*#line 2687.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 98, ( result, AND1left, sigbinds1right), rest671)
 end
 |  ( 57, ( ( _, ( MlyValue.sigbinds'' sigbinds''1, _, sigbinds''1right)) :: ( _, ( MlyValue.whereeqn whereeqn1, _, _)) :: ( _, ( _, (WHEREleft as WHERE1left), _)) :: rest671)) => let val  result = MlyValue.sigbinds' (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
  val  (sigbinds'' as sigbinds''1) = sigbinds''1 ()
- in ((*#line 634.40 "ml.grm"*)cons1 (whereeqn WHEREleft, sigbinds'')(*#line 2688.1 "ml.grm.sml"*)
+ in ((*#line 639.40 "ml.grm"*)cons1 (whereeqn WHEREleft, sigbinds'')(*#line 2693.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 98, ( result, WHERE1left, sigbinds''1right), rest671)
 end
 |  ( 58, ( ( _, ( MlyValue.sigbinds' sigbinds'1, sigbinds'1left, sigbinds'1right)) :: rest671)) => let val  result = MlyValue.sigbinds'' (fn _ => let val  (sigbinds' as sigbinds'1) = sigbinds'1 ()
- in ((*#line 636.40 "ml.grm"*)sigbinds'(*#line 2695.1 "ml.grm.sml"*)
+ in ((*#line 641.40 "ml.grm"*)sigbinds'(*#line 2700.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 99, ( result, sigbinds'1left, sigbinds'1right), rest671)
 end
 |  ( 59, ( ( _, ( MlyValue.sigbinds'' sigbinds''1, _, sigbinds''1right)) :: ( _, ( MlyValue.whereeqn whereeqn1, _, _)) :: ( _, ( _, (ANDleft as AND1left), _)) :: rest671)) => let val  result = MlyValue.sigbinds'' (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
  val  (sigbinds'' as sigbinds''1) = sigbinds''1 ()
- in ((*#line 637.40 "ml.grm"*)cons1 (whereeqn ANDleft, sigbinds'')(*#line 2701.1 "ml.grm.sml"*)
+ in ((*#line 642.40 "ml.grm"*)cons1 (whereeqn ANDleft, sigbinds'')(*#line 2706.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 99, ( result, AND1left, sigbinds''1right), rest671)
@@ -2708,159 +2713,159 @@ end
 |  ( 60, ( ( _, ( MlyValue.ty ty1, _, (tyright as ty1right))) :: _ :: ( _, ( MlyValue.longtycon longtycon1, _, _)) :: ( _, ( MlyValue.tyvars tyvars1, _, _)) :: ( _, ( _, TYPE1left, _)) :: rest671)) => let val  result = MlyValue.whereeqn (fn _ => let val  (tyvars as tyvars1) = tyvars1 ()
  val  (longtycon as longtycon1) = longtycon1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 639.48 "ml.grm"*)fn eqnleft =>
+ in ((*#line 644.48 "ml.grm"*)fn eqnleft =>
                                                WhereEquation.makeRegion'
                                                (WhereEquation.Type {tyvars = tyvars,
                                                                     longtycon = longtycon,
                                                                     ty = ty},
                                                 eqnleft,
-                                                tyright)(*#line 2708.1 "ml.grm.sml"*)
+                                                tyright)(*#line 2713.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 162, ( result, TYPE1left, ty1right), rest671)
 end
-|  ( 61, ( rest671)) => let val  result = MlyValue.sigconst (fn _ => ((*#line 647.29 "ml.grm"*)SigConst.None(*#line 2722.1 "ml.grm.sml"*)
+|  ( 61, ( rest671)) => let val  result = MlyValue.sigconst (fn _ => ((*#line 652.29 "ml.grm"*)SigConst.None(*#line 2727.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 100, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 62, ( ( _, ( MlyValue.sigexp sigexp1, _, sigexp1right)) :: ( _, ( _, COLON1left, _)) :: rest671)) => let val  result = MlyValue.sigconst (fn _ => let val  (sigexp as sigexp1) = sigexp1 ()
- in ((*#line 648.29 "ml.grm"*)SigConst.Transparent sigexp(*#line 2726.1 "ml.grm.sml"*)
+ in ((*#line 653.29 "ml.grm"*)SigConst.Transparent sigexp(*#line 2731.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 100, ( result, COLON1left, sigexp1right), rest671)
 end
 |  ( 63, ( ( _, ( MlyValue.sigexp sigexp1, _, sigexp1right)) :: ( _, ( _, COLONGT1left, _)) :: rest671)) => let val  result = MlyValue.sigconst (fn _ => let val  (sigexp as sigexp1) = sigexp1 ()
- in ((*#line 649.29 "ml.grm"*)SigConst.Opaque sigexp(*#line 2732.1 "ml.grm.sml"*)
+ in ((*#line 654.29 "ml.grm"*)SigConst.Opaque sigexp(*#line 2737.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 100, ( result, COLONGT1left, sigexp1right), rest671)
 end
-|  ( 64, ( rest671)) => let val  result = MlyValue.specs (fn _ => ((*#line 651.29 "ml.grm"*)Spec.makeRegion (Spec.Empty, Region.bogus)(*#line 2738.1 "ml.grm.sml"*)
+|  ( 64, ( rest671)) => let val  result = MlyValue.specs (fn _ => ((*#line 656.29 "ml.grm"*)Spec.makeRegion (Spec.Empty, Region.bogus)(*#line 2743.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 109, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 65, ( ( _, ( MlyValue.specs specs1, _, specs1right)) :: ( _, ( _, SEMICOLON1left, _)) :: rest671)) => let val  result = MlyValue.specs (fn _ => let val  (specs as specs1) = specs1 ()
- in ((*#line 652.29 "ml.grm"*)specs(*#line 2742.1 "ml.grm.sml"*)
+ in ((*#line 657.29 "ml.grm"*)specs(*#line 2747.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 109, ( result, SEMICOLON1left, specs1right), rest671)
 end
 |  ( 66, ( ( _, ( MlyValue.specs specs1, _, specs1right)) :: ( _, ( MlyValue.spec spec1, spec1left, _)) :: rest671)) => let val  result = MlyValue.specs (fn _ => let val  (spec as spec1) = spec1 ()
  val  (specs as specs1) = specs1 ()
- in ((*#line 653.29 "ml.grm"*)Spec.seq (spec, specs)(*#line 2748.1 "ml.grm.sml"*)
+ in ((*#line 658.29 "ml.grm"*)Spec.seq (spec, specs)(*#line 2753.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 109, ( result, spec1left, specs1right), rest671)
 end
 |  ( 67, ( ( _, ( MlyValue.specnode specnode1, (specnodeleft as specnode1left), (specnoderight as specnode1right))) :: rest671)) => let val  result = MlyValue.spec (fn _ => let val  (specnode as specnode1) = specnode1 ()
- in ((*#line 655.18 "ml.grm"*)Spec.makeRegion' (specnode, specnodeleft, specnoderight)(*#line 2755.1 "ml.grm.sml"*)
+ in ((*#line 660.18 "ml.grm"*)Spec.makeRegion' (specnode, specnodeleft, specnoderight)(*#line 2760.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 107, ( result, specnode1left, specnode1right), rest671)
 end
 |  ( 68, ( ( _, ( MlyValue.valdescs valdescs1, _, valdescs1right)) :: ( _, ( _, VAL1left, _)) :: rest671)) => let val  result = MlyValue.specnode (fn _ => let val  (valdescs as valdescs1) = valdescs1 ()
- in ((*#line 657.34 "ml.grm"*)Spec.Val (Vector.fromList valdescs)(*#line 2761.1 "ml.grm.sml"*)
+ in ((*#line 662.34 "ml.grm"*)Spec.Val (Vector.fromList valdescs)(*#line 2766.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 108, ( result, VAL1left, valdescs1right), rest671)
 end
 |  ( 69, ( ( _, ( MlyValue.typdescs typdescs1, _, typdescs1right)) :: ( _, ( _, TYPE1left, _)) :: rest671)) => let val  result = MlyValue.specnode (fn _ => let val  (typdescs as typdescs1) = typdescs1 ()
- in ((*#line 658.34 "ml.grm"*)Spec.Type (Vector.fromList typdescs)(*#line 2767.1 "ml.grm.sml"*)
+ in ((*#line 663.34 "ml.grm"*)Spec.Type (Vector.fromList typdescs)(*#line 2772.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 108, ( result, TYPE1left, typdescs1right), rest671)
 end
 |  ( 70, ( ( _, ( MlyValue.typBind typBind1, _, typBind1right)) :: ( _, ( _, TYPE1left, _)) :: rest671)) => let val  result = MlyValue.specnode (fn _ => let val  (typBind as typBind1) = typBind1 ()
- in ((*#line 659.34 "ml.grm"*)Spec.TypeDefs typBind(*#line 2773.1 "ml.grm.sml"*)
+ in ((*#line 664.34 "ml.grm"*)Spec.TypeDefs typBind(*#line 2778.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 108, ( result, TYPE1left, typBind1right), rest671)
 end
 |  ( 71, ( ( _, ( MlyValue.typdescs typdescs1, _, typdescs1right)) :: ( _, ( _, EQTYPE1left, _)) :: rest671)) => let val  result = MlyValue.specnode (fn _ => let val  (typdescs as typdescs1) = typdescs1 ()
- in ((*#line 660.34 "ml.grm"*)Spec.Eqtype (Vector.fromList typdescs)(*#line 2779.1 "ml.grm.sml"*)
+ in ((*#line 665.34 "ml.grm"*)Spec.Eqtype (Vector.fromList typdescs)(*#line 2784.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 108, ( result, EQTYPE1left, typdescs1right), rest671)
 end
 |  ( 72, ( ( _, ( MlyValue.datatypeRhs datatypeRhs1, _, datatypeRhs1right)) :: ( _, ( _, DATATYPE1left, _)) :: rest671)) => let val  result = MlyValue.specnode (fn _ => let val  (datatypeRhs as datatypeRhs1) = datatypeRhs1 ()
- in ((*#line 661.34 "ml.grm"*)Spec.Datatype datatypeRhs(*#line 2785.1 "ml.grm.sml"*)
+ in ((*#line 666.34 "ml.grm"*)Spec.Datatype datatypeRhs(*#line 2790.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 108, ( result, DATATYPE1left, datatypeRhs1right), rest671)
 end
 |  ( 73, ( ( _, ( MlyValue.exndescs exndescs1, _, exndescs1right)) :: ( _, ( _, EXCEPTION1left, _)) :: rest671)) => let val  result = MlyValue.specnode (fn _ => let val  (exndescs as exndescs1) = exndescs1 ()
- in ((*#line 662.34 "ml.grm"*)Spec.Exception (Vector.fromList exndescs)(*#line 2791.1 "ml.grm.sml"*)
+ in ((*#line 667.34 "ml.grm"*)Spec.Exception (Vector.fromList exndescs)(*#line 2796.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 108, ( result, EXCEPTION1left, exndescs1right), rest671)
 end
 |  ( 74, ( ( _, ( MlyValue.strdescs strdescs1, _, strdescs1right)) :: ( _, ( _, STRUCTURE1left, _)) :: rest671)) => let val  result = MlyValue.specnode (fn _ => let val  (strdescs as strdescs1) = strdescs1 ()
- in ((*#line 663.34 "ml.grm"*)Spec.Structure (Vector.fromList strdescs)(*#line 2797.1 "ml.grm.sml"*)
+ in ((*#line 668.34 "ml.grm"*)Spec.Structure (Vector.fromList strdescs)(*#line 2802.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 108, ( result, STRUCTURE1left, strdescs1right), rest671)
 end
 |  ( 75, ( ( _, ( MlyValue.sigexp sigexp1, _, sigexp1right)) :: ( _, ( _, INCLUDE1left, _)) :: rest671)) => let val  result = MlyValue.specnode (fn _ => let val  (sigexp as sigexp1) = sigexp1 ()
- in ((*#line 664.34 "ml.grm"*)Spec.IncludeSigexp sigexp(*#line 2803.1 "ml.grm.sml"*)
+ in ((*#line 669.34 "ml.grm"*)Spec.IncludeSigexp sigexp(*#line 2808.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 108, ( result, INCLUDE1left, sigexp1right), rest671)
 end
 |  ( 76, ( ( _, ( MlyValue.sigids sigids1, _, sigids1right)) :: ( _, ( MlyValue.sigid sigid1, _, _)) :: ( _, ( _, INCLUDE1left, _)) :: rest671)) => let val  result = MlyValue.specnode (fn _ => let val  (sigid as sigid1) = sigid1 ()
  val  (sigids as sigids1) = sigids1 ()
- in ((*#line 666.13 "ml.grm"*)Spec.IncludeSigids (Vector.fromList (sigid :: sigids)) (*#line 2809.1 "ml.grm.sml"*)
+ in ((*#line 671.13 "ml.grm"*)Spec.IncludeSigids (Vector.fromList (sigid :: sigids)) (*#line 2814.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 108, ( result, INCLUDE1left, sigids1right), rest671)
 end
 |  ( 77, ( ( _, ( MlyValue.sharespec sharespec1, (sharespecleft as sharespec1left), (sharespecright as sharespec1right))) :: rest671)) => let val  result = MlyValue.specnode (fn _ => let val  (sharespec as sharespec1) = sharespec1 ()
- in ((*#line 668.13 "ml.grm"*)Spec.Sharing {spec = Spec.makeRegion' (Spec.Empty,
+ in ((*#line 673.13 "ml.grm"*)Spec.Sharing {spec = Spec.makeRegion' (Spec.Empty,
                                                    sharespecleft,
                                                    sharespecright),
                           equation = (SharingEquation.makeRegion'
                                       (sharespec,
                                        sharespecleft,
-                                       sharespecright))}(*#line 2816.1 "ml.grm.sml"*)
+                                       sharespecright))}(*#line 2821.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 108, ( result, sharespec1left, sharespec1right), rest671)
 end
 |  ( 78, ( ( _, ( MlyValue.longtyconeqns longtyconeqns1, _, longtyconeqns1right)) :: _ :: ( _, ( _, SHARING1left, _)) :: rest671)) => let val  result = MlyValue.sharespec (fn _ => let val  (longtyconeqns as longtyconeqns1) = longtyconeqns1 ()
- in ((*#line 676.41 "ml.grm"*)SharingEquation.Type longtyconeqns(*#line 2828.1 "ml.grm.sml"*)
+ in ((*#line 681.41 "ml.grm"*)SharingEquation.Type longtyconeqns(*#line 2833.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 94, ( result, SHARING1left, longtyconeqns1right), rest671)
 end
 |  ( 79, ( ( _, ( MlyValue.longstrideqns longstrideqns1, _, longstrideqns1right)) :: ( _, ( _, SHARING1left, _)) :: rest671)) => let val  result = MlyValue.sharespec (fn _ => let val  (longstrideqns as longstrideqns1) = longstrideqns1 ()
- in ((*#line 677.41 "ml.grm"*)SharingEquation.Structure longstrideqns(*#line 2834.1 "ml.grm.sml"*)
+ in ((*#line 682.41 "ml.grm"*)SharingEquation.Structure longstrideqns(*#line 2839.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 94, ( result, SHARING1left, longstrideqns1right), rest671)
 end
 |  ( 80, ( ( _, ( MlyValue.longstrid longstrid2, _, longstrid2right)) :: _ :: ( _, ( MlyValue.longstrid longstrid1, longstrid1left, _)) :: rest671)) => let val  result = MlyValue.longstrideqns (fn _ => let val  longstrid1 = longstrid1 ()
  val  longstrid2 = longstrid2 ()
- in ((*#line 679.46 "ml.grm"*)[longstrid1,longstrid2](*#line 2840.1 "ml.grm.sml"*)
+ in ((*#line 684.46 "ml.grm"*)[longstrid1,longstrid2](*#line 2845.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 64, ( result, longstrid1left, longstrid2right), rest671)
 end
 |  ( 81, ( ( _, ( MlyValue.longstrideqns longstrideqns1, _, longstrideqns1right)) :: _ :: ( _, ( MlyValue.longstrid longstrid1, longstrid1left, _)) :: rest671)) => let val  result = MlyValue.longstrideqns (fn _ => let val  (longstrid as longstrid1) = longstrid1 ()
  val  (longstrideqns as longstrideqns1) = longstrideqns1 ()
- in ((*#line 680.50 "ml.grm"*)longstrid :: longstrideqns(*#line 2847.1 "ml.grm.sml"*)
+ in ((*#line 685.50 "ml.grm"*)longstrid :: longstrideqns(*#line 2852.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 64, ( result, longstrid1left, longstrideqns1right), rest671)
 end
 |  ( 82, ( ( _, ( MlyValue.longtycon longtycon2, _, longtycon2right)) :: _ :: ( _, ( MlyValue.longtycon longtycon1, longtycon1left, _)) :: rest671)) => let val  result = MlyValue.longtyconeqns (fn _ => let val  longtycon1 = longtycon1 ()
  val  longtycon2 = longtycon2 ()
- in ((*#line 682.46 "ml.grm"*)[longtycon1,longtycon2](*#line 2854.1 "ml.grm.sml"*)
+ in ((*#line 687.46 "ml.grm"*)[longtycon1,longtycon2](*#line 2859.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 67, ( result, longtycon1left, longtycon2right), rest671)
 end
 |  ( 83, ( ( _, ( MlyValue.longtyconeqns longtyconeqns1, _, longtyconeqns1right)) :: _ :: ( _, ( MlyValue.longtycon longtycon1, longtycon1left, _)) :: rest671)) => let val  result = MlyValue.longtyconeqns (fn _ => let val  (longtycon as longtycon1) = longtycon1 ()
  val  (longtyconeqns as longtyconeqns1) = longtyconeqns1 ()
- in ((*#line 683.50 "ml.grm"*)longtycon :: longtyconeqns(*#line 2861.1 "ml.grm.sml"*)
+ in ((*#line 688.50 "ml.grm"*)longtycon :: longtyconeqns(*#line 2866.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 67, ( result, longtycon1left, longtyconeqns1right), rest671)
@@ -2868,108 +2873,108 @@ end
 |  ( 84, ( ( _, ( MlyValue.strdescs' strdescs'1, _, strdescs'1right)) :: ( _, ( MlyValue.sigexp' sigexp'1, _, _)) :: _ :: ( _, ( MlyValue.strid strid1, strid1left, _)) :: rest671)) => let val  result = MlyValue.strdescs (fn _ => let val  (strid as strid1) = strid1 ()
  val  (sigexp' as sigexp'1) = sigexp'1 ()
  val  (strdescs' as strdescs'1) = strdescs'1 ()
- in ((*#line 685.44 "ml.grm"*)augment (strid, sigexp', strdescs')(*#line 2868.1 "ml.grm.sml"*)
+ in ((*#line 690.44 "ml.grm"*)augment (strid, sigexp', strdescs')(*#line 2873.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 119, ( result, strid1left, strdescs'1right), rest671)
 end
-|  ( 85, ( rest671)) => let val  result = MlyValue.strdescs' (fn _ => ((*#line 687.41 "ml.grm"*)([], [])(*#line 2876.1 "ml.grm.sml"*)
+|  ( 85, ( rest671)) => let val  result = MlyValue.strdescs' (fn _ => ((*#line 692.41 "ml.grm"*)([], [])(*#line 2881.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 120, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 86, ( ( _, ( MlyValue.strdescs strdescs1, _, strdescs1right)) :: ( _, ( _, AND1left, _)) :: rest671)) => let val  result = MlyValue.strdescs' (fn _ => let val  (strdescs as strdescs1) = strdescs1 ()
- in ((*#line 688.41 "ml.grm"*)([], strdescs)(*#line 2880.1 "ml.grm.sml"*)
+ in ((*#line 693.41 "ml.grm"*)([], strdescs)(*#line 2885.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 120, ( result, AND1left, strdescs1right), rest671)
 end
 |  ( 87, ( ( _, ( MlyValue.strdescs'' strdescs''1, _, strdescs''1right)) :: ( _, ( MlyValue.whereeqn whereeqn1, _, _)) :: ( _, ( _, (WHEREleft as WHERE1left), _)) :: rest671)) => let val  result = MlyValue.strdescs' (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
  val  (strdescs'' as strdescs''1) = strdescs''1 ()
- in ((*#line 689.41 "ml.grm"*)cons1 (whereeqn WHEREleft, strdescs'')(*#line 2886.1 "ml.grm.sml"*)
+ in ((*#line 694.41 "ml.grm"*)cons1 (whereeqn WHEREleft, strdescs'')(*#line 2891.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 120, ( result, WHERE1left, strdescs''1right), rest671)
 end
 |  ( 88, ( ( _, ( MlyValue.strdescs' strdescs'1, strdescs'1left, strdescs'1right)) :: rest671)) => let val  result = MlyValue.strdescs'' (fn _ => let val  (strdescs' as strdescs'1) = strdescs'1 ()
- in ((*#line 691.40 "ml.grm"*)strdescs'(*#line 2893.1 "ml.grm.sml"*)
+ in ((*#line 696.40 "ml.grm"*)strdescs'(*#line 2898.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 121, ( result, strdescs'1left, strdescs'1right), rest671)
 end
 |  ( 89, ( ( _, ( MlyValue.strdescs'' strdescs''1, _, strdescs''1right)) :: ( _, ( MlyValue.whereeqn whereeqn1, _, _)) :: ( _, ( _, (ANDleft as AND1left), _)) :: rest671)) => let val  result = MlyValue.strdescs'' (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
  val  (strdescs'' as strdescs''1) = strdescs''1 ()
- in ((*#line 692.40 "ml.grm"*)cons1 (whereeqn ANDleft, strdescs'')(*#line 2899.1 "ml.grm.sml"*)
+ in ((*#line 697.40 "ml.grm"*)cons1 (whereeqn ANDleft, strdescs'')(*#line 2904.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 121, ( result, AND1left, strdescs''1right), rest671)
 end
 |  ( 90, ( ( _, ( MlyValue.typdesc typdesc1, typdesc1left, typdesc1right)) :: rest671)) => let val  result = MlyValue.typdescs (fn _ => let val  (typdesc as typdesc1) = typdesc1 ()
- in ((*#line 694.35 "ml.grm"*)[typdesc](*#line 2906.1 "ml.grm.sml"*)
+ in ((*#line 699.35 "ml.grm"*)[typdesc](*#line 2911.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 148, ( result, typdesc1left, typdesc1right), rest671)
 end
 |  ( 91, ( ( _, ( MlyValue.typdescs typdescs1, _, typdescs1right)) :: _ :: ( _, ( MlyValue.typdesc typdesc1, typdesc1left, _)) :: rest671)) => let val  result = MlyValue.typdescs (fn _ => let val  (typdesc as typdesc1) = typdesc1 ()
  val  (typdescs as typdescs1) = typdescs1 ()
- in ((*#line 695.35 "ml.grm"*)typdesc :: typdescs(*#line 2912.1 "ml.grm.sml"*)
+ in ((*#line 700.35 "ml.grm"*)typdesc :: typdescs(*#line 2917.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 148, ( result, typdesc1left, typdescs1right), rest671)
 end
 |  ( 92, ( ( _, ( MlyValue.tycon tycon1, _, tycon1right)) :: ( _, ( MlyValue.tyvars tyvars1, tyvars1left, _)) :: rest671)) => let val  result = MlyValue.typdesc (fn _ => let val  (tyvars as tyvars1) = tyvars1 ()
  val  (tycon as tycon1) = tycon1 ()
- in ((*#line 697.25 "ml.grm"*){tyvars = tyvars,
-                         tycon = tycon}(*#line 2919.1 "ml.grm.sml"*)
+ in ((*#line 702.25 "ml.grm"*){tyvars = tyvars,
+                         tycon = tycon}(*#line 2924.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 147, ( result, tyvars1left, tycon1right), rest671)
 end
 |  ( 93, ( ( _, ( MlyValue.valdesc valdesc1, valdesc1left, valdesc1right)) :: rest671)) => let val  result = MlyValue.valdescs (fn _ => let val  (valdesc as valdesc1) = valdesc1 ()
- in ((*#line 700.36 "ml.grm"*)[valdesc](*#line 2927.1 "ml.grm.sml"*)
+ in ((*#line 705.36 "ml.grm"*)[valdesc](*#line 2932.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 156, ( result, valdesc1left, valdesc1right), rest671)
 end
 |  ( 94, ( ( _, ( MlyValue.valdescs valdescs1, _, valdescs1right)) :: _ :: ( _, ( MlyValue.valdesc valdesc1, valdesc1left, _)) :: rest671)) => let val  result = MlyValue.valdescs (fn _ => let val  (valdesc as valdesc1) = valdesc1 ()
  val  (valdescs as valdescs1) = valdescs1 ()
- in ((*#line 701.36 "ml.grm"*)valdesc :: valdescs(*#line 2933.1 "ml.grm.sml"*)
+ in ((*#line 706.36 "ml.grm"*)valdesc :: valdescs(*#line 2938.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 156, ( result, valdesc1left, valdescs1right), rest671)
 end
 |  ( 95, ( ( _, ( MlyValue.ty ty1, _, ty1right)) :: _ :: ( _, ( MlyValue.vid vid1, vid1left, _)) :: rest671)) => let val  result = MlyValue.valdesc (fn _ => let val  (vid as vid1) = vid1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 703.26 "ml.grm"*)Vid.toVar vid, ty(*#line 2940.1 "ml.grm.sml"*)
+ in ((*#line 708.26 "ml.grm"*)Vid.toVar vid, ty(*#line 2945.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 155, ( result, vid1left, ty1right), rest671)
 end
 |  ( 96, ( ( _, ( MlyValue.exndesc exndesc1, exndesc1left, exndesc1right)) :: rest671)) => let val  result = MlyValue.exndescs (fn _ => let val  (exndesc as exndesc1) = exndesc1 ()
- in ((*#line 705.36 "ml.grm"*)[exndesc](*#line 2947.1 "ml.grm.sml"*)
+ in ((*#line 710.36 "ml.grm"*)[exndesc](*#line 2952.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 40, ( result, exndesc1left, exndesc1right), rest671)
 end
 |  ( 97, ( ( _, ( MlyValue.exndescs exndescs1, _, exndescs1right)) :: _ :: ( _, ( MlyValue.exndesc exndesc1, exndesc1left, _)) :: rest671)) => let val  result = MlyValue.exndescs (fn _ => let val  (exndesc as exndesc1) = exndesc1 ()
  val  (exndescs as exndescs1) = exndescs1 ()
- in ((*#line 706.36 "ml.grm"*)exndesc :: exndescs(*#line 2953.1 "ml.grm.sml"*)
+ in ((*#line 711.36 "ml.grm"*)exndesc :: exndescs(*#line 2958.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 40, ( result, exndesc1left, exndescs1right), rest671)
 end
 |  ( 98, ( ( _, ( MlyValue.tyOpt tyOpt1, _, tyOpt1right)) :: ( _, ( MlyValue.con con1, con1left, _)) :: rest671)) => let val  result = MlyValue.exndesc (fn _ => let val  (con as con1) = con1 ()
  val  (tyOpt as tyOpt1) = tyOpt1 ()
- in ((*#line 708.23 "ml.grm"*)con, tyOpt(*#line 2960.1 "ml.grm.sml"*)
+ in ((*#line 713.23 "ml.grm"*)con, tyOpt(*#line 2965.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 39, ( result, con1left, tyOpt1right), rest671)
 end
-|  ( 99, ( rest671)) => let val  result = MlyValue.tyOpt (fn _ => ((*#line 710.18 "ml.grm"*)NONE(*#line 2967.1 "ml.grm.sml"*)
+|  ( 99, ( rest671)) => let val  result = MlyValue.tyOpt (fn _ => ((*#line 715.18 "ml.grm"*)NONE(*#line 2972.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 143, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 100, ( ( _, ( MlyValue.ty ty1, _, ty1right)) :: ( _, ( _, OF1left, _)) :: rest671)) => let val  result = MlyValue.tyOpt (fn _ => let val  (ty as ty1) = ty1 ()
- in ((*#line 711.18 "ml.grm"*)SOME ty(*#line 2971.1 "ml.grm.sml"*)
+ in ((*#line 716.18 "ml.grm"*)SOME ty(*#line 2976.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 143, ( result, OF1left, ty1right), rest671)
@@ -2978,189 +2983,189 @@ end
  val  (fctarg as fctarg1) = fctarg1 ()
  val  (sigconst as sigconst1) = sigconst1 ()
  val  (funbinds' as funbinds'1) = funbinds'1 ()
- in ((*#line 718.13 "ml.grm"*)let val (strexp,funbinds) = funbinds'
+ in ((*#line 723.13 "ml.grm"*)let val (strexp,funbinds) = funbinds'
             in {name = fctid,
                 arg = FctArg.makeRegion' (fctarg, fctargleft, fctargright),
                 result = sigconst,
                 body = strexp}
                :: funbinds
-            end(*#line 2977.1 "ml.grm.sml"*)
+            end(*#line 2982.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 52, ( result, fctid1left, funbinds'1right), rest671)
 end
 |  ( 102, ( ( _, ( MlyValue.funbinds'1 funbinds'11, _, funbinds'11right)) :: ( _, ( MlyValue.strexp1 strexp11, strexp11left, _)) :: rest671)) => let val  result = MlyValue.funbinds' (fn _ => let val  (strexp1 as strexp11) = strexp11 ()
  val  (funbinds'1 as funbinds'11) = funbinds'11 ()
- in ((*#line 726.34 "ml.grm"*)augment1 (strexp1, funbinds'1)(*#line 2992.1 "ml.grm.sml"*)
+ in ((*#line 731.34 "ml.grm"*)augment1 (strexp1, funbinds'1)(*#line 2997.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 53, ( result, strexp11left, funbinds'11right), rest671)
 end
 |  ( 103, ( ( _, ( MlyValue.funbinds'2 funbinds'21, _, funbinds'21right)) :: ( _, ( MlyValue.strexp2 strexp21, strexp21left, _)) :: rest671)) => let val  result = MlyValue.funbinds' (fn _ => let val  (strexp2 as strexp21) = strexp21 ()
  val  (funbinds'2 as funbinds'21) = funbinds'21 ()
- in ((*#line 727.34 "ml.grm"*)(strexp2, funbinds'2)(*#line 2999.1 "ml.grm.sml"*)
+ in ((*#line 732.34 "ml.grm"*)(strexp2, funbinds'2)(*#line 3004.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 53, ( result, strexp21left, funbinds'21right), rest671)
 end
 |  ( 104, ( ( _, ( MlyValue.funbinds'2 funbinds'21, funbinds'21left, funbinds'21right)) :: rest671)) => let val  result = MlyValue.funbinds'1 (fn _ => let val  (funbinds'2 as funbinds'21) = funbinds'21 ()
- in ((*#line 729.43 "ml.grm"*)[], funbinds'2(*#line 3006.1 "ml.grm.sml"*)
+ in ((*#line 734.43 "ml.grm"*)[], funbinds'2(*#line 3011.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 54, ( result, funbinds'21left, funbinds'21right), rest671)
 end
 |  ( 105, ( ( _, ( MlyValue.funbinds'1' funbinds'1'1, _, funbinds'1'1right)) :: ( _, ( MlyValue.whereeqn whereeqn1, _, _)) :: ( _, ( _, (WHEREleft as WHERE1left), _)) :: rest671)) => let val  result = MlyValue.funbinds'1 (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
  val  (funbinds'1' as funbinds'1'1) = funbinds'1'1 ()
- in ((*#line 730.43 "ml.grm"*)cons1 (whereeqn WHEREleft, funbinds'1')(*#line 3012.1 "ml.grm.sml"*)
+ in ((*#line 735.43 "ml.grm"*)cons1 (whereeqn WHEREleft, funbinds'1')(*#line 3017.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 54, ( result, WHERE1left, funbinds'1'1right), rest671)
 end
-|  ( 106, ( rest671)) => let val  result = MlyValue.funbinds'2 (fn _ => ((*#line 732.29 "ml.grm"*)[](*#line 3019.1 "ml.grm.sml"*)
+|  ( 106, ( rest671)) => let val  result = MlyValue.funbinds'2 (fn _ => ((*#line 737.29 "ml.grm"*)[](*#line 3024.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 56, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 107, ( ( _, ( MlyValue.funbinds funbinds1, _, funbinds1right)) :: ( _, ( _, AND1left, _)) :: rest671)) => let val  result = MlyValue.funbinds'2 (fn _ => let val  (funbinds as funbinds1) = funbinds1 ()
- in ((*#line 733.29 "ml.grm"*)funbinds(*#line 3023.1 "ml.grm.sml"*)
+ in ((*#line 738.29 "ml.grm"*)funbinds(*#line 3028.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 56, ( result, AND1left, funbinds1right), rest671)
 end
 |  ( 108, ( ( _, ( MlyValue.funbinds'1 funbinds'11, funbinds'11left, funbinds'11right)) :: rest671)) => let val  result = MlyValue.funbinds'1' (fn _ => let val  (funbinds'1 as funbinds'11) = funbinds'11 ()
- in ((*#line 735.42 "ml.grm"*)funbinds'1(*#line 3029.1 "ml.grm.sml"*)
+ in ((*#line 740.42 "ml.grm"*)funbinds'1(*#line 3034.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 55, ( result, funbinds'11left, funbinds'11right), rest671)
 end
 |  ( 109, ( ( _, ( MlyValue.funbinds'1' funbinds'1'1, _, funbinds'1'1right)) :: ( _, ( MlyValue.whereeqn whereeqn1, _, _)) :: ( _, ( _, (ANDleft as AND1left), _)) :: rest671)) => let val  result = MlyValue.funbinds'1' (fn _ => let val  (whereeqn as whereeqn1) = whereeqn1 ()
  val  (funbinds'1' as funbinds'1'1) = funbinds'1'1 ()
- in ((*#line 736.42 "ml.grm"*)cons1 (whereeqn ANDleft, funbinds'1')(*#line 3035.1 "ml.grm.sml"*)
+ in ((*#line 741.42 "ml.grm"*)cons1 (whereeqn ANDleft, funbinds'1')(*#line 3040.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 55, ( result, AND1left, funbinds'1'1right), rest671)
 end
 |  ( 110, ( ( _, ( MlyValue.sigexp sigexp1, _, sigexp1right)) :: _ :: ( _, ( MlyValue.strid strid1, strid1left, _)) :: rest671)) => let val  result = MlyValue.fctarg (fn _ => let val  (strid as strid1) = strid1 ()
  val  (sigexp as sigexp1) = sigexp1 ()
- in ((*#line 738.31 "ml.grm"*)FctArg.Structure (strid, sigexp)(*#line 3042.1 "ml.grm.sml"*)
+ in ((*#line 743.31 "ml.grm"*)FctArg.Structure (strid, sigexp)(*#line 3047.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 48, ( result, strid1left, sigexp1right), rest671)
 end
 |  ( 111, ( ( _, ( MlyValue.specs specs1, specs1left, specs1right)) :: rest671)) => let val  result = MlyValue.fctarg (fn _ => let val  (specs as specs1) = specs1 ()
- in ((*#line 739.31 "ml.grm"*)FctArg.Spec specs(*#line 3049.1 "ml.grm.sml"*)
+ in ((*#line 744.31 "ml.grm"*)FctArg.Spec specs(*#line 3054.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 48, ( result, specs1left, specs1right), rest671)
 end
-|  ( 112, ( rest671)) => let val  result = MlyValue.decs (fn _ => ((*#line 745.26 "ml.grm"*)Dec.makeRegion' (Dec.SeqDec (Vector.new0 ()),
-                                          defaultPos, defaultPos)(*#line 3055.1 "ml.grm.sml"*)
+|  ( 112, ( rest671)) => let val  result = MlyValue.decs (fn _ => ((*#line 750.26 "ml.grm"*)Dec.makeRegion' (Dec.SeqDec (Vector.new0 ()),
+                                          defaultPos, defaultPos)(*#line 3060.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 30, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 113, ( ( _, ( MlyValue.decs decs1, _, decs1right)) :: ( _, ( MlyValue.dec dec1, dec1left, _)) :: rest671)) => let val  result = MlyValue.decs (fn _ => let val  (dec as dec1) = dec1 ()
  val  (decs as decs1) = decs1 ()
- in ((*#line 747.26 "ml.grm"*)Dec.sequence (dec,decs)(*#line 3060.1 "ml.grm.sml"*)
+ in ((*#line 752.26 "ml.grm"*)Dec.sequence (dec,decs)(*#line 3065.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 30, ( result, dec1left, decs1right), rest671)
 end
 |  ( 114, ( ( _, ( MlyValue.decs decs1, _, decs1right)) :: ( _, ( _, SEMICOLON1left, _)) :: rest671)) => let val  result = MlyValue.decs (fn _ => let val  (decs as decs1) = decs1 ()
- in ((*#line 748.26 "ml.grm"*)decs(*#line 3067.1 "ml.grm.sml"*)
+ in ((*#line 753.26 "ml.grm"*)decs(*#line 3072.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 30, ( result, SEMICOLON1left, decs1right), rest671)
 end
 |  ( 115, ( ( _, ( MlyValue.decnode decnode1, (decnodeleft as decnode1left), (decnoderight as decnode1right))) :: rest671)) => let val  result = MlyValue.dec (fn _ => let val  (decnode as decnode1) = decnode1 ()
- in ((*#line 750.16 "ml.grm"*)Dec.makeRegion' (decnode, decnodeleft, decnoderight)(*#line 3073.1 "ml.grm.sml"*)
+ in ((*#line 755.16 "ml.grm"*)Dec.makeRegion' (decnode, decnodeleft, decnoderight)(*#line 3078.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 27, ( result, decnode1left, decnode1right), rest671)
 end
 |  ( 116, ( ( _, ( MlyValue.decnolocal decnolocal1, decnolocal1left, decnolocal1right)) :: rest671)) => let val  result = MlyValue.decnode (fn _ => let val  (decnolocal as decnolocal1) = decnolocal1 ()
- in ((*#line 752.36 "ml.grm"*)decnolocal(*#line 3079.1 "ml.grm.sml"*)
+ in ((*#line 757.36 "ml.grm"*)decnolocal(*#line 3084.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 28, ( result, decnolocal1left, decnolocal1right), rest671)
 end
 |  ( 117, ( ( _, ( _, _, END1right)) :: ( _, ( MlyValue.decs decs2, _, _)) :: _ :: ( _, ( MlyValue.decs decs1, _, _)) :: ( _, ( _, LOCAL1left, _)) :: rest671)) => let val  result = MlyValue.decnode (fn _ => let val  decs1 = decs1 ()
  val  decs2 = decs2 ()
- in ((*#line 753.36 "ml.grm"*)Dec.Local (decs1,decs2)(*#line 3085.1 "ml.grm.sml"*)
+ in ((*#line 758.36 "ml.grm"*)Dec.Local (decs1,decs2)(*#line 3090.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 28, ( result, LOCAL1left, END1right), rest671)
 end
 |  ( 118, ( ( _, ( MlyValue.valbindTop valbindTop1, _, valbindTop1right)) :: ( _, ( _, VAL1left, _)) :: rest671)) => let val  result = MlyValue.decnolocal (fn _ => let val  (valbindTop as valbindTop1) = valbindTop1 ()
- in ((*#line 756.36 "ml.grm"*)Dec.Val {tyvars = Vector.new0 (),
+ in ((*#line 761.36 "ml.grm"*)Dec.Val {tyvars = Vector.new0 (),
                                             vbs = #1 valbindTop,
-                                            rvbs = #2 valbindTop}(*#line 3092.1 "ml.grm.sml"*)
+                                            rvbs = #2 valbindTop}(*#line 3097.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 29, ( result, VAL1left, valbindTop1right), rest671)
 end
 |  ( 119, ( ( _, ( MlyValue.valbindTop valbindTop1, _, valbindTop1right)) :: ( _, ( MlyValue.tyvarseq tyvarseq1, _, _)) :: ( _, ( _, VAL1left, _)) :: rest671)) => let val  result = MlyValue.decnolocal (fn _ => let val  (tyvarseq as tyvarseq1) = tyvarseq1 ()
  val  (valbindTop as valbindTop1) = valbindTop1 ()
- in ((*#line 759.37 "ml.grm"*)Dec.Val {tyvars = tyvarseq,
+ in ((*#line 764.37 "ml.grm"*)Dec.Val {tyvars = tyvarseq,
                                              vbs = #1 valbindTop,
-                                             rvbs = #2 valbindTop}(*#line 3100.1 "ml.grm.sml"*)
+                                             rvbs = #2 valbindTop}(*#line 3105.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 29, ( result, VAL1left, valbindTop1right), rest671)
 end
 |  ( 120, ( ( _, ( MlyValue.exp exp1, _, exp1right)) :: ( _, ( _, DO1left, _)) :: rest671)) => let val  result = MlyValue.decnolocal (fn _ => let val  (exp as exp1) = exp1 ()
- in ((*#line 762.34 "ml.grm"*)Dec.DoDec exp(*#line 3109.1 "ml.grm.sml"*)
+ in ((*#line 767.34 "ml.grm"*)Dec.DoDec exp(*#line 3114.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 29, ( result, DO1left, exp1right), rest671)
 end
 |  ( 121, ( ( _, ( MlyValue.funs funs1, _, funs1right)) :: ( _, ( _, FUN1left, _)) :: rest671)) => let val  result = MlyValue.decnolocal (fn _ => let val  (funs as funs1) = funs1 ()
- in ((*#line 763.34 "ml.grm"*)Dec.Fun {tyvars = Vector.new0 (), fbs = Vector.fromList funs}(*#line 3115.1 "ml.grm.sml"*)
+ in ((*#line 768.34 "ml.grm"*)Dec.Fun {tyvars = Vector.new0 (), fbs = Vector.fromList funs}(*#line 3120.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 29, ( result, FUN1left, funs1right), rest671)
 end
 |  ( 122, ( ( _, ( MlyValue.funs funs1, _, funs1right)) :: ( _, ( MlyValue.tyvarseq tyvarseq1, _, _)) :: ( _, ( _, FUN1left, _)) :: rest671)) => let val  result = MlyValue.decnolocal (fn _ => let val  (tyvarseq as tyvarseq1) = tyvarseq1 ()
  val  (funs as funs1) = funs1 ()
- in ((*#line 764.34 "ml.grm"*)Dec.Fun {tyvars = tyvarseq, fbs = Vector.fromList funs}(*#line 3121.1 "ml.grm.sml"*)
+ in ((*#line 769.34 "ml.grm"*)Dec.Fun {tyvars = tyvarseq, fbs = Vector.fromList funs}(*#line 3126.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 29, ( result, FUN1left, funs1right), rest671)
 end
 |  ( 123, ( ( _, ( MlyValue.typBind typBind1, _, typBind1right)) :: ( _, ( _, TYPE1left, _)) :: rest671)) => let val  result = MlyValue.decnolocal (fn _ => let val  (typBind as typBind1) = typBind1 ()
- in ((*#line 765.34 "ml.grm"*)Dec.Type typBind(*#line 3128.1 "ml.grm.sml"*)
+ in ((*#line 770.34 "ml.grm"*)Dec.Type typBind(*#line 3133.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 29, ( result, TYPE1left, typBind1right), rest671)
 end
 |  ( 124, ( ( _, ( MlyValue.datatypeRhs datatypeRhs1, _, datatypeRhs1right)) :: ( _, ( _, DATATYPE1left, _)) :: rest671)) => let val  result = MlyValue.decnolocal (fn _ => let val  (datatypeRhs as datatypeRhs1) = datatypeRhs1 ()
- in ((*#line 766.34 "ml.grm"*)Dec.Datatype datatypeRhs(*#line 3134.1 "ml.grm.sml"*)
+ in ((*#line 771.34 "ml.grm"*)Dec.Datatype datatypeRhs(*#line 3139.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 29, ( result, DATATYPE1left, datatypeRhs1right), rest671)
 end
 |  ( 125, ( ( _, ( _, _, END1right)) :: ( _, ( MlyValue.decs decs1, _, _)) :: _ :: ( _, ( MlyValue.datBind datBind1, _, _)) :: ( _, ( _, ABSTYPE1left, _)) :: rest671)) => let val  result = MlyValue.decnolocal (fn _ => let val  (datBind as datBind1) = datBind1 ()
  val  (decs as decs1) = decs1 ()
- in ((*#line 767.44 "ml.grm"*)Dec.Abstype {datBind = datBind,
-                                                        body = decs}(*#line 3140.1 "ml.grm.sml"*)
+ in ((*#line 772.44 "ml.grm"*)Dec.Abstype {datBind = datBind,
+                                                        body = decs}(*#line 3145.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 29, ( result, ABSTYPE1left, END1right), rest671)
 end
 |  ( 126, ( ( _, ( MlyValue.ebs ebs1, _, ebs1right)) :: ( _, ( _, EXCEPTION1left, _)) :: rest671)) => let val  result = MlyValue.decnolocal (fn _ => let val  (ebs as ebs1) = ebs1 ()
- in ((*#line 769.34 "ml.grm"*)Dec.Exception (Vector.fromList ebs)(*#line 3148.1 "ml.grm.sml"*)
+ in ((*#line 774.34 "ml.grm"*)Dec.Exception (Vector.fromList ebs)(*#line 3153.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 29, ( result, EXCEPTION1left, ebs1right), rest671)
 end
 |  ( 127, ( ( _, ( MlyValue.longstrids longstrids1, _, longstrids1right)) :: ( _, ( _, OPEN1left, _)) :: rest671)) => let val  result = MlyValue.decnolocal (fn _ => let val  (longstrids as longstrids1) = longstrids1 ()
- in ((*#line 770.34 "ml.grm"*)Dec.Open (Vector.fromList longstrids)(*#line 3154.1 "ml.grm.sml"*)
+ in ((*#line 775.34 "ml.grm"*)Dec.Open (Vector.fromList longstrids)(*#line 3159.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 29, ( result, OPEN1left, longstrids1right), rest671)
 end
 |  ( 128, ( ( _, ( MlyValue.vids vids1, _, vids1right)) :: ( _, ( MlyValue.fixity fixity1, fixity1left, _)) :: rest671)) => let val  result = MlyValue.decnolocal (fn _ => let val  (fixity as fixity1) = fixity1 ()
  val  (vids as vids1) = vids1 ()
- in ((*#line 771.34 "ml.grm"*)Dec.Fix {fixity = fixity,
-                                          ops = Vector.fromList vids}(*#line 3160.1 "ml.grm.sml"*)
+ in ((*#line 776.34 "ml.grm"*)Dec.Fix {fixity = fixity,
+                                          ops = Vector.fromList vids}(*#line 3165.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 29, ( result, fixity1left, vids1right), rest671)
@@ -3169,29 +3174,29 @@ end
  val  (vid as vid1) = vid1 ()
  val  (ty as ty1) = ty1 ()
  val  (longvidands as longvidands1) = longvidands1 ()
- in ((*#line 774.34 "ml.grm"*)Dec.Overload (priority,
+ in ((*#line 779.34 "ml.grm"*)Dec.Overload (priority,
                                                Vid.toVar vid,
                                                Vector.new0 (),
                                                ty,
-                                               Vector.fromList longvidands)(*#line 3168.1 "ml.grm.sml"*)
+                                               Vector.fromList longvidands)(*#line 3173.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 29, ( result, OVERLOAD1left, longvidands1right), rest671)
 end
 |  ( 130, ( ( _, ( MlyValue.valbind valbind1, valbind1left, valbind1right)) :: rest671)) => let val  result = MlyValue.valbindTop (fn _ => let val  (valbind as valbind1) = valbind1 ()
- in ((*#line 780.23 "ml.grm"*)let
+ in ((*#line 785.23 "ml.grm"*)let
                          val (vbs, rvbs) = valbind
                       in
                          (Vector.fromList vbs,
                           Vector.fromList rvbs)
-                      end(*#line 3181.1 "ml.grm.sml"*)
+                      end(*#line 3186.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 154, ( result, valbind1left, valbind1right), rest671)
 end
 |  ( 131, ( ( _, ( MlyValue.exp exp1, _, exp1right)) :: _ :: ( _, ( MlyValue.pat pat1, pat1left, _)) :: rest671)) => let val  result = MlyValue.valbind (fn _ => let val  (pat as pat1) = pat1 ()
  val  (exp as exp1) = exp1 ()
- in ((*#line 788.15 "ml.grm"*)([{pat = pat, exp = exp}], [])(*#line 3192.1 "ml.grm.sml"*)
+ in ((*#line 793.15 "ml.grm"*)([{pat = pat, exp = exp}], [])(*#line 3197.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 153, ( result, pat1left, exp1right), rest671)
@@ -3199,31 +3204,31 @@ end
 |  ( 132, ( ( _, ( MlyValue.valbind valbind1, _, valbind1right)) :: _ :: ( _, ( MlyValue.exp exp1, _, _)) :: _ :: ( _, ( MlyValue.pat pat1, pat1left, _)) :: rest671)) => let val  result = MlyValue.valbind (fn _ => let val  (pat as pat1) = pat1 ()
  val  (exp as exp1) = exp1 ()
  val  (valbind as valbind1) = valbind1 ()
- in ((*#line 790.15 "ml.grm"*)let
+ in ((*#line 795.15 "ml.grm"*)let
                  val (vbs, rvbs) = valbind
               in
                  ({pat = pat, exp = exp} :: vbs,
                   rvbs)
-              end(*#line 3199.1 "ml.grm.sml"*)
+              end(*#line 3204.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 153, ( result, pat1left, valbind1right), rest671)
 end
 |  ( 133, ( ( _, ( MlyValue.rvalbind rvalbind1, _, rvalbind1right)) :: ( _, ( _, REC1left, _)) :: rest671)) => let val  result = MlyValue.valbind (fn _ => let val  (rvalbind as rvalbind1) = rvalbind1 ()
- in ((*#line 796.41 "ml.grm"*)([], rvalbind)(*#line 3212.1 "ml.grm.sml"*)
+ in ((*#line 801.41 "ml.grm"*)([], rvalbind)(*#line 3217.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 153, ( result, REC1left, rvalbind1right), rest671)
 end
 |  ( 134, ( ( _, ( MlyValue.rvalbind rvalbind1, _, rvalbind1right)) :: ( _, ( _, REC1left, _)) :: rest671)) => let val  result = MlyValue.rvalbind (fn _ => let val  (rvalbind as rvalbind1) = rvalbind1 ()
- in ((*#line 798.41 "ml.grm"*)rvalbind(*#line 3218.1 "ml.grm.sml"*)
+ in ((*#line 803.41 "ml.grm"*)rvalbind(*#line 3223.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 90, ( result, REC1left, rvalbind1right), rest671)
 end
 |  ( 135, ( ( _, ( MlyValue.match match1, _, match1right)) :: _ :: _ :: ( _, ( MlyValue.pat pat1, pat1left, _)) :: rest671)) => let val  result = MlyValue.rvalbind (fn _ => let val  (pat as pat1) = pat1 ()
  val  (match as match1) = match1 ()
- in ((*#line 800.15 "ml.grm"*)[{pat = pat, match = match}](*#line 3224.1 "ml.grm.sml"*)
+ in ((*#line 805.15 "ml.grm"*)[{pat = pat, match = match}](*#line 3229.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 90, ( result, pat1left, match1right), rest671)
@@ -3231,74 +3236,74 @@ end
 |  ( 136, ( ( _, ( MlyValue.rvalbind rvalbind1, _, rvalbind1right)) :: _ :: ( _, ( MlyValue.match match1, _, _)) :: _ :: _ :: ( _, ( MlyValue.pat pat1, pat1left, _)) :: rest671)) => let val  result = MlyValue.rvalbind (fn _ => let val  (pat as pat1) = pat1 ()
  val  (match as match1) = match1 ()
  val  (rvalbind as rvalbind1) = rvalbind1 ()
- in ((*#line 802.15 "ml.grm"*){pat = pat, match = match} :: rvalbind(*#line 3231.1 "ml.grm.sml"*)
+ in ((*#line 807.15 "ml.grm"*){pat = pat, match = match} :: rvalbind(*#line 3236.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 90, ( result, pat1left, rvalbind1right), rest671)
 end
-|  ( 137, ( rest671)) => let val  result = MlyValue.constraint (fn _ => ((*#line 804.34 "ml.grm"*)NONE(*#line 3239.1 "ml.grm.sml"*)
+|  ( 137, ( rest671)) => let val  result = MlyValue.constraint (fn _ => ((*#line 809.34 "ml.grm"*)NONE(*#line 3244.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 16, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 138, ( ( _, ( MlyValue.ty ty1, _, ty1right)) :: ( _, ( _, COLON1left, _)) :: rest671)) => let val  result = MlyValue.constraint (fn _ => let val  (ty as ty1) = ty1 ()
- in ((*#line 805.34 "ml.grm"*)SOME ty(*#line 3243.1 "ml.grm.sml"*)
+ in ((*#line 810.34 "ml.grm"*)SOME ty(*#line 3248.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 16, ( result, COLON1left, ty1right), rest671)
 end
-|  ( 139, ( rest671)) => let val  result = MlyValue.mode_constraint (fn _ => ((*#line 807.36 "ml.grm"*)NONE(*#line 3249.1 "ml.grm.sml"*)
+|  ( 139, ( rest671)) => let val  result = MlyValue.mode_constraint (fn _ => ((*#line 812.36 "ml.grm"*)NONE(*#line 3254.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 74, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 140, ( ( _, ( MlyValue.mode mode1, _, mode1right)) :: ( _, ( _, COLONDASH1left, _)) :: rest671)) => let val  result = MlyValue.mode_constraint (fn _ => let val  (mode as mode1) = mode1 ()
- in ((*#line 808.35 "ml.grm"*)SOME mode(*#line 3253.1 "ml.grm.sml"*)
+ in ((*#line 813.35 "ml.grm"*)SOME mode(*#line 3258.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 74, ( result, COLONDASH1left, mode1right), rest671)
 end
-|  ( 141, ( ( _, ( _, STACK1left, STACK1right)) :: rest671)) => let val  result = MlyValue.mode (fn _ => ((*#line 810.34 "ml.grm"*)Mode.Stack(*#line 3259.1 "ml.grm.sml"*)
+|  ( 141, ( ( _, ( _, STACK1left, STACK1right)) :: rest671)) => let val  result = MlyValue.mode (fn _ => ((*#line 815.34 "ml.grm"*)Mode.Stack(*#line 3264.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 73, ( result, STACK1left, STACK1right), rest671)
 end
-|  ( 142, ( ( _, ( _, HEAP1left, HEAP1right)) :: rest671)) => let val  result = MlyValue.mode (fn _ => ((*#line 811.34 "ml.grm"*)Mode.Heap(*#line 3263.1 "ml.grm.sml"*)
+|  ( 142, ( ( _, ( _, HEAP1left, HEAP1right)) :: rest671)) => let val  result = MlyValue.mode (fn _ => ((*#line 816.34 "ml.grm"*)Mode.Heap(*#line 3268.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 73, ( result, HEAP1left, HEAP1right), rest671)
 end
 |  ( 143, ( ( _, ( MlyValue.clausesTop clausesTop1, clausesTop1left, clausesTop1right)) :: rest671)) => let val  result = MlyValue.funs (fn _ => let val  (clausesTop as clausesTop1) = clausesTop1 ()
- in ((*#line 813.37 "ml.grm"*)[clausesTop](*#line 3267.1 "ml.grm.sml"*)
+ in ((*#line 818.37 "ml.grm"*)[clausesTop](*#line 3272.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 57, ( result, clausesTop1left, clausesTop1right), rest671)
 end
 |  ( 144, ( ( _, ( MlyValue.funs funs1, _, funs1right)) :: _ :: ( _, ( MlyValue.clausesTop clausesTop1, clausesTop1left, _)) :: rest671)) => let val  result = MlyValue.funs (fn _ => let val  (clausesTop as clausesTop1) = clausesTop1 ()
  val  (funs as funs1) = funs1 ()
- in ((*#line 814.37 "ml.grm"*)clausesTop :: funs(*#line 3273.1 "ml.grm.sml"*)
+ in ((*#line 819.37 "ml.grm"*)clausesTop :: funs(*#line 3278.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 57, ( result, clausesTop1left, funs1right), rest671)
 end
 |  ( 145, ( ( _, ( MlyValue.clauses clauses1, clauses1left, clauses1right)) :: rest671)) => let val  result = MlyValue.clausesTop (fn _ => let val  (clauses as clauses1) = clauses1 ()
- in ((*#line 816.22 "ml.grm"*)Vector.fromList clauses(*#line 3280.1 "ml.grm.sml"*)
+ in ((*#line 821.22 "ml.grm"*)Vector.fromList clauses(*#line 3285.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 10, ( result, clauses1left, clauses1right), rest671)
 end
 |  ( 146, ( ( _, ( MlyValue.clauses clauses1, _, clauses1right)) :: ( _, ( MlyValue.optbar' optbar'1, optbar'1left, _)) :: rest671)) => let val  result = MlyValue.clausesTop (fn _ => let val  optbar'1 = optbar'1 ()
  val  (clauses as clauses1) = clauses1 ()
- in ((*#line 817.30 "ml.grm"*)Vector.fromList clauses(*#line 3286.1 "ml.grm.sml"*)
+ in ((*#line 822.30 "ml.grm"*)Vector.fromList clauses(*#line 3291.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 10, ( result, optbar'1left, clauses1right), rest671)
 end
 |  ( 147, ( ( _, ( MlyValue.clause clause1, clause1left, clause1right)) :: rest671)) => let val  result = MlyValue.clauses (fn _ => let val  (clause as clause1) = clause1 ()
- in ((*#line 819.34 "ml.grm"*)[clause](*#line 3293.1 "ml.grm.sml"*)
+ in ((*#line 824.34 "ml.grm"*)[clause](*#line 3298.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 9, ( result, clause1left, clause1right), rest671)
 end
 |  ( 148, ( ( _, ( MlyValue.clauses clauses1, _, clauses1right)) :: _ :: ( _, ( MlyValue.clause clause1, clause1left, _)) :: rest671)) => let val  result = MlyValue.clauses (fn _ => let val  (clause as clause1) = clause1 ()
  val  (clauses as clauses1) = clauses1 ()
- in ((*#line 820.34 "ml.grm"*)clause :: clauses(*#line 3299.1 "ml.grm.sml"*)
+ in ((*#line 825.34 "ml.grm"*)clause :: clauses(*#line 3304.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 9, ( result, clause1left, clauses1right), rest671)
@@ -3306,34 +3311,34 @@ end
 |  ( 149, ( ( _, ( MlyValue.exp exp1, _, exp1right)) :: _ :: ( _, ( MlyValue.constraint constraint1, _, _)) :: ( _, ( MlyValue.apats apats1, apats1left, _)) :: rest671)) => let val  result = MlyValue.clause (fn _ => let val  (apats as apats1) = apats1 ()
  val  (constraint as constraint1) = constraint1 ()
  val  (exp as exp1) = exp1 ()
- in ((*#line 822.42 "ml.grm"*){pats = Vector.fromList apats,
+ in ((*#line 827.42 "ml.grm"*){pats = Vector.fromList apats,
                                           resultType = constraint,
-                                          body = exp}(*#line 3306.1 "ml.grm.sml"*)
+                                          body = exp}(*#line 3311.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 8, ( result, apats1left, exp1right), rest671)
 end
 |  ( 150, ( ( _, ( MlyValue.tbs tbs1, (tbsleft as tbs1left), (tbsright as tbs1right))) :: rest671)) => let val  result = MlyValue.typBind (fn _ => let val  (tbs as tbs1) = tbs1 ()
- in ((*#line 827.12 "ml.grm"*)TypBind.makeRegion' (TypBind.T tbs, tbsleft, tbsright)(*#line 3316.1 "ml.grm.sml"*)
+ in ((*#line 832.12 "ml.grm"*)TypBind.makeRegion' (TypBind.T tbs, tbsleft, tbsright)(*#line 3321.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 146, ( result, tbs1left, tbs1right), rest671)
 end
 |  ( 151, ( ( _, ( MlyValue.tbs' tbs'1, tbs'1left, tbs'1right)) :: rest671)) => let val  result = MlyValue.tbs (fn _ => let val  (tbs' as tbs'1) = tbs'1 ()
- in ((*#line 829.14 "ml.grm"*)Vector.fromList tbs'(*#line 3322.1 "ml.grm.sml"*)
+ in ((*#line 834.14 "ml.grm"*)Vector.fromList tbs'(*#line 3327.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 131, ( result, tbs'1left, tbs'1right), rest671)
 end
 |  ( 152, ( ( _, ( MlyValue.tb tb1, tb1left, tb1right)) :: rest671)) => let val  result = MlyValue.tbs' (fn _ => let val  (tb as tb1) = tb1 ()
- in ((*#line 831.22 "ml.grm"*)[tb](*#line 3328.1 "ml.grm.sml"*)
+ in ((*#line 836.22 "ml.grm"*)[tb](*#line 3333.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 132, ( result, tb1left, tb1right), rest671)
 end
 |  ( 153, ( ( _, ( MlyValue.tbs' tbs'1, _, tbs'1right)) :: _ :: ( _, ( MlyValue.tb tb1, tb1left, _)) :: rest671)) => let val  result = MlyValue.tbs' (fn _ => let val  (tb as tb1) = tb1 ()
  val  (tbs' as tbs'1) = tbs'1 ()
- in ((*#line 832.22 "ml.grm"*)tb :: tbs'(*#line 3334.1 "ml.grm.sml"*)
+ in ((*#line 837.22 "ml.grm"*)tb :: tbs'(*#line 3339.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 132, ( result, tb1left, tbs'1right), rest671)
@@ -3341,195 +3346,195 @@ end
 |  ( 154, ( ( _, ( MlyValue.ty ty1, _, ty1right)) :: _ :: ( _, ( MlyValue.tycon tycon1, _, _)) :: ( _, ( MlyValue.tyvars tyvars1, tyvars1left, _)) :: rest671)) => let val  result = MlyValue.tb (fn _ => let val  (tyvars as tyvars1) = tyvars1 ()
  val  (tycon as tycon1) = tycon1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 835.7 "ml.grm"*){def = ty,
+ in ((*#line 840.7 "ml.grm"*){def = ty,
        tycon = tycon,
-       tyvars = tyvars}(*#line 3341.1 "ml.grm.sml"*)
+       tyvars = tyvars}(*#line 3346.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 130, ( result, tyvars1left, ty1right), rest671)
 end
 |  ( 155, ( ( _, ( MlyValue.tyvarseq tyvarseq1, tyvarseq1left, tyvarseq1right)) :: rest671)) => let val  result = MlyValue.tyvars (fn _ => let val  (tyvarseq as tyvarseq1) = tyvarseq1 ()
- in ((*#line 839.21 "ml.grm"*)tyvarseq(*#line 3351.1 "ml.grm.sml"*)
+ in ((*#line 844.21 "ml.grm"*)tyvarseq(*#line 3356.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 151, ( result, tyvarseq1left, tyvarseq1right), rest671)
 end
-|  ( 156, ( rest671)) => let val  result = MlyValue.tyvars (fn _ => ((*#line 840.21 "ml.grm"*)Vector.new0 ()(*#line 3357.1 "ml.grm.sml"*)
+|  ( 156, ( rest671)) => let val  result = MlyValue.tyvars (fn _ => ((*#line 845.21 "ml.grm"*)Vector.new0 ()(*#line 3362.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 151, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 157, ( ( _, ( MlyValue.tyvar tyvar1, tyvar1left, tyvar1right)) :: rest671)) => let val  result = MlyValue.tyvarseq (fn _ => let val  (tyvar as tyvar1) = tyvar1 ()
- in ((*#line 842.36 "ml.grm"*)Vector.new1 tyvar(*#line 3361.1 "ml.grm.sml"*)
+ in ((*#line 847.36 "ml.grm"*)Vector.new1 tyvar(*#line 3366.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 152, ( result, tyvar1left, tyvar1right), rest671)
 end
 |  ( 158, ( ( _, ( _, _, RPAREN1right)) :: ( _, ( MlyValue.tyvar_pc tyvar_pc1, _, _)) :: ( _, ( _, LPAREN1left, _)) :: rest671)) => let val  result = MlyValue.tyvarseq (fn _ => let val  (tyvar_pc as tyvar_pc1) = tyvar_pc1 ()
- in ((*#line 843.36 "ml.grm"*)Vector.fromList tyvar_pc(*#line 3367.1 "ml.grm.sml"*)
+ in ((*#line 848.36 "ml.grm"*)Vector.fromList tyvar_pc(*#line 3372.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 152, ( result, LPAREN1left, RPAREN1right), rest671)
 end
 |  ( 159, ( ( _, ( MlyValue.tyvar tyvar1, tyvar1left, tyvar1right)) :: rest671)) => let val  result = MlyValue.tyvar_pc (fn _ => let val  (tyvar as tyvar1) = tyvar1 ()
- in ((*#line 845.33 "ml.grm"*)[tyvar](*#line 3373.1 "ml.grm.sml"*)
+ in ((*#line 850.33 "ml.grm"*)[tyvar](*#line 3378.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 150, ( result, tyvar1left, tyvar1right), rest671)
 end
 |  ( 160, ( ( _, ( MlyValue.tyvar_pc tyvar_pc1, _, tyvar_pc1right)) :: _ :: ( _, ( MlyValue.tyvar tyvar1, tyvar1left, _)) :: rest671)) => let val  result = MlyValue.tyvar_pc (fn _ => let val  (tyvar as tyvar1) = tyvar1 ()
  val  (tyvar_pc as tyvar_pc1) = tyvar_pc1 ()
- in ((*#line 846.33 "ml.grm"*)tyvar :: tyvar_pc(*#line 3379.1 "ml.grm.sml"*)
+ in ((*#line 851.33 "ml.grm"*)tyvar :: tyvar_pc(*#line 3384.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 150, ( result, tyvar1left, tyvar_pc1right), rest671)
 end
 |  ( 161, ( ( _, ( MlyValue.constr constr1, constr1left, constr1right)) :: rest671)) => let val  result = MlyValue.constrs (fn _ => let val  (constr as constr1) = constr1 ()
- in ((*#line 848.34 "ml.grm"*)[constr](*#line 3386.1 "ml.grm.sml"*)
+ in ((*#line 853.34 "ml.grm"*)[constr](*#line 3391.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 17, ( result, constr1left, constr1right), rest671)
 end
 |  ( 162, ( ( _, ( MlyValue.constrs constrs1, _, constrs1right)) :: _ :: ( _, ( MlyValue.constr constr1, constr1left, _)) :: rest671)) => let val  result = MlyValue.constrs (fn _ => let val  (constr as constr1) = constr1 ()
  val  (constrs as constrs1) = constrs1 ()
- in ((*#line 849.34 "ml.grm"*)constr :: constrs(*#line 3392.1 "ml.grm.sml"*)
+ in ((*#line 854.34 "ml.grm"*)constr :: constrs(*#line 3397.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 17, ( result, constr1left, constrs1right), rest671)
 end
 |  ( 163, ( ( _, ( MlyValue.opcon opcon1, opcon1left, opcon1right)) :: rest671)) => let val  result = MlyValue.constr (fn _ => let val  (opcon as opcon1) = opcon1 ()
- in ((*#line 851.26 "ml.grm"*)opcon, NONE(*#line 3399.1 "ml.grm.sml"*)
+ in ((*#line 856.26 "ml.grm"*)opcon, NONE(*#line 3404.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 15, ( result, opcon1left, opcon1right), rest671)
 end
 |  ( 164, ( ( _, ( MlyValue.ty ty1, _, ty1right)) :: _ :: ( _, ( MlyValue.opcon opcon1, opcon1left, _)) :: rest671)) => let val  result = MlyValue.constr (fn _ => let val  (opcon as opcon1) = opcon1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 852.26 "ml.grm"*)opcon, SOME ty(*#line 3405.1 "ml.grm.sml"*)
+ in ((*#line 857.26 "ml.grm"*)opcon, SOME ty(*#line 3410.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 15, ( result, opcon1left, ty1right), rest671)
 end
 |  ( 165, ( ( _, ( MlyValue.con con1, con1left, con1right)) :: rest671)) => let val  result = MlyValue.opcon (fn _ => let val  (con as con1) = con1 ()
- in ((*#line 854.26 "ml.grm"*)con(*#line 3412.1 "ml.grm.sml"*)
+ in ((*#line 859.26 "ml.grm"*)con(*#line 3417.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 77, ( result, con1left, con1right), rest671)
 end
 |  ( 166, ( ( _, ( MlyValue.con con1, _, con1right)) :: ( _, ( _, OP1left, _)) :: rest671)) => let val  result = MlyValue.opcon (fn _ => let val  (con as con1) = con1 ()
- in ((*#line 855.26 "ml.grm"*)con(*#line 3418.1 "ml.grm.sml"*)
+ in ((*#line 860.26 "ml.grm"*)con(*#line 3423.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 77, ( result, OP1left, con1right), rest671)
 end
 |  ( 167, ( ( _, ( MlyValue.eb eb1, eb1left, eb1right)) :: rest671)) => let val  result = MlyValue.ebs (fn _ => let val  (eb as eb1) = eb1 ()
- in ((*#line 857.28 "ml.grm"*)[eb](*#line 3424.1 "ml.grm.sml"*)
+ in ((*#line 862.28 "ml.grm"*)[eb](*#line 3429.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 36, ( result, eb1left, eb1right), rest671)
 end
 |  ( 168, ( ( _, ( MlyValue.ebs ebs1, _, ebs1right)) :: _ :: ( _, ( MlyValue.eb eb1, eb1left, _)) :: rest671)) => let val  result = MlyValue.ebs (fn _ => let val  (eb as eb1) = eb1 ()
  val  (ebs as ebs1) = ebs1 ()
- in ((*#line 858.28 "ml.grm"*)eb::ebs(*#line 3430.1 "ml.grm.sml"*)
+ in ((*#line 863.28 "ml.grm"*)eb::ebs(*#line 3435.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 36, ( result, eb1left, ebs1right), rest671)
 end
 |  ( 169, ( ( _, ( MlyValue.ebrhs ebrhs1, _, ebrhs1right)) :: ( _, ( MlyValue.opcon opcon1, opcon1left, _)) :: rest671)) => let val  result = MlyValue.eb (fn _ => let val  (opcon as opcon1) = opcon1 ()
  val  (ebrhs as ebrhs1) = ebrhs1 ()
- in ((*#line 860.28 "ml.grm"*)opcon, ebrhs(*#line 3437.1 "ml.grm.sml"*)
+ in ((*#line 865.28 "ml.grm"*)opcon, ebrhs(*#line 3442.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 33, ( result, opcon1left, ebrhs1right), rest671)
 end
 |  ( 170, ( ( _, ( MlyValue.ebrhsnode ebrhsnode1, (ebrhsnodeleft as ebrhsnode1left), (ebrhsnoderight as ebrhsnode1right))) :: rest671)) => let val  result = MlyValue.ebrhs (fn _ => let val  (ebrhsnode as ebrhsnode1) = ebrhsnode1 ()
- in ((*#line 862.20 "ml.grm"*)EbRhs.makeRegion' (ebrhsnode,
-                                     ebrhsnodeleft, ebrhsnoderight)(*#line 3444.1 "ml.grm.sml"*)
+ in ((*#line 867.20 "ml.grm"*)EbRhs.makeRegion' (ebrhsnode,
+                                     ebrhsnodeleft, ebrhsnoderight)(*#line 3449.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 34, ( result, ebrhsnode1left, ebrhsnode1right), rest671)
 end
-|  ( 171, ( rest671)) => let val  result = MlyValue.ebrhsnode (fn _ => ((*#line 865.35 "ml.grm"*)EbRhs.Gen NONE(*#line 3451.1 "ml.grm.sml"*)
+|  ( 171, ( rest671)) => let val  result = MlyValue.ebrhsnode (fn _ => ((*#line 870.35 "ml.grm"*)EbRhs.Gen NONE(*#line 3456.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 35, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 172, ( ( _, ( MlyValue.ty ty1, _, ty1right)) :: ( _, ( _, OF1left, _)) :: rest671)) => let val  result = MlyValue.ebrhsnode (fn _ => let val  (ty as ty1) = ty1 ()
- in ((*#line 866.35 "ml.grm"*)EbRhs.Gen (SOME ty)(*#line 3455.1 "ml.grm.sml"*)
+ in ((*#line 871.35 "ml.grm"*)EbRhs.Gen (SOME ty)(*#line 3460.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 35, ( result, OF1left, ty1right), rest671)
 end
 |  ( 173, ( ( _, ( MlyValue.longcon longcon1, _, longcon1right)) :: ( _, ( _, EQUALOP1left, _)) :: rest671)) => let val  result = MlyValue.ebrhsnode (fn _ => let val  (longcon as longcon1) = longcon1 ()
- in ((*#line 867.35 "ml.grm"*)EbRhs.Def longcon(*#line 3461.1 "ml.grm.sml"*)
+ in ((*#line 872.35 "ml.grm"*)EbRhs.Def longcon(*#line 3466.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 35, ( result, EQUALOP1left, longcon1right), rest671)
 end
 |  ( 174, ( ( _, ( MlyValue.longcon longcon1, _, longcon1right)) :: _ :: ( _, ( _, EQUALOP1left, _)) :: rest671)) => let val  result = MlyValue.ebrhsnode (fn _ => let val  (longcon as longcon1) = longcon1 ()
- in ((*#line 868.35 "ml.grm"*)EbRhs.Def longcon(*#line 3467.1 "ml.grm.sml"*)
+ in ((*#line 873.35 "ml.grm"*)EbRhs.Def longcon(*#line 3472.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 35, ( result, EQUALOP1left, longcon1right), rest671)
 end
-|  ( 175, ( ( _, ( _, INFIX1left, INFIX1right)) :: rest671)) => let val  result = MlyValue.fixity (fn _ => ((*#line 870.34 "ml.grm"*)Fixity.Infix NONE(*#line 3473.1 "ml.grm.sml"*)
+|  ( 175, ( ( _, ( _, INFIX1left, INFIX1right)) :: rest671)) => let val  result = MlyValue.fixity (fn _ => ((*#line 875.34 "ml.grm"*)Fixity.Infix NONE(*#line 3478.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 51, ( result, INFIX1left, INFIX1right), rest671)
 end
 |  ( 176, ( ( _, ( MlyValue.digit digit1, _, digit1right)) :: ( _, ( _, INFIX1left, _)) :: rest671)) => let val  result = MlyValue.fixity (fn _ => let val  (digit as digit1) = digit1 ()
- in ((*#line 871.34 "ml.grm"*)Fixity.Infix (SOME digit)(*#line 3477.1 "ml.grm.sml"*)
+ in ((*#line 876.34 "ml.grm"*)Fixity.Infix (SOME digit)(*#line 3482.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 51, ( result, INFIX1left, digit1right), rest671)
 end
-|  ( 177, ( ( _, ( _, INFIXR1left, INFIXR1right)) :: rest671)) => let val  result = MlyValue.fixity (fn _ => ((*#line 872.34 "ml.grm"*)Fixity.Infixr NONE(*#line 3483.1 "ml.grm.sml"*)
+|  ( 177, ( ( _, ( _, INFIXR1left, INFIXR1right)) :: rest671)) => let val  result = MlyValue.fixity (fn _ => ((*#line 877.34 "ml.grm"*)Fixity.Infixr NONE(*#line 3488.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 51, ( result, INFIXR1left, INFIXR1right), rest671)
 end
 |  ( 178, ( ( _, ( MlyValue.digit digit1, _, digit1right)) :: ( _, ( _, INFIXR1left, _)) :: rest671)) => let val  result = MlyValue.fixity (fn _ => let val  (digit as digit1) = digit1 ()
- in ((*#line 873.34 "ml.grm"*)Fixity.Infixr (SOME digit)(*#line 3487.1 "ml.grm.sml"*)
+ in ((*#line 878.34 "ml.grm"*)Fixity.Infixr (SOME digit)(*#line 3492.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 51, ( result, INFIXR1left, digit1right), rest671)
 end
-|  ( 179, ( ( _, ( _, NONFIX1left, NONFIX1right)) :: rest671)) => let val  result = MlyValue.fixity (fn _ => ((*#line 874.34 "ml.grm"*)Fixity.Nonfix(*#line 3493.1 "ml.grm.sml"*)
+|  ( 179, ( ( _, ( _, NONFIX1left, NONFIX1right)) :: rest671)) => let val  result = MlyValue.fixity (fn _ => ((*#line 879.34 "ml.grm"*)Fixity.Nonfix(*#line 3498.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 51, ( result, NONFIX1left, NONFIX1right), rest671)
 end
-|  ( 180, ( rest671)) => let val  result = MlyValue.priority (fn _ => ((*#line 876.34 "ml.grm"*)Priority.T NONE(*#line 3497.1 "ml.grm.sml"*)
+|  ( 180, ( rest671)) => let val  result = MlyValue.priority (fn _ => ((*#line 881.34 "ml.grm"*)Priority.T NONE(*#line 3502.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 85, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 181, ( ( _, ( MlyValue.digit digit1, digit1left, digit1right)) :: rest671)) => let val  result = MlyValue.priority (fn _ => let val  (digit as digit1) = digit1 ()
- in ((*#line 877.34 "ml.grm"*)Priority.T (SOME digit)(*#line 3501.1 "ml.grm.sml"*)
+ in ((*#line 882.34 "ml.grm"*)Priority.T (SOME digit)(*#line 3506.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 85, ( result, digit1left, digit1right), rest671)
 end
 |  ( 182, ( ( _, ( MlyValue.INT INT1, INT1left, INT1right)) :: rest671)) => let val  result = MlyValue.int (fn _ => let val  (INT as INT1) = INT1 ()
- in ((*#line 880.5 "ml.grm"*)let
+ in ((*#line 885.5 "ml.grm"*)let
        val {digits, negate, radix, yytext, ...} = INT
     in
        case StringCvt.scanString (fn r => IntInf.scan (radix, r)) digits of
           NONE => Error.bug "parser saw invalid int"
         | SOME i => (if negate then ~ i else i, yytext)
-    end(*#line 3507.1 "ml.grm.sml"*)
+    end(*#line 3512.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 59, ( result, INT1left, INT1right), rest671)
 end
 |  ( 183, ( ( _, ( MlyValue.WORD WORD1, WORD1left, WORD1right)) :: rest671)) => let val  result = MlyValue.word (fn _ => let val  (WORD as WORD1) = WORD1 ()
- in ((*#line 889.5 "ml.grm"*)let
+ in ((*#line 894.5 "ml.grm"*)let
        val {digits, radix, yytext} = WORD
     in
        case StringCvt.scanString (fn r => IntInf.scan (radix, r)) digits of
           NONE => Error.bug "parser saw invalid word"
         | SOME i => (i, yytext)
-    end(*#line 3519.1 "ml.grm.sml"*)
+    end(*#line 3524.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 166, ( result, WORD1left, WORD1right), rest671)
 end
 |  ( 184, ( ( _, ( MlyValue.INT INT1, (INTleft as INT1left), (INTright as INT1right))) :: rest671)) => let val  result = MlyValue.digit (fn _ => let val  (INT as INT1) = INT1 ()
- in ((*#line 898.5 "ml.grm"*)let
+ in ((*#line 903.5 "ml.grm"*)let
        val {digits, extended, negate, radix, ...} = INT
     in
        if 1 = String.size digits andalso not extended andalso not negate andalso radix = StringCvt.DEC
@@ -3543,13 +3548,13 @@ end
             in
                0
             end
-    end(*#line 3531.1 "ml.grm.sml"*)
+    end(*#line 3536.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 32, ( result, INT1left, INT1right), rest671)
 end
 |  ( 185, ( ( _, ( MlyValue.INT INT1, (INTleft as INT1left), (INTright as INT1right))) :: rest671)) => let val  result = MlyValue.numericField (fn _ => let val  (INT as INT1) = INT1 ()
- in ((*#line 915.5 "ml.grm"*)let
+ in ((*#line 920.5 "ml.grm"*)let
        val {digits, extended, negate, radix, ...} = INT
        fun err () =
           let
@@ -3568,26 +3573,26 @@ end
                 | SOME i => (IntInf.toInt (if negate then ~ i else i)
                              handle Exn.Overflow => err ())
        else err ()
-    end(*#line 3551.1 "ml.grm.sml"*)
+    end(*#line 3556.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 75, ( result, INT1left, INT1right), rest671)
 end
 |  ( 186, ( ( _, ( MlyValue.datatypeRhsnode datatypeRhsnode1, (datatypeRhsnodeleft as datatypeRhsnode1left), (datatypeRhsnoderight as datatypeRhsnode1right))) :: rest671)) => let val  result = MlyValue.datatypeRhs (fn _ => let val  (datatypeRhsnode as datatypeRhsnode1) = datatypeRhsnode1 ()
- in ((*#line 938.7 "ml.grm"*)DatatypeRhs.makeRegion' (datatypeRhsnode,
-                               datatypeRhsnodeleft, datatypeRhsnoderight)(*#line 3576.1 "ml.grm.sml"*)
+ in ((*#line 943.7 "ml.grm"*)DatatypeRhs.makeRegion' (datatypeRhsnode,
+                               datatypeRhsnodeleft, datatypeRhsnoderight)(*#line 3581.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 22, ( result, datatypeRhsnode1left, datatypeRhsnode1right), rest671)
 end
 |  ( 187, ( ( _, ( MlyValue.repl repl1, repl1left, repl1right)) :: rest671)) => let val  result = MlyValue.datatypeRhsnode (fn _ => let val  (repl as repl1) = repl1 ()
- in ((*#line 942.25 "ml.grm"*)repl(*#line 3583.1 "ml.grm.sml"*)
+ in ((*#line 947.25 "ml.grm"*)repl(*#line 3588.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 23, ( result, repl1left, repl1right), rest671)
 end
 |  ( 188, ( ( _, ( MlyValue.datBind datBind1, datBind1left, datBind1right)) :: rest671)) => let val  result = MlyValue.datatypeRhsnode (fn _ => let val  (datBind as datBind1) = datBind1 ()
- in ((*#line 943.25 "ml.grm"*)DatatypeRhs.DatBind datBind(*#line 3589.1 "ml.grm.sml"*)
+ in ((*#line 948.25 "ml.grm"*)DatatypeRhs.DatBind datBind(*#line 3594.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 23, ( result, datBind1left, datBind1right), rest671)
@@ -3595,43 +3600,43 @@ end
 |  ( 189, ( ( _, ( MlyValue.longtycon longtycon1, _, longtycon1right)) :: _ :: _ :: ( _, ( MlyValue.tycon tycon1, _, _)) :: ( _, ( MlyValue.tyvars tyvars1, (tyvarsleft as tyvars1left), tyvarsright)) :: rest671)) => let val  result = MlyValue.repl (fn _ => let val  (tyvars as tyvars1) = tyvars1 ()
  val  (tycon as tycon1) = tycon1 ()
  val  (longtycon as longtycon1) = longtycon1 ()
- in ((*#line 946.9 "ml.grm"*)if Vector.isEmpty tyvars
+ in ((*#line 951.9 "ml.grm"*)if Vector.isEmpty tyvars
            then ()
         else error (reg (tyvarsleft, tyvarsright),
                     "nonempty tyvars in datatype repl")
-        ; DatatypeRhs.Repl {lhs = tycon, rhs = longtycon}(*#line 3595.1 "ml.grm.sml"*)
+        ; DatatypeRhs.Repl {lhs = tycon, rhs = longtycon}(*#line 3600.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 87, ( result, tyvars1left, longtycon1right), rest671)
 end
 |  ( 190, ( ( _, ( MlyValue.dbs dbs1, (dbsleft as dbs1left), (dbsright as dbs1right))) :: rest671)) => let val  result = MlyValue.datBind (fn _ => let val  (dbs as dbs1) = dbs1 ()
- in ((*#line 954.7 "ml.grm"*)DatBind.make (dbs, TypBind.empty, dbsleft, dbsright)(*#line 3607.1 "ml.grm.sml"*)
+ in ((*#line 959.7 "ml.grm"*)DatBind.make (dbs, TypBind.empty, dbsleft, dbsright)(*#line 3612.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 21, ( result, dbs1left, dbs1right), rest671)
 end
 |  ( 191, ( ( _, ( MlyValue.withtypes withtypes1, _, (withtypesright as withtypes1right))) :: ( _, ( MlyValue.dbs dbs1, (dbsleft as dbs1left), _)) :: rest671)) => let val  result = MlyValue.datBind (fn _ => let val  (dbs as dbs1) = dbs1 ()
  val  (withtypes as withtypes1) = withtypes1 ()
- in ((*#line 956.7 "ml.grm"*)DatBind.make (dbs, withtypes, dbsleft, withtypesright)(*#line 3613.1 "ml.grm.sml"*)
+ in ((*#line 961.7 "ml.grm"*)DatBind.make (dbs, withtypes, dbsleft, withtypesright)(*#line 3618.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 21, ( result, dbs1left, withtypes1right), rest671)
 end
 |  ( 192, ( ( _, ( MlyValue.dbs' dbs'1, dbs'1left, dbs'1right)) :: rest671)) => let val  result = MlyValue.dbs (fn _ => let val  (dbs' as dbs'1) = dbs'1 ()
- in ((*#line 958.13 "ml.grm"*)Vector.fromList dbs'(*#line 3620.1 "ml.grm.sml"*)
+ in ((*#line 963.13 "ml.grm"*)Vector.fromList dbs'(*#line 3625.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 25, ( result, dbs'1left, dbs'1right), rest671)
 end
 |  ( 193, ( ( _, ( MlyValue.db db1, db1left, db1right)) :: rest671)) => let val  result = MlyValue.dbs' (fn _ => let val  (db as db1) = db1 ()
- in ((*#line 960.22 "ml.grm"*)[db](*#line 3626.1 "ml.grm.sml"*)
+ in ((*#line 965.22 "ml.grm"*)[db](*#line 3631.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 26, ( result, db1left, db1right), rest671)
 end
 |  ( 194, ( ( _, ( MlyValue.dbs' dbs'1, _, dbs'1right)) :: _ :: ( _, ( MlyValue.db db1, db1left, _)) :: rest671)) => let val  result = MlyValue.dbs' (fn _ => let val  (db as db1) = db1 ()
  val  (dbs' as dbs'1) = dbs'1 ()
- in ((*#line 961.22 "ml.grm"*)db :: dbs'(*#line 3632.1 "ml.grm.sml"*)
+ in ((*#line 966.22 "ml.grm"*)db :: dbs'(*#line 3637.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 26, ( result, db1left, dbs'1right), rest671)
@@ -3640,70 +3645,70 @@ end
  val  (tycon as tycon1) = tycon1 ()
  val  optbar1 = optbar1 ()
  val  (constrs as constrs1) = constrs1 ()
- in ((*#line 964.7 "ml.grm"*){cons = Vector.fromList constrs,
+ in ((*#line 969.7 "ml.grm"*){cons = Vector.fromList constrs,
        tycon = tycon,
-       tyvars = tyvars}(*#line 3639.1 "ml.grm.sml"*)
+       tyvars = tyvars}(*#line 3644.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 24, ( result, tyvars1left, constrs1right), rest671)
 end
 |  ( 196, ( ( _, ( MlyValue.typBind typBind1, _, typBind1right)) :: ( _, ( _, WITHTYPE1left, _)) :: rest671)) => let val  result = MlyValue.withtypes (fn _ => let val  (typBind as typBind1) = typBind1 ()
- in ((*#line 968.32 "ml.grm"*)typBind(*#line 3650.1 "ml.grm.sml"*)
+ in ((*#line 973.32 "ml.grm"*)typBind(*#line 3655.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 165, ( result, WITHTYPE1left, typBind1right), rest671)
 end
 |  ( 197, ( ( _, ( MlyValue.longvid longvid1, longvid1left, longvid1right)) :: rest671)) => let val  result = MlyValue.longvidands (fn _ => let val  (longvid as longvid1) = longvid1 ()
- in ((*#line 970.25 "ml.grm"*)[longvid](*#line 3656.1 "ml.grm.sml"*)
+ in ((*#line 975.25 "ml.grm"*)[longvid](*#line 3661.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 71, ( result, longvid1left, longvid1right), rest671)
 end
 |  ( 198, ( ( _, ( MlyValue.longvidands longvidands1, _, longvidands1right)) :: _ :: ( _, ( MlyValue.longvid longvid1, longvid1left, _)) :: rest671)) => let val  result = MlyValue.longvidands (fn _ => let val  (longvid as longvid1) = longvid1 ()
  val  (longvidands as longvidands1) = longvidands1 ()
- in ((*#line 971.40 "ml.grm"*)longvid :: longvidands(*#line 3662.1 "ml.grm.sml"*)
+ in ((*#line 976.40 "ml.grm"*)longvid :: longvidands(*#line 3667.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 71, ( result, longvid1left, longvidands1right), rest671)
 end
 |  ( 199, ( ( _, ( MlyValue.rules rules1, rulesleft, (rulesright as rules1right))) :: ( _, ( MlyValue.optbar optbar1, optbar1left, _)) :: rest671)) => let val  result = MlyValue.match (fn _ => let val  optbar1 = optbar1 ()
  val  (rules as rules1) = rules1 ()
- in ((*#line 973.26 "ml.grm"*)Match.makeRegion' (Match.T (Vector.fromList rules),
-                                            rulesleft, rulesright)(*#line 3669.1 "ml.grm.sml"*)
+ in ((*#line 978.26 "ml.grm"*)Match.makeRegion' (Match.T (Vector.fromList rules),
+                                            rulesleft, rulesright)(*#line 3674.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 72, ( result, optbar1left, rules1right), rest671)
 end
 |  ( 200, ( ( _, ( MlyValue.rule rule1, rule1left, rule1right)) :: rest671)) => let val  result = MlyValue.rules (fn _ => let val  (rule as rule1) = rule1 ()
- in ((*#line 976.26 "ml.grm"*)[rule](*#line 3677.1 "ml.grm.sml"*)
+ in ((*#line 981.26 "ml.grm"*)[rule](*#line 3682.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 89, ( result, rule1left, rule1right), rest671)
 end
 |  ( 201, ( ( _, ( MlyValue.rules rules1, _, rules1right)) :: _ :: ( _, ( MlyValue.rule rule1, rule1left, _)) :: rest671)) => let val  result = MlyValue.rules (fn _ => let val  (rule as rule1) = rule1 ()
  val  (rules as rules1) = rules1 ()
- in ((*#line 977.26 "ml.grm"*)rule :: rules(*#line 3683.1 "ml.grm.sml"*)
+ in ((*#line 982.26 "ml.grm"*)rule :: rules(*#line 3688.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 89, ( result, rule1left, rules1right), rest671)
 end
 |  ( 202, ( ( _, ( MlyValue.exp exp1, _, exp1right)) :: _ :: ( _, ( MlyValue.pat pat1, pat1left, _)) :: rest671)) => let val  result = MlyValue.rule (fn _ => let val  (pat as pat1) = pat1 ()
  val  (exp as exp1) = exp1 ()
- in ((*#line 979.34 "ml.grm"*)(pat,exp)(*#line 3690.1 "ml.grm.sml"*)
+ in ((*#line 984.34 "ml.grm"*)(pat,exp)(*#line 3695.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 88, ( result, pat1left, exp1right), rest671)
 end
 |  ( 203, ( ( _, ( MlyValue.exp exp1, _, exp1right)) :: _ :: ( _, ( MlyValue.field field1, (fieldleft as field1left), fieldright)) :: rest671)) => let val  result = MlyValue.elabel (fn _ => let val  (field as field1) = field1 ()
  val  (exp as exp1) = exp1 ()
- in ((*#line 981.34 "ml.grm"*)field, (reg (fieldleft, fieldright), exp)(*#line 3697.1 "ml.grm.sml"*)
+ in ((*#line 986.34 "ml.grm"*)field, (reg (fieldleft, fieldright), exp)(*#line 3702.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 37, ( result, field1left, exp1right), rest671)
 end
 |  ( 204, ( ( _, ( MlyValue.constraint constraint1, _, (constraintright as constraint1right))) :: ( _, ( MlyValue.idField idField1, (idFieldleft as idField1left), idFieldright)) :: rest671)) => let val  result = MlyValue.elabel (fn _ => let val  (idField as idField1) = idField1 ()
  val  (constraint as constraint1) = constraint1 ()
- in ((*#line 982.34 "ml.grm"*)if allowRecordPunExps ()
+ in ((*#line 987.34 "ml.grm"*)if allowRecordPunExps ()
                                     then ()
                                     else error (reg (idFieldleft, idFieldright), "Record punning expressions disallowed, compile with -default-ann 'allowRecordPunExps true'")
                                  ; (Field.Symbol (#1 idField),
@@ -3727,94 +3732,94 @@ end
                                                   idFieldleft, constraintright)
                                      in
                                         exp
-                                     end))(*#line 3704.1 "ml.grm.sml"*)
+                                     end))(*#line 3709.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 37, ( result, idField1left, constraint1right), rest671)
 end
 |  ( 205, ( ( _, ( MlyValue.elabels elabels1, _, elabels1right)) :: _ :: ( _, ( MlyValue.elabel elabel1, elabel1left, _)) :: rest671)) => let val  result = MlyValue.elabels (fn _ => let val  (elabel as elabel1) = elabel1 ()
  val  (elabels as elabels1) = elabels1 ()
- in ((*#line 1008.34 "ml.grm"*)elabel :: elabels(*#line 3735.1 "ml.grm.sml"*)
+ in ((*#line 1013.34 "ml.grm"*)elabel :: elabels(*#line 3740.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 38, ( result, elabel1left, elabels1right), rest671)
 end
 |  ( 206, ( ( _, ( MlyValue.elabel elabel1, elabel1left, elabel1right)) :: rest671)) => let val  result = MlyValue.elabels (fn _ => let val  (elabel as elabel1) = elabel1 ()
- in ((*#line 1009.34 "ml.grm"*)[elabel](*#line 3742.1 "ml.grm.sml"*)
+ in ((*#line 1014.34 "ml.grm"*)[elabel](*#line 3747.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 38, ( result, elabel1left, elabel1right), rest671)
 end
 |  ( 207, ( ( _, ( MlyValue.optsemicolon optsemicolon1, _, optsemicolon1right)) :: ( _, ( MlyValue.exp exp1, exp1left, _)) :: rest671)) => let val  result = MlyValue.exp_ps (fn _ => let val  (exp as exp1) = exp1 ()
  val  optsemicolon1 = optsemicolon1 ()
- in ((*#line 1011.34 "ml.grm"*)[exp](*#line 3748.1 "ml.grm.sml"*)
+ in ((*#line 1016.34 "ml.grm"*)[exp](*#line 3753.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 44, ( result, exp1left, optsemicolon1right), rest671)
 end
 |  ( 208, ( ( _, ( MlyValue.exp_ps exp_ps1, _, exp_ps1right)) :: _ :: ( _, ( MlyValue.exp exp1, exp1left, _)) :: rest671)) => let val  result = MlyValue.exp_ps (fn _ => let val  (exp as exp1) = exp1 ()
  val  (exp_ps as exp_ps1) = exp_ps1 ()
- in ((*#line 1012.34 "ml.grm"*)exp :: exp_ps(*#line 3755.1 "ml.grm.sml"*)
+ in ((*#line 1017.34 "ml.grm"*)exp :: exp_ps(*#line 3760.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 44, ( result, exp1left, exp_ps1right), rest671)
 end
 |  ( 209, ( ( _, ( MlyValue.expnode expnode1, (expnodeleft as expnode1left), (expnoderight as expnode1right))) :: rest671)) => let val  result = MlyValue.exp (fn _ => let val  (expnode as expnode1) = expnode1 ()
- in ((*#line 1014.16 "ml.grm"*)Exp.makeRegion' (expnode, expnodeleft, expnoderight)(*#line 3762.1 "ml.grm.sml"*)
+ in ((*#line 1019.16 "ml.grm"*)Exp.makeRegion' (expnode, expnodeleft, expnoderight)(*#line 3767.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 41, ( result, expnode1left, expnode1right), rest671)
 end
 |  ( 210, ( ( _, ( MlyValue.match match1, _, match1right)) :: _ :: ( _, ( MlyValue.exp exp1, exp1left, _)) :: rest671)) => let val  result = MlyValue.expnode (fn _ => let val  (exp as exp1) = exp1 ()
  val  (match as match1) = match1 ()
- in ((*#line 1016.34 "ml.grm"*)Exp.Handle (exp, match)(*#line 3768.1 "ml.grm.sml"*)
+ in ((*#line 1021.34 "ml.grm"*)Exp.Handle (exp, match)(*#line 3773.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 45, ( result, exp1left, match1right), rest671)
 end
 |  ( 211, ( ( _, ( MlyValue.exp exp2, _, exp2right)) :: _ :: ( _, ( MlyValue.exp exp1, exp1left, _)) :: rest671)) => let val  result = MlyValue.expnode (fn _ => let val  exp1 = exp1 ()
  val  exp2 = exp2 ()
- in ((*#line 1017.34 "ml.grm"*)Exp.Orelse (exp1, exp2)(*#line 3775.1 "ml.grm.sml"*)
+ in ((*#line 1022.34 "ml.grm"*)Exp.Orelse (exp1, exp2)(*#line 3780.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 45, ( result, exp1left, exp2right), rest671)
 end
 |  ( 212, ( ( _, ( MlyValue.exp exp2, _, exp2right)) :: _ :: ( _, ( MlyValue.exp exp1, exp1left, _)) :: rest671)) => let val  result = MlyValue.expnode (fn _ => let val  exp1 = exp1 ()
  val  exp2 = exp2 ()
- in ((*#line 1018.34 "ml.grm"*)Exp.Andalso (exp1, exp2)(*#line 3782.1 "ml.grm.sml"*)
+ in ((*#line 1023.34 "ml.grm"*)Exp.Andalso (exp1, exp2)(*#line 3787.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 45, ( result, exp1left, exp2right), rest671)
 end
 |  ( 213, ( ( _, ( MlyValue.ty ty1, _, ty1right)) :: _ :: ( _, ( MlyValue.exp exp1, exp1left, _)) :: rest671)) => let val  result = MlyValue.expnode (fn _ => let val  (exp as exp1) = exp1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 1019.34 "ml.grm"*)Exp.Constraint (exp, ty)(*#line 3789.1 "ml.grm.sml"*)
+ in ((*#line 1024.34 "ml.grm"*)Exp.Constraint (exp, ty)(*#line 3794.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 45, ( result, exp1left, ty1right), rest671)
 end
 |  ( 214, ( ( _, ( MlyValue.app_exp app_exp1, app_exp1left, app_exp1right)) :: rest671)) => let val  result = MlyValue.expnode (fn _ => let val  (app_exp as app_exp1) = app_exp1 ()
- in ((*#line 1020.34 "ml.grm"*)Exp.FlatApp (Vector.fromList app_exp)(*#line 3796.1 "ml.grm.sml"*)
+ in ((*#line 1025.34 "ml.grm"*)Exp.FlatApp (Vector.fromList app_exp)(*#line 3801.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 45, ( result, app_exp1left, app_exp1right), rest671)
 end
 |  ( 215, ( ( _, ( MlyValue.match match1, _, match1right)) :: ( _, ( _, FN1left, _)) :: rest671)) => let val  result = MlyValue.expnode (fn _ => let val  (match as match1) = match1 ()
- in ((*#line 1021.34 "ml.grm"*)Exp.Fn match(*#line 3802.1 "ml.grm.sml"*)
+ in ((*#line 1026.34 "ml.grm"*)Exp.Fn match(*#line 3807.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 45, ( result, FN1left, match1right), rest671)
 end
 |  ( 216, ( ( _, ( MlyValue.match match1, _, match1right)) :: _ :: ( _, ( MlyValue.exp exp1, _, _)) :: ( _, ( _, CASE1left, _)) :: rest671)) => let val  result = MlyValue.expnode (fn _ => let val  (exp as exp1) = exp1 ()
  val  (match as match1) = match1 ()
- in ((*#line 1022.34 "ml.grm"*)Exp.Case (exp, match)(*#line 3808.1 "ml.grm.sml"*)
+ in ((*#line 1027.34 "ml.grm"*)Exp.Case (exp, match)(*#line 3813.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 45, ( result, CASE1left, match1right), rest671)
 end
 |  ( 217, ( ( _, ( MlyValue.exp exp2, _, exp2right)) :: _ :: ( _, ( MlyValue.exp exp1, _, _)) :: ( _, ( _, WHILE1left, _)) :: rest671)) => let val  result = MlyValue.expnode (fn _ => let val  exp1 = exp1 ()
  val  exp2 = exp2 ()
- in ((*#line 1023.34 "ml.grm"*)Exp.While {test = exp1, expr = exp2}(*#line 3815.1 "ml.grm.sml"*)
+ in ((*#line 1028.34 "ml.grm"*)Exp.While {test = exp1, expr = exp2}(*#line 3820.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 45, ( result, WHILE1left, exp2right), rest671)
@@ -3822,123 +3827,123 @@ end
 |  ( 218, ( ( _, ( MlyValue.exp exp3, _, exp3right)) :: _ :: ( _, ( MlyValue.exp exp2, _, _)) :: _ :: ( _, ( MlyValue.exp exp1, _, _)) :: ( _, ( _, IF1left, _)) :: rest671)) => let val  result = MlyValue.expnode (fn _ => let val  exp1 = exp1 ()
  val  exp2 = exp2 ()
  val  exp3 = exp3 ()
- in ((*#line 1024.37 "ml.grm"*)Exp.If (exp1, exp2, exp3)(*#line 3822.1 "ml.grm.sml"*)
+ in ((*#line 1029.37 "ml.grm"*)Exp.If (exp1, exp2, exp3)(*#line 3827.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 45, ( result, IF1left, exp3right), rest671)
 end
 |  ( 219, ( ( _, ( MlyValue.exp exp1, _, exp1right)) :: ( _, ( _, RAISE1left, _)) :: rest671)) => let val  result = MlyValue.expnode (fn _ => let val  (exp as exp1) = exp1 ()
- in ((*#line 1025.34 "ml.grm"*)Exp.Raise exp(*#line 3830.1 "ml.grm.sml"*)
+ in ((*#line 1030.34 "ml.grm"*)Exp.Raise exp(*#line 3835.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 45, ( result, RAISE1left, exp1right), rest671)
 end
 |  ( 220, ( ( _, ( MlyValue.aexp aexp1, (aexpleft as aexp1left), (aexpright as aexp1right))) :: rest671)) => let val  result = MlyValue.app_exp (fn _ => let val  (aexp as aexp1) = aexp1 ()
- in ((*#line 1027.29 "ml.grm"*)[Exp.makeRegion' (aexp, aexpleft, aexpright)](*#line 3836.1 "ml.grm.sml"*)
+ in ((*#line 1032.29 "ml.grm"*)[Exp.makeRegion' (aexp, aexpleft, aexpright)](*#line 3841.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 4, ( result, aexp1left, aexp1right), rest671)
 end
 |  ( 221, ( ( _, ( MlyValue.app_exp app_exp1, _, app_exp1right)) :: ( _, ( MlyValue.aexp aexp1, (aexpleft as aexp1left), aexpright)) :: rest671)) => let val  result = MlyValue.app_exp (fn _ => let val  (aexp as aexp1) = aexp1 ()
  val  (app_exp as app_exp1) = app_exp1 ()
- in ((*#line 1028.29 "ml.grm"*)Exp.makeRegion' (aexp, aexpleft, aexpright)
-                            :: app_exp(*#line 3842.1 "ml.grm.sml"*)
+ in ((*#line 1033.29 "ml.grm"*)Exp.makeRegion' (aexp, aexpleft, aexpright)
+                            :: app_exp(*#line 3847.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 4, ( result, aexp1left, app_exp1right), rest671)
 end
 |  ( 222, ( ( _, ( MlyValue.longvid longvid1, (longvidleft as longvid1left), (longvidright as longvid1right))) :: rest671)) => let val  result = MlyValue.app_exp (fn _ => let val  (longvid as longvid1) = longvid1 ()
- in ((*#line 1030.29 "ml.grm"*)[Exp.makeRegion' (Exp.Var {name = longvid,
+ in ((*#line 1035.29 "ml.grm"*)[Exp.makeRegion' (Exp.Var {name = longvid,
                                                        fixop = Fixop.None},
-                                              longvidleft, longvidright)](*#line 3850.1 "ml.grm.sml"*)
+                                              longvidleft, longvidright)](*#line 3855.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 4, ( result, longvid1left, longvid1right), rest671)
 end
 |  ( 223, ( ( _, ( MlyValue.app_exp app_exp1, _, app_exp1right)) :: ( _, ( MlyValue.longvid longvid1, (longvidleft as longvid1left), longvidright)) :: rest671)) => let val  result = MlyValue.app_exp (fn _ => let val  (longvid as longvid1) = longvid1 ()
  val  (app_exp as app_exp1) = app_exp1 ()
- in ((*#line 1033.29 "ml.grm"*)Exp.makeRegion' (Exp.Var {name = longvid,
+ in ((*#line 1038.29 "ml.grm"*)Exp.makeRegion' (Exp.Var {name = longvid,
                                                       fixop = Fixop.None},
                                              longvidleft, longvidright)
-                            :: app_exp(*#line 3858.1 "ml.grm.sml"*)
+                            :: app_exp(*#line 3863.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 4, ( result, longvid1left, app_exp1right), rest671)
 end
 |  ( 224, ( ( _, ( MlyValue.longvid longvid1, _, longvid1right)) :: ( _, ( _, OP1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (longvid as longvid1) = longvid1 ()
- in ((*#line 1038.34 "ml.grm"*)Exp.Var {name = longvid,
-                                          fixop = Fixop.Op}(*#line 3868.1 "ml.grm.sml"*)
+ in ((*#line 1043.34 "ml.grm"*)Exp.Var {name = longvid,
+                                          fixop = Fixop.Op}(*#line 3873.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, OP1left, longvid1right), rest671)
 end
 |  ( 225, ( ( _, ( MlyValue.const const1, const1left, const1right)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (const as const1) = const1 ()
- in ((*#line 1040.34 "ml.grm"*)Exp.Const const(*#line 3875.1 "ml.grm.sml"*)
+ in ((*#line 1045.34 "ml.grm"*)Exp.Const const(*#line 3880.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, const1left, const1right), rest671)
 end
 |  ( 226, ( ( _, ( MlyValue.field field1, _, field1right)) :: ( _, ( _, HASH1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (field as field1) = field1 ()
- in ((*#line 1041.34 "ml.grm"*)Exp.Selector field(*#line 3881.1 "ml.grm.sml"*)
+ in ((*#line 1046.34 "ml.grm"*)Exp.Selector field(*#line 3886.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, HASH1left, field1right), rest671)
 end
 |  ( 227, ( ( _, ( _, _, RBRACKET1right)) :: ( _, ( MlyValue.exp_list exp_list1, _, _)) :: ( _, ( _, HASHLBRACKET1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (exp_list as exp_list1) = exp_list1 ()
- in ((*#line 1042.43 "ml.grm"*)Exp.Vector (Vector.fromList exp_list)(*#line 3887.1 "ml.grm.sml"*)
+ in ((*#line 1047.43 "ml.grm"*)Exp.Vector (Vector.fromList exp_list)(*#line 3892.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, HASHLBRACKET1left, RBRACKET1right), rest671)
 end
-|  ( 228, ( ( _, ( _, _, RBRACKET1right)) :: ( _, ( _, HASHLBRACKET1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => ((*#line 1043.43 "ml.grm"*)Exp.Vector (Vector.new0 ())(*#line 3893.1 "ml.grm.sml"*)
+|  ( 228, ( ( _, ( _, _, RBRACKET1right)) :: ( _, ( _, HASHLBRACKET1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => ((*#line 1048.43 "ml.grm"*)Exp.Vector (Vector.new0 ())(*#line 3898.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 0, ( result, HASHLBRACKET1left, RBRACKET1right), rest671)
 end
 |  ( 229, ( ( _, ( _, _, RBRACE1right)) :: ( _, ( MlyValue.elabels elabels1, _, _)) :: ( _, ( _, LBRACE1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (elabels as elabels1) = elabels1 ()
- in ((*#line 1045.12 "ml.grm"*)Exp.Record (Record.fromVector (Vector.fromList elabels))(*#line 3897.1 "ml.grm.sml"*)
+ in ((*#line 1050.12 "ml.grm"*)Exp.Record (Record.fromVector (Vector.fromList elabels))(*#line 3902.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, LBRACE1left, RBRACE1right), rest671)
 end
-|  ( 230, ( ( _, ( _, _, RBRACE1right)) :: ( _, ( _, LBRACE1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => ((*#line 1046.34 "ml.grm"*)Exp.unit(*#line 3903.1 "ml.grm.sml"*)
+|  ( 230, ( ( _, ( _, _, RBRACE1right)) :: ( _, ( _, LBRACE1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => ((*#line 1051.34 "ml.grm"*)Exp.unit(*#line 3908.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 0, ( result, LBRACE1left, RBRACE1right), rest671)
 end
-|  ( 231, ( ( _, ( _, _, RPAREN1right)) :: ( _, ( _, LPAREN1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => ((*#line 1047.34 "ml.grm"*)Exp.unit(*#line 3907.1 "ml.grm.sml"*)
+|  ( 231, ( ( _, ( _, _, RPAREN1right)) :: ( _, ( _, LPAREN1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => ((*#line 1052.34 "ml.grm"*)Exp.unit(*#line 3912.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 0, ( result, LPAREN1left, RPAREN1right), rest671)
 end
 |  ( 232, ( ( _, ( _, _, RPAREN1right)) :: ( _, ( MlyValue.exp_ps exp_ps1, _, _)) :: ( _, ( _, LPAREN1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (exp_ps as exp_ps1) = exp_ps1 ()
- in ((*#line 1049.14 "ml.grm"*)case exp_ps of
+ in ((*#line 1054.14 "ml.grm"*)case exp_ps of
                 [exp] => Exp.Paren exp
-              | _ => Exp.Seq (Vector.fromList exp_ps)(*#line 3911.1 "ml.grm.sml"*)
+              | _ => Exp.Seq (Vector.fromList exp_ps)(*#line 3916.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, LPAREN1left, RPAREN1right), rest671)
 end
 |  ( 233, ( ( _, ( _, _, RPAREN1right)) :: ( _, ( MlyValue.exp_2c exp_2c1, _, _)) :: ( _, ( _, LPAREN1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (exp_2c as exp_2c1) = exp_2c1 ()
- in ((*#line 1052.34 "ml.grm"*)Exp.tuple (Vector.fromList exp_2c)(*#line 3919.1 "ml.grm.sml"*)
+ in ((*#line 1057.34 "ml.grm"*)Exp.tuple (Vector.fromList exp_2c)(*#line 3924.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, LPAREN1left, RPAREN1right), rest671)
 end
 |  ( 234, ( ( _, ( _, _, RBRACKET1right)) :: ( _, ( MlyValue.exp_list exp_list1, _, _)) :: ( _, ( _, LBRACKET1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (exp_list as exp_list1) = exp_list1 ()
- in ((*#line 1053.40 "ml.grm"*)Exp.List (Vector.fromList exp_list)(*#line 3925.1 "ml.grm.sml"*)
+ in ((*#line 1058.40 "ml.grm"*)Exp.List (Vector.fromList exp_list)(*#line 3930.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, LBRACKET1left, RBRACKET1right), rest671)
 end
-|  ( 235, ( ( _, ( _, _, RBRACKET1right)) :: ( _, ( _, LBRACKET1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => ((*#line 1054.40 "ml.grm"*)Exp.List (Vector.new0 ())(*#line 3931.1 "ml.grm.sml"*)
+|  ( 235, ( ( _, ( _, _, RBRACKET1right)) :: ( _, ( _, LBRACKET1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => ((*#line 1059.40 "ml.grm"*)Exp.List (Vector.new0 ())(*#line 3936.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 0, ( result, LBRACKET1left, RBRACKET1right), rest671)
 end
 |  ( 236, ( ( _, ( _, _, END1right)) :: ( _, ( MlyValue.exp_ps exp_ps1, exp_psleft, exp_psright)) :: _ :: ( _, ( MlyValue.decs decs1, _, _)) :: ( _, ( _, LET1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (decs as decs1) = decs1 ()
  val  (exp_ps as exp_ps1) = exp_ps1 ()
- in ((*#line 1056.14 "ml.grm"*)Exp.Let (decs,
+ in ((*#line 1061.14 "ml.grm"*)Exp.Let (decs,
                       case exp_ps of
                          [exp] => exp
                        | _ => Exp.makeRegion' (Exp.Seq (Vector.fromList exp_ps),
-                                               exp_psleft, exp_psright))(*#line 3935.1 "ml.grm.sml"*)
+                                               exp_psleft, exp_psright))(*#line 3940.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, LET1left, END1right), rest671)
@@ -3946,16 +3951,16 @@ end
 |  ( 237, ( ( _, ( _, _, SEMICOLON1right)) :: ( _, ( MlyValue.ty ty1, _, _)) :: _ :: ( _, ( MlyValue.symattributes symattributes1, _, _)) :: ( _, ( MlyValue.string string1, _, _)) :: ( _, ( _, ADDRESS1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (string as string1) = string1 ()
  val  (symattributes as symattributes1) = symattributes1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 1062.12 "ml.grm"*)Exp.Prim (PrimKind.Address {attributes = symattributes,
+ in ((*#line 1067.12 "ml.grm"*)Exp.Prim (PrimKind.Address {attributes = symattributes,
                                        name = string,
-                                       ty = ty})(*#line 3946.1 "ml.grm.sml"*)
+                                       ty = ty})(*#line 3951.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, ADDRESS1left, SEMICOLON1right), rest671)
 end
 |  ( 238, ( ( _, ( _, _, SEMICOLON1right)) :: ( _, ( MlyValue.ty ty1, _, _)) :: _ :: ( _, ( MlyValue.string string1, _, _)) :: ( _, ( _, BUILD_CONST1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (string as string1) = string1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 1066.12 "ml.grm"*)Exp.Prim (PrimKind.BuildConst {name = string, ty = ty})(*#line 3956.1 "ml.grm.sml"*)
+ in ((*#line 1071.12 "ml.grm"*)Exp.Prim (PrimKind.BuildConst {name = string, ty = ty})(*#line 3961.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, BUILD_CONST1left, SEMICOLON1right), rest671)
@@ -3963,16 +3968,16 @@ end
 |  ( 239, ( ( _, ( _, _, SEMICOLON1right)) :: ( _, ( MlyValue.constOrBool constOrBool1, _, _)) :: _ :: ( _, ( MlyValue.ty ty1, _, _)) :: _ :: ( _, ( MlyValue.string string1, _, _)) :: ( _, ( _, COMMAND_LINE_CONST1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (string as string1) = string1 ()
  val  (ty as ty1) = ty1 ()
  val  (constOrBool as constOrBool1) = constOrBool1 ()
- in ((*#line 1068.12 "ml.grm"*)Exp.Prim (PrimKind.CommandLineConst {name = string,
+ in ((*#line 1073.12 "ml.grm"*)Exp.Prim (PrimKind.CommandLineConst {name = string,
                                                 ty = ty,
-                                                value = constOrBool})(*#line 3963.1 "ml.grm.sml"*)
+                                                value = constOrBool})(*#line 3968.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, COMMAND_LINE_CONST1left, SEMICOLON1right), rest671)
 end
 |  ( 240, ( ( _, ( _, _, SEMICOLON1right)) :: ( _, ( MlyValue.ty ty1, _, _)) :: _ :: ( _, ( MlyValue.string string1, _, _)) :: ( _, ( _, CONST1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (string as string1) = string1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 1072.12 "ml.grm"*)Exp.Prim (PrimKind.Const {name = string, ty = ty})(*#line 3973.1 "ml.grm.sml"*)
+ in ((*#line 1077.12 "ml.grm"*)Exp.Prim (PrimKind.Const {name = string, ty = ty})(*#line 3978.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, CONST1left, SEMICOLON1right), rest671)
@@ -3980,9 +3985,9 @@ end
 |  ( 241, ( ( _, ( _, _, SEMICOLON1right)) :: ( _, ( MlyValue.ty ty1, _, _)) :: _ :: ( _, ( MlyValue.ieattributes ieattributes1, _, _)) :: ( _, ( MlyValue.string string1, _, _)) :: ( _, ( _, EXPORT1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (string as string1) = string1 ()
  val  (ieattributes as ieattributes1) = ieattributes1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 1074.12 "ml.grm"*)Exp.Prim (PrimKind.Export {attributes = ieattributes,
+ in ((*#line 1079.12 "ml.grm"*)Exp.Prim (PrimKind.Export {attributes = ieattributes,
                                       name = string,
-                                      ty = ty})(*#line 3980.1 "ml.grm.sml"*)
+                                      ty = ty})(*#line 3985.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, EXPORT1left, SEMICOLON1right), rest671)
@@ -3990,25 +3995,25 @@ end
 |  ( 242, ( ( _, ( _, _, SEMICOLON1right)) :: ( _, ( MlyValue.ty ty1, _, _)) :: _ :: ( _, ( MlyValue.ieattributes ieattributes1, _, _)) :: ( _, ( MlyValue.string string1, _, _)) :: ( _, ( _, IMPORT1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (string as string1) = string1 ()
  val  (ieattributes as ieattributes1) = ieattributes1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 1078.12 "ml.grm"*)Exp.Prim (PrimKind.Import {attributes = ieattributes,
+ in ((*#line 1083.12 "ml.grm"*)Exp.Prim (PrimKind.Import {attributes = ieattributes,
                                       name = string,
-                                      ty = ty})(*#line 3990.1 "ml.grm.sml"*)
+                                      ty = ty})(*#line 3995.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, IMPORT1left, SEMICOLON1right), rest671)
 end
 |  ( 243, ( ( _, ( _, _, SEMICOLON1right)) :: ( _, ( MlyValue.ty ty1, _, _)) :: _ :: ( _, ( MlyValue.ieattributes ieattributes1, _, _)) :: _ :: ( _, ( _, IMPORT1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (ieattributes as ieattributes1) = ieattributes1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 1082.12 "ml.grm"*)Exp.Prim (PrimKind.IImport {attributes = ieattributes,
-                                       ty = ty})(*#line 4000.1 "ml.grm.sml"*)
+ in ((*#line 1087.12 "ml.grm"*)Exp.Prim (PrimKind.IImport {attributes = ieattributes,
+                                       ty = ty})(*#line 4005.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, IMPORT1left, SEMICOLON1right), rest671)
 end
 |  ( 244, ( ( _, ( _, _, SEMICOLON1right)) :: ( _, ( MlyValue.ty ty1, _, _)) :: _ :: ( _, ( MlyValue.string string1, _, _)) :: ( _, ( _, PRIM1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (string as string1) = string1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 1085.12 "ml.grm"*)Exp.Prim (PrimKind.Prim {name = string,
-                                    ty = ty})(*#line 4008.1 "ml.grm.sml"*)
+ in ((*#line 1090.12 "ml.grm"*)Exp.Prim (PrimKind.Prim {name = string,
+                                    ty = ty})(*#line 4013.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, PRIM1left, SEMICOLON1right), rest671)
@@ -4016,26 +4021,26 @@ end
 |  ( 245, ( ( _, ( _, _, SEMICOLON1right)) :: ( _, ( MlyValue.ty ty1, _, _)) :: _ :: ( _, ( MlyValue.symattributes symattributes1, _, _)) :: ( _, ( MlyValue.string string1, _, _)) :: ( _, ( _, SYMBOL1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (string as string1) = string1 ()
  val  (symattributes as symattributes1) = symattributes1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 1088.12 "ml.grm"*)Exp.Prim (PrimKind.Symbol {attributes = symattributes,
+ in ((*#line 1093.12 "ml.grm"*)Exp.Prim (PrimKind.Symbol {attributes = symattributes,
                                       name = string,
-                                      ty = ty})(*#line 4016.1 "ml.grm.sml"*)
+                                      ty = ty})(*#line 4021.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, SYMBOL1left, SEMICOLON1right), rest671)
 end
 |  ( 246, ( ( _, ( _, _, SEMICOLON1right)) :: ( _, ( MlyValue.ty ty1, _, _)) :: _ :: _ :: ( _, ( _, SYMBOL1left, _)) :: rest671)) => let val  result = MlyValue.aexp (fn _ => let val  (ty as ty1) = ty1 ()
- in ((*#line 1092.12 "ml.grm"*)Exp.Prim (PrimKind.ISymbol {ty = ty})(*#line 4026.1 "ml.grm.sml"*)
+ in ((*#line 1097.12 "ml.grm"*)Exp.Prim (PrimKind.ISymbol {ty = ty})(*#line 4031.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 0, ( result, SYMBOL1left, SEMICOLON1right), rest671)
 end
-|  ( 247, ( rest671)) => let val  result = MlyValue.ieattributes (fn _ => ((*#line 1096.7 "ml.grm"*)[](*#line 4032.1 "ml.grm.sml"*)
+|  ( 247, ( rest671)) => let val  result = MlyValue.ieattributes (fn _ => ((*#line 1101.7 "ml.grm"*)[](*#line 4037.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 6, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 248, ( ( _, ( MlyValue.ieattributes ieattributes1, _, ieattributes1right)) :: ( _, ( MlyValue.shortAlphanumId shortAlphanumId1, shortAlphanumId1left, _)) :: rest671)) => let val  result = MlyValue.ieattributes (fn _ => let val  (shortAlphanumId as shortAlphanumId1) = shortAlphanumId1 ()
  val  (ieattributes as ieattributes1) = ieattributes1 ()
- in ((*#line 1098.7 "ml.grm"*)let
+ in ((*#line 1103.7 "ml.grm"*)let
          val (id, reg) = shortAlphanumId
       in
          case Symbol.toString id of
@@ -4051,18 +4056,18 @@ end
           | "stdcall" => PrimKind.ImportExportAttribute.Stdcall :: ieattributes
           | id => (error (reg, concat ["invalid attribute: ", id])
                    ; ieattributes)
-      end(*#line 4036.1 "ml.grm.sml"*)
+      end(*#line 4041.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 6, ( result, shortAlphanumId1left, ieattributes1right), rest671)
 end
-|  ( 249, ( rest671)) => let val  result = MlyValue.symattributes (fn _ => ((*#line 1118.7 "ml.grm"*)[](*#line 4059.1 "ml.grm.sml"*)
+|  ( 249, ( rest671)) => let val  result = MlyValue.symattributes (fn _ => ((*#line 1123.7 "ml.grm"*)[](*#line 4064.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 129, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 250, ( ( _, ( MlyValue.symattributes symattributes1, _, symattributes1right)) :: ( _, ( MlyValue.shortAlphanumId shortAlphanumId1, shortAlphanumId1left, _)) :: rest671)) => let val  result = MlyValue.symattributes (fn _ => let val  (shortAlphanumId as shortAlphanumId1) = shortAlphanumId1 ()
  val  (symattributes as symattributes1) = symattributes1 ()
- in ((*#line 1120.7 "ml.grm"*)let
+ in ((*#line 1125.7 "ml.grm"*)let
          val (id, reg) = shortAlphanumId
       in
          case Symbol.toString id of
@@ -4072,122 +4077,122 @@ end
           | "public" => PrimKind.SymbolAttribute.Public :: symattributes
           | id => (error (reg, concat ["invalid attribute: ", id])
                    ; symattributes)
-      end(*#line 4063.1 "ml.grm.sml"*)
+      end(*#line 4068.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 129, ( result, shortAlphanumId1left, symattributes1right), rest671)
 end
 |  ( 251, ( ( _, ( MlyValue.exp_2c exp_2c1, _, exp_2c1right)) :: _ :: ( _, ( MlyValue.exp exp1, exp1left, _)) :: rest671)) => let val  result = MlyValue.exp_2c (fn _ => let val  (exp as exp1) = exp1 ()
  val  (exp_2c as exp_2c1) = exp_2c1 ()
- in ((*#line 1132.34 "ml.grm"*)exp :: exp_2c(*#line 4080.1 "ml.grm.sml"*)
+ in ((*#line 1137.34 "ml.grm"*)exp :: exp_2c(*#line 4085.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 42, ( result, exp1left, exp_2c1right), rest671)
 end
 |  ( 252, ( ( _, ( MlyValue.exp exp2, _, exp2right)) :: _ :: ( _, ( MlyValue.exp exp1, exp1left, _)) :: rest671)) => let val  result = MlyValue.exp_2c (fn _ => let val  exp1 = exp1 ()
  val  exp2 = exp2 ()
- in ((*#line 1133.34 "ml.grm"*)[exp1, exp2](*#line 4087.1 "ml.grm.sml"*)
+ in ((*#line 1138.34 "ml.grm"*)[exp1, exp2](*#line 4092.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 42, ( result, exp1left, exp2right), rest671)
 end
 |  ( 253, ( ( _, ( MlyValue.exp exp1, exp1left, exp1right)) :: rest671)) => let val  result = MlyValue.exp_list (fn _ => let val  (exp as exp1) = exp1 ()
- in ((*#line 1135.34 "ml.grm"*)[exp](*#line 4094.1 "ml.grm.sml"*)
+ in ((*#line 1140.34 "ml.grm"*)[exp](*#line 4099.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 43, ( result, exp1left, exp1right), rest671)
 end
 |  ( 254, ( ( _, ( MlyValue.exp_list exp_list1, _, exp_list1right)) :: _ :: ( _, ( MlyValue.exp exp1, exp1left, _)) :: rest671)) => let val  result = MlyValue.exp_list (fn _ => let val  (exp as exp1) = exp1 ()
  val  (exp_list as exp_list1) = exp_list1 ()
- in ((*#line 1136.34 "ml.grm"*)exp :: exp_list(*#line 4100.1 "ml.grm.sml"*)
+ in ((*#line 1141.34 "ml.grm"*)exp :: exp_list(*#line 4105.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 43, ( result, exp1left, exp_list1right), rest671)
 end
 |  ( 255, ( ( _, ( MlyValue.barcpats barcpats1, _, (barcpatsright as barcpats1right))) :: _ :: ( _, ( MlyValue.cpat cpat1, (cpatleft as cpat1left), _)) :: rest671)) => let val  result = MlyValue.pat (fn _ => let val  (cpat as cpat1) = cpat1 ()
  val  (barcpats as barcpats1) = barcpats1 ()
- in ((*#line 1142.27 "ml.grm"*)Pat.makeRegion' (Pat.Or (Vector.fromList (cpat::barcpats)),
-                                           cpatleft, barcpatsright)(*#line 4107.1 "ml.grm.sml"*)
+ in ((*#line 1147.27 "ml.grm"*)Pat.makeRegion' (Pat.Or (Vector.fromList (cpat::barcpats)),
+                                           cpatleft, barcpatsright)(*#line 4112.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 81, ( result, cpat1left, barcpats1right), rest671)
 end
 |  ( 256, ( ( _, ( MlyValue.cpat cpat1, cpat1left, cpat1right)) :: rest671)) => let val  result = MlyValue.pat (fn _ => let val  (cpat as cpat1) = cpat1 ()
- in ((*#line 1144.27 "ml.grm"*)cpat(*#line 4115.1 "ml.grm.sml"*)
+ in ((*#line 1149.27 "ml.grm"*)cpat(*#line 4120.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 81, ( result, cpat1left, cpat1right), rest671)
 end
 |  ( 257, ( ( _, ( MlyValue.cpatnode cpatnode1, (cpatnodeleft as cpatnode1left), (cpatnoderight as cpatnode1right))) :: rest671)) => let val  result = MlyValue.cpat (fn _ => let val  (cpatnode as cpatnode1) = cpatnode1 ()
- in ((*#line 1146.18 "ml.grm"*)Pat.makeRegion' (cpatnode, cpatnodeleft, cpatnoderight)(*#line 4121.1 "ml.grm.sml"*)
+ in ((*#line 1151.18 "ml.grm"*)Pat.makeRegion' (cpatnode, cpatnodeleft, cpatnoderight)(*#line 4126.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 19, ( result, cpatnode1left, cpatnode1right), rest671)
 end
 |  ( 258, ( ( _, ( MlyValue.cpat cpat2, _, cpat2right)) :: _ :: ( _, ( MlyValue.cpat cpat1, cpat1left, _)) :: rest671)) => let val  result = MlyValue.cpatnode (fn _ => let val  cpat1 = cpat1 ()
  val  cpat2 = cpat2 ()
- in ((*#line 1148.28 "ml.grm"*)Pat.makeAs (cpat1, cpat2)(*#line 4127.1 "ml.grm.sml"*)
+ in ((*#line 1153.28 "ml.grm"*)Pat.makeAs (cpat1, cpat2)(*#line 4132.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 20, ( result, cpat1left, cpat2right), rest671)
 end
 |  ( 259, ( ( _, ( MlyValue.ty ty1, _, ty1right)) :: _ :: ( _, ( MlyValue.cpat cpat1, cpat1left, _)) :: rest671)) => let val  result = MlyValue.cpatnode (fn _ => let val  (cpat as cpat1) = cpat1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 1149.28 "ml.grm"*)Pat.Constraint (cpat, ty)(*#line 4134.1 "ml.grm.sml"*)
+ in ((*#line 1154.28 "ml.grm"*)Pat.Constraint (cpat, ty)(*#line 4139.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 20, ( result, cpat1left, ty1right), rest671)
 end
 |  ( 260, ( ( _, ( MlyValue.mode mode1, _, mode1right)) :: _ :: ( _, ( MlyValue.cpat cpat1, cpat1left, _)) :: rest671)) => let val  result = MlyValue.cpatnode (fn _ => let val  (cpat as cpat1) = cpat1 ()
  val  (mode as mode1) = mode1 ()
- in ((*#line 1150.33 "ml.grm"*)Pat.ModeConstraint (cpat, mode)(*#line 4141.1 "ml.grm.sml"*)
+ in ((*#line 1155.33 "ml.grm"*)Pat.ModeConstraint (cpat, SOME mode)(*#line 4146.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 20, ( result, cpat1left, mode1right), rest671)
 end
 |  ( 261, ( ( _, ( MlyValue.apats apats1, apats1left, apats1right)) :: rest671)) => let val  result = MlyValue.cpatnode (fn _ => let val  (apats as apats1) = apats1 ()
- in ((*#line 1151.28 "ml.grm"*)Pat.FlatApp (Vector.fromList apats)(*#line 4148.1 "ml.grm.sml"*)
+ in ((*#line 1156.28 "ml.grm"*)Pat.FlatApp (Vector.fromList apats)(*#line 4153.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 20, ( result, apats1left, apats1right), rest671)
 end
 |  ( 262, ( ( _, ( MlyValue.apat apat1, apat1left, apat1right)) :: rest671)) => let val  result = MlyValue.apats (fn _ => let val  (apat as apat1) = apat1 ()
- in ((*#line 1153.22 "ml.grm"*)[apat](*#line 4154.1 "ml.grm.sml"*)
+ in ((*#line 1158.22 "ml.grm"*)[apat](*#line 4159.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 3, ( result, apat1left, apat1right), rest671)
 end
 |  ( 263, ( ( _, ( MlyValue.apats apats1, _, apats1right)) :: ( _, ( MlyValue.apat apat1, apat1left, _)) :: rest671)) => let val  result = MlyValue.apats (fn _ => let val  (apat as apat1) = apat1 ()
  val  (apats as apats1) = apats1 ()
- in ((*#line 1154.22 "ml.grm"*)apat :: apats(*#line 4160.1 "ml.grm.sml"*)
+ in ((*#line 1159.22 "ml.grm"*)apat :: apats(*#line 4165.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 3, ( result, apat1left, apats1right), rest671)
 end
 |  ( 264, ( ( _, ( MlyValue.apatnode apatnode1, (apatnodeleft as apatnode1left), (apatnoderight as apatnode1right))) :: rest671)) => let val  result = MlyValue.apat (fn _ => let val  (apatnode as apatnode1) = apatnode1 ()
- in ((*#line 1157.15 "ml.grm"*)Pat.makeRegion' (apatnode,
+ in ((*#line 1162.15 "ml.grm"*)Pat.makeRegion' (apatnode,
                                apatnodeleft,
-                               apatnoderight)(*#line 4167.1 "ml.grm.sml"*)
+                               apatnoderight)(*#line 4172.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 1, ( result, apatnode1left, apatnode1right), rest671)
 end
 |  ( 265, ( ( _, ( MlyValue.longvidNoEqual longvidNoEqual1, longvidNoEqual1left, longvidNoEqual1right)) :: rest671)) => let val  result = MlyValue.apatnode (fn _ => let val  (longvidNoEqual as longvidNoEqual1) = longvidNoEqual1 ()
- in ((*#line 1162.34 "ml.grm"*)Pat.Var {name = longvidNoEqual,
-                                          fixop = Fixop.None}(*#line 4175.1 "ml.grm.sml"*)
+ in ((*#line 1167.34 "ml.grm"*)Pat.Var {name = longvidNoEqual,
+                                          fixop = Fixop.None}(*#line 4180.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 2, ( result, longvidNoEqual1left, longvidNoEqual1right), rest671)
 end
 |  ( 266, ( ( _, ( MlyValue.longvid longvid1, _, longvid1right)) :: ( _, ( _, OP1left, _)) :: rest671)) => let val  result = MlyValue.apatnode (fn _ => let val  (longvid as longvid1) = longvid1 ()
- in ((*#line 1164.34 "ml.grm"*)Pat.Var {name = longvid,
-                                          fixop = Fixop.Op}(*#line 4182.1 "ml.grm.sml"*)
+ in ((*#line 1169.34 "ml.grm"*)Pat.Var {name = longvid,
+                                          fixop = Fixop.Op}(*#line 4187.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 2, ( result, OP1left, longvid1right), rest671)
 end
 |  ( 267, ( ( _, ( MlyValue.const const1, const1left, const1right)) :: rest671)) => let val  result = MlyValue.apatnode (fn _ => let val  (const as const1) = const1 ()
- in ((*#line 1167.8 "ml.grm"*)let
+ in ((*#line 1172.8 "ml.grm"*)let
           val _ =
              case Const.value const of
                 Const.Real r =>
@@ -4203,105 +4208,105 @@ end
               | _ => ()
        in
           Pat.Const const
-       end(*#line 4189.1 "ml.grm.sml"*)
+       end(*#line 4194.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 2, ( result, const1left, const1right), rest671)
 end
-|  ( 268, ( ( _, ( _, WILD1left, WILD1right)) :: rest671)) => let val  result = MlyValue.apatnode (fn _ => ((*#line 1184.34 "ml.grm"*)Pat.Wild(*#line 4211.1 "ml.grm.sml"*)
+|  ( 268, ( ( _, ( _, WILD1left, WILD1right)) :: rest671)) => let val  result = MlyValue.apatnode (fn _ => ((*#line 1189.34 "ml.grm"*)Pat.Wild(*#line 4216.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 2, ( result, WILD1left, WILD1right), rest671)
 end
 |  ( 269, ( ( _, ( _, _, RPAREN1right)) :: ( _, ( MlyValue.pats pats1, _, _)) :: ( _, ( _, LPAREN1left, _)) :: rest671)) => let val  result = MlyValue.apatnode (fn _ => let val  (pats as pats1) = pats1 ()
- in ((*#line 1185.34 "ml.grm"*)Pat.tuple (Vector.fromList pats)(*#line 4215.1 "ml.grm.sml"*)
+ in ((*#line 1190.34 "ml.grm"*)Pat.tuple (Vector.fromList pats)(*#line 4220.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 2, ( result, LPAREN1left, RPAREN1right), rest671)
 end
 |  ( 270, ( ( _, ( _, _, RBRACKET1right)) :: ( _, ( MlyValue.pats pats1, _, _)) :: ( _, ( _, LBRACKET1left, _)) :: rest671)) => let val  result = MlyValue.apatnode (fn _ => let val  (pats as pats1) = pats1 ()
- in ((*#line 1186.34 "ml.grm"*)Pat.List (Vector.fromList pats)(*#line 4221.1 "ml.grm.sml"*)
+ in ((*#line 1191.34 "ml.grm"*)Pat.List (Vector.fromList pats)(*#line 4226.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 2, ( result, LBRACKET1left, RBRACKET1right), rest671)
 end
 |  ( 271, ( ( _, ( _, _, RBRACKET1right)) :: ( _, ( MlyValue.pats pats1, _, _)) :: ( _, ( _, HASHLBRACKET1left, _)) :: rest671)) => let val  result = MlyValue.apatnode (fn _ => let val  (pats as pats1) = pats1 ()
- in ((*#line 1187.34 "ml.grm"*)Pat.Vector (Vector.fromList pats)(*#line 4227.1 "ml.grm.sml"*)
+ in ((*#line 1192.34 "ml.grm"*)Pat.Vector (Vector.fromList pats)(*#line 4232.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 2, ( result, HASHLBRACKET1left, RBRACKET1right), rest671)
 end
-|  ( 272, ( ( _, ( _, _, RBRACE1right)) :: ( _, ( _, LBRACE1left, _)) :: rest671)) => let val  result = MlyValue.apatnode (fn _ => ((*#line 1188.34 "ml.grm"*)Pat.unit(*#line 4233.1 "ml.grm.sml"*)
+|  ( 272, ( ( _, ( _, _, RBRACE1right)) :: ( _, ( _, LBRACE1left, _)) :: rest671)) => let val  result = MlyValue.apatnode (fn _ => ((*#line 1193.34 "ml.grm"*)Pat.unit(*#line 4238.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 2, ( result, LBRACE1left, RBRACE1right), rest671)
 end
 |  ( 273, ( ( _, ( _, _, RBRACE1right)) :: ( _, ( MlyValue.patitems patitems1, _, _)) :: ( _, ( _, LBRACE1left, _)) :: rest671)) => let val  result = MlyValue.apatnode (fn _ => let val  (patitems as patitems1) = patitems1 ()
- in ((*#line 1190.8 "ml.grm"*)let
+ in ((*#line 1195.8 "ml.grm"*)let
           val (items, flexible) = patitems
        in
           Pat.Record {flexible = flexible,
                       items = Vector.fromList items}
-       end(*#line 4237.1 "ml.grm.sml"*)
+       end(*#line 4242.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 2, ( result, LBRACE1left, RBRACE1right), rest671)
 end
-|  ( 274, ( rest671)) => let val  result = MlyValue.pats (fn _ => ((*#line 1197.9 "ml.grm"*)[](*#line 4248.1 "ml.grm.sml"*)
+|  ( 274, ( rest671)) => let val  result = MlyValue.pats (fn _ => ((*#line 1202.9 "ml.grm"*)[](*#line 4253.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 84, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 275, ( ( _, ( MlyValue.commapats commapats1, _, commapats1right)) :: ( _, ( MlyValue.pat pat1, pat1left, _)) :: rest671)) => let val  result = MlyValue.pats (fn _ => let val  (pat as pat1) = pat1 ()
  val  (commapats as commapats1) = commapats1 ()
- in ((*#line 1198.23 "ml.grm"*)pat :: commapats(*#line 4252.1 "ml.grm.sml"*)
+ in ((*#line 1203.23 "ml.grm"*)pat :: commapats(*#line 4257.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 84, ( result, pat1left, commapats1right), rest671)
 end
 |  ( 276, ( ( _, ( MlyValue.cpat cpat1, cpat1left, cpat1right)) :: rest671)) => let val  result = MlyValue.barcpats (fn _ => let val  (cpat as cpat1) = cpat1 ()
- in ((*#line 1200.18 "ml.grm"*)[cpat](*#line 4259.1 "ml.grm.sml"*)
+ in ((*#line 1205.18 "ml.grm"*)[cpat](*#line 4264.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 7, ( result, cpat1left, cpat1right), rest671)
 end
 |  ( 277, ( ( _, ( MlyValue.barcpats barcpats1, _, barcpats1right)) :: _ :: ( _, ( MlyValue.cpat cpat1, cpat1left, _)) :: rest671)) => let val  result = MlyValue.barcpats (fn _ => let val  (cpat as cpat1) = cpat1 ()
  val  (barcpats as barcpats1) = barcpats1 ()
- in ((*#line 1201.31 "ml.grm"*)cpat :: barcpats(*#line 4265.1 "ml.grm.sml"*)
+ in ((*#line 1206.31 "ml.grm"*)cpat :: barcpats(*#line 4270.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 7, ( result, cpat1left, barcpats1right), rest671)
 end
-|  ( 278, ( rest671)) => let val  result = MlyValue.commapats (fn _ => ((*#line 1203.14 "ml.grm"*)[](*#line 4272.1 "ml.grm.sml"*)
+|  ( 278, ( rest671)) => let val  result = MlyValue.commapats (fn _ => ((*#line 1208.14 "ml.grm"*)[](*#line 4277.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 11, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 279, ( ( _, ( MlyValue.commapats commapats1, _, commapats1right)) :: ( _, ( MlyValue.pat pat1, _, _)) :: ( _, ( _, COMMA1left, _)) :: rest671)) => let val  result = MlyValue.commapats (fn _ => let val  (pat as pat1) = pat1 ()
  val  (commapats as commapats1) = commapats1 ()
- in ((*#line 1204.34 "ml.grm"*)pat :: commapats(*#line 4276.1 "ml.grm.sml"*)
+ in ((*#line 1209.34 "ml.grm"*)pat :: commapats(*#line 4281.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 11, ( result, COMMA1left, commapats1right), rest671)
 end
 |  ( 280, ( ( _, ( MlyValue.patitems patitems1, _, patitems1right)) :: _ :: ( _, ( MlyValue.patitem patitem1, patitem1left, _)) :: rest671)) => let val  result = MlyValue.patitems (fn _ => let val  (patitem as patitem1) = patitem1 ()
  val  (patitems as patitems1) = patitems1 ()
- in ((*#line 1206.37 "ml.grm"*)let val (items, f) = patitems
+ in ((*#line 1211.37 "ml.grm"*)let val (items, f) = patitems
                                     in (patitem :: items, f)
-                                    end(*#line 4283.1 "ml.grm.sml"*)
+                                    end(*#line 4288.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 83, ( result, patitem1left, patitems1right), rest671)
 end
 |  ( 281, ( ( _, ( MlyValue.patitem patitem1, patitem1left, patitem1right)) :: rest671)) => let val  result = MlyValue.patitems (fn _ => let val  (patitem as patitem1) = patitem1 ()
- in ((*#line 1209.34 "ml.grm"*)[patitem], false(*#line 4292.1 "ml.grm.sml"*)
+ in ((*#line 1214.34 "ml.grm"*)[patitem], false(*#line 4297.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 83, ( result, patitem1left, patitem1right), rest671)
 end
-|  ( 282, ( ( _, ( _, DOTDOTDOT1left, DOTDOTDOT1right)) :: rest671)) => let val  result = MlyValue.patitems (fn _ => ((*#line 1210.34 "ml.grm"*)[], true(*#line 4298.1 "ml.grm.sml"*)
+|  ( 282, ( ( _, ( _, DOTDOTDOT1left, DOTDOTDOT1right)) :: rest671)) => let val  result = MlyValue.patitems (fn _ => ((*#line 1215.34 "ml.grm"*)[], true(*#line 4303.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 83, ( result, DOTDOTDOT1left, DOTDOTDOT1right), rest671)
 end
 |  ( 283, ( ( _, ( MlyValue.pat pat1, _, pat1right)) :: _ :: ( _, ( MlyValue.field field1, (fieldleft as field1left), fieldright)) :: rest671)) => let val  result = MlyValue.patitem (fn _ => let val  (field as field1) = field1 ()
  val  (pat as pat1) = pat1 ()
- in ((*#line 1214.7 "ml.grm"*)(field, reg (fieldleft, fieldright), Pat.Item.Field pat)(*#line 4302.1 "ml.grm.sml"*)
+ in ((*#line 1219.7 "ml.grm"*)(field, reg (fieldleft, fieldright), Pat.Item.Field pat)(*#line 4307.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 82, ( result, field1left, pat1right), rest671)
@@ -4309,181 +4314,181 @@ end
 |  ( 284, ( ( _, ( MlyValue.opaspat opaspat1, _, opaspat1right)) :: ( _, ( MlyValue.constraint constraint1, _, _)) :: ( _, ( MlyValue.vid vid1, (vidleft as vid1left), vidright)) :: rest671)) => let val  result = MlyValue.patitem (fn _ => let val  (vid as vid1) = vid1 ()
  val  (constraint as constraint1) = constraint1 ()
  val  (opaspat as opaspat1) = opaspat1 ()
- in ((*#line 1216.7 "ml.grm"*)Field.Symbol (Vid.toSymbol vid),
+ in ((*#line 1221.7 "ml.grm"*)Field.Symbol (Vid.toSymbol vid),
       reg (vidleft, vidright),
-      Pat.Item.Vid (vid, constraint, opaspat)(*#line 4309.1 "ml.grm.sml"*)
+      Pat.Item.Vid (vid, constraint, opaspat)(*#line 4314.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 82, ( result, vid1left, opaspat1right), rest671)
 end
-|  ( 285, ( rest671)) => let val  result = MlyValue.opaspat (fn _ => ((*#line 1220.20 "ml.grm"*)NONE(*#line 4319.1 "ml.grm.sml"*)
+|  ( 285, ( rest671)) => let val  result = MlyValue.opaspat (fn _ => ((*#line 1225.20 "ml.grm"*)NONE(*#line 4324.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 76, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 286, ( ( _, ( MlyValue.pat pat1, _, pat1right)) :: ( _, ( _, AS1left, _)) :: rest671)) => let val  result = MlyValue.opaspat (fn _ => let val  (pat as pat1) = pat1 ()
- in ((*#line 1221.20 "ml.grm"*)SOME pat(*#line 4323.1 "ml.grm.sml"*)
+ in ((*#line 1226.20 "ml.grm"*)SOME pat(*#line 4328.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 76, ( result, AS1left, pat1right), rest671)
 end
 |  ( 287, ( ( _, ( MlyValue.tynode tynode1, (tynodeleft as tynode1left), (tynoderight as tynode1right))) :: rest671)) => let val  result = MlyValue.ty (fn _ => let val  (tynode as tynode1) = tynode1 ()
- in ((*#line 1227.14 "ml.grm"*)Type.makeRegion' (tynode, tynodeleft, tynoderight)(*#line 4329.1 "ml.grm.sml"*)
+ in ((*#line 1232.14 "ml.grm"*)Type.makeRegion' (tynode, tynodeleft, tynoderight)(*#line 4334.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 139, ( result, tynode1left, tynode1right), rest671)
 end
 |  ( 288, ( ( _, ( MlyValue.tuple_ty tuple_ty1, tuple_ty1left, tuple_ty1right)) :: rest671)) => let val  result = MlyValue.tynode (fn _ => let val  (tuple_ty as tuple_ty1) = tuple_ty1 ()
- in ((*#line 1229.26 "ml.grm"*)Type.tuple (Vector.fromList tuple_ty)(*#line 4335.1 "ml.grm.sml"*)
+ in ((*#line 1234.26 "ml.grm"*)Type.tuple (Vector.fromList tuple_ty)(*#line 4340.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 145, ( result, tuple_ty1left, tuple_ty1right), rest671)
 end
 |  ( 289, ( ( _, ( MlyValue.ty ty2, _, ty2right)) :: _ :: ( _, ( MlyValue.ty ty1, ty1left, _)) :: rest671)) => let val  result = MlyValue.tynode (fn _ => let val  ty1 = ty1 ()
  val  ty2 = ty2 ()
- in ((*#line 1230.26 "ml.grm"*)Type.arrow (ty1, ty2)(*#line 4341.1 "ml.grm.sml"*)
+ in ((*#line 1235.26 "ml.grm"*)Type.arrow (ty1, ty2)(*#line 4346.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 145, ( result, ty1left, ty2right), rest671)
 end
 |  ( 290, ( ( _, ( MlyValue.ty'node ty'node1, ty'node1left, ty'node1right)) :: rest671)) => let val  result = MlyValue.tynode (fn _ => let val  (ty'node as ty'node1) = ty'node1 ()
- in ((*#line 1231.26 "ml.grm"*)ty'node(*#line 4348.1 "ml.grm.sml"*)
+ in ((*#line 1236.26 "ml.grm"*)ty'node(*#line 4353.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 145, ( result, ty'node1left, ty'node1right), rest671)
 end
 |  ( 291, ( ( _, ( MlyValue.ty'node ty'node1, (ty'nodeleft as ty'node1left), (ty'noderight as ty'node1right))) :: rest671)) => let val  result = MlyValue.ty' (fn _ => let val  (ty'node as ty'node1) = ty'node1 ()
- in ((*#line 1233.16 "ml.grm"*)Type.makeRegion' (ty'node, ty'nodeleft, ty'noderight)(*#line 4354.1 "ml.grm.sml"*)
+ in ((*#line 1238.16 "ml.grm"*)Type.makeRegion' (ty'node, ty'nodeleft, ty'noderight)(*#line 4359.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 140, ( result, ty'node1left, ty'node1right), rest671)
 end
 |  ( 292, ( ( _, ( MlyValue.tyvar tyvar1, tyvar1left, tyvar1right)) :: rest671)) => let val  result = MlyValue.ty'node (fn _ => let val  (tyvar as tyvar1) = tyvar1 ()
- in ((*#line 1235.44 "ml.grm"*)Type.Var tyvar(*#line 4360.1 "ml.grm.sml"*)
+ in ((*#line 1240.44 "ml.grm"*)Type.Var tyvar(*#line 4365.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 141, ( result, tyvar1left, tyvar1right), rest671)
 end
 |  ( 293, ( ( _, ( _, _, RBRACE1right)) :: ( _, ( MlyValue.tlabels tlabels1, _, _)) :: ( _, ( _, LBRACE1left, _)) :: rest671)) => let val  result = MlyValue.ty'node (fn _ => let val  (tlabels as tlabels1) = tlabels1 ()
- in ((*#line 1237.12 "ml.grm"*)Type.Record (Record.fromVector (Vector.fromList tlabels))(*#line 4366.1 "ml.grm.sml"*)
+ in ((*#line 1242.12 "ml.grm"*)Type.Record (Record.fromVector (Vector.fromList tlabels))(*#line 4371.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 141, ( result, LBRACE1left, RBRACE1right), rest671)
 end
-|  ( 294, ( ( _, ( _, _, RBRACE1right)) :: ( _, ( _, LBRACE1left, _)) :: rest671)) => let val  result = MlyValue.ty'node (fn _ => ((*#line 1238.44 "ml.grm"*)Type.unit(*#line 4372.1 "ml.grm.sml"*)
+|  ( 294, ( ( _, ( _, _, RBRACE1right)) :: ( _, ( _, LBRACE1left, _)) :: rest671)) => let val  result = MlyValue.ty'node (fn _ => ((*#line 1243.44 "ml.grm"*)Type.unit(*#line 4377.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 141, ( result, LBRACE1left, RBRACE1right), rest671)
 end
 |  ( 295, ( ( _, ( MlyValue.longtycon longtycon1, _, longtycon1right)) :: _ :: ( _, ( MlyValue.ty0_pc ty0_pc1, _, _)) :: ( _, ( _, LPAREN1left, _)) :: rest671)) => let val  result = MlyValue.ty'node (fn _ => let val  (ty0_pc as ty0_pc1) = ty0_pc1 ()
  val  (longtycon as longtycon1) = longtycon1 ()
- in ((*#line 1239.44 "ml.grm"*)Type.Con (longtycon,
-                                                     Vector.fromList ty0_pc)(*#line 4376.1 "ml.grm.sml"*)
+ in ((*#line 1244.44 "ml.grm"*)Type.Con (longtycon,
+                                                     Vector.fromList ty0_pc)(*#line 4381.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 141, ( result, LPAREN1left, longtycon1right), rest671)
 end
 |  ( 296, ( ( _, ( _, _, RPAREN1right)) :: ( _, ( MlyValue.ty ty1, _, _)) :: ( _, ( _, LPAREN1left, _)) :: rest671)) => let val  result = MlyValue.ty'node (fn _ => let val  (ty as ty1) = ty1 ()
- in ((*#line 1241.44 "ml.grm"*)Type.Paren ty(*#line 4384.1 "ml.grm.sml"*)
+ in ((*#line 1246.44 "ml.grm"*)Type.Paren ty(*#line 4389.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 141, ( result, LPAREN1left, RPAREN1right), rest671)
 end
 |  ( 297, ( ( _, ( MlyValue.longtycon longtycon1, _, longtycon1right)) :: ( _, ( MlyValue.ty' ty'1, ty'1left, _)) :: rest671)) => let val  result = MlyValue.ty'node (fn _ => let val  (ty' as ty'1) = ty'1 ()
  val  (longtycon as longtycon1) = longtycon1 ()
- in ((*#line 1242.44 "ml.grm"*)Type.Con (longtycon,
-                                                     Vector.new1 ty')(*#line 4390.1 "ml.grm.sml"*)
+ in ((*#line 1247.44 "ml.grm"*)Type.Con (longtycon,
+                                                     Vector.new1 ty')(*#line 4395.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 141, ( result, ty'1left, longtycon1right), rest671)
 end
 |  ( 298, ( ( _, ( MlyValue.longtycon longtycon1, longtycon1left, longtycon1right)) :: rest671)) => let val  result = MlyValue.ty'node (fn _ => let val  (longtycon as longtycon1) = longtycon1 ()
- in ((*#line 1244.44 "ml.grm"*)Type.Con (longtycon,
-                                                     Vector.new0 ())(*#line 4398.1 "ml.grm.sml"*)
+ in ((*#line 1249.44 "ml.grm"*)Type.Con (longtycon,
+                                                     Vector.new0 ())(*#line 4403.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 141, ( result, longtycon1left, longtycon1right), rest671)
 end
 |  ( 299, ( ( _, ( MlyValue.ty ty1, _, ty1right)) :: _ :: ( _, ( MlyValue.field field1, (fieldleft as field1left), fieldright)) :: rest671)) => let val  result = MlyValue.tlabel (fn _ => let val  (field as field1) = field1 ()
  val  (ty as ty1) = ty1 ()
- in ((*#line 1247.34 "ml.grm"*)field, (reg (fieldleft, fieldright), ty)(*#line 4405.1 "ml.grm.sml"*)
+ in ((*#line 1252.34 "ml.grm"*)field, (reg (fieldleft, fieldright), ty)(*#line 4410.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 133, ( result, field1left, ty1right), rest671)
 end
 |  ( 300, ( ( _, ( MlyValue.tlabels tlabels1, _, tlabels1right)) :: _ :: ( _, ( MlyValue.tlabel tlabel1, tlabel1left, _)) :: rest671)) => let val  result = MlyValue.tlabels (fn _ => let val  (tlabel as tlabel1) = tlabel1 ()
  val  (tlabels as tlabels1) = tlabels1 ()
- in ((*#line 1249.34 "ml.grm"*)tlabel :: tlabels(*#line 4412.1 "ml.grm.sml"*)
+ in ((*#line 1254.34 "ml.grm"*)tlabel :: tlabels(*#line 4417.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 134, ( result, tlabel1left, tlabels1right), rest671)
 end
 |  ( 301, ( ( _, ( MlyValue.tlabel tlabel1, tlabel1left, tlabel1right)) :: rest671)) => let val  result = MlyValue.tlabels (fn _ => let val  (tlabel as tlabel1) = tlabel1 ()
- in ((*#line 1250.34 "ml.grm"*)[tlabel](*#line 4419.1 "ml.grm.sml"*)
+ in ((*#line 1255.34 "ml.grm"*)[tlabel](*#line 4424.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 134, ( result, tlabel1left, tlabel1right), rest671)
 end
 |  ( 302, ( ( _, ( MlyValue.tuple_ty tuple_ty1, _, tuple_ty1right)) :: _ :: ( _, ( MlyValue.ty' ty'1, ty'1left, _)) :: rest671)) => let val  result = MlyValue.tuple_ty (fn _ => let val  (ty' as ty'1) = ty'1 ()
  val  (tuple_ty as tuple_ty1) = tuple_ty1 ()
- in ((*#line 1252.42 "ml.grm"*)ty' :: tuple_ty(*#line 4425.1 "ml.grm.sml"*)
+ in ((*#line 1257.42 "ml.grm"*)ty' :: tuple_ty(*#line 4430.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 138, ( result, ty'1left, tuple_ty1right), rest671)
 end
 |  ( 303, ( ( _, ( MlyValue.ty' ty'2, _, ty'2right)) :: _ :: ( _, ( MlyValue.ty' ty'1, ty'1left, _)) :: rest671)) => let val  result = MlyValue.tuple_ty (fn _ => let val  ty'1 = ty'1 ()
  val  ty'2 = ty'2 ()
- in ((*#line 1253.42 "ml.grm"*)[ty'1, ty'2](*#line 4432.1 "ml.grm.sml"*)
+ in ((*#line 1258.42 "ml.grm"*)[ty'1, ty'2](*#line 4437.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 138, ( result, ty'1left, ty'2right), rest671)
 end
 |  ( 304, ( ( _, ( MlyValue.ty ty2, _, ty2right)) :: _ :: ( _, ( MlyValue.ty ty1, ty1left, _)) :: rest671)) => let val  result = MlyValue.ty0_pc (fn _ => let val  ty1 = ty1 ()
  val  ty2 = ty2 ()
- in ((*#line 1255.34 "ml.grm"*)[ty1, ty2](*#line 4439.1 "ml.grm.sml"*)
+ in ((*#line 1260.34 "ml.grm"*)[ty1, ty2](*#line 4444.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 142, ( result, ty1left, ty2right), rest671)
 end
 |  ( 305, ( ( _, ( MlyValue.ty0_pc ty0_pc1, _, ty0_pc1right)) :: _ :: ( _, ( MlyValue.ty ty1, ty1left, _)) :: rest671)) => let val  result = MlyValue.ty0_pc (fn _ => let val  (ty as ty1) = ty1 ()
  val  (ty0_pc as ty0_pc1) = ty0_pc1 ()
- in ((*#line 1256.34 "ml.grm"*)ty :: ty0_pc(*#line 4446.1 "ml.grm.sml"*)
+ in ((*#line 1261.34 "ml.grm"*)ty :: ty0_pc(*#line 4451.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 142, ( result, ty1left, ty0_pc1right), rest671)
 end
-|  ( 306, ( rest671)) => let val  result = MlyValue.optbar (fn _ => ((*#line 1263.19 "ml.grm"*)(*#line 4453.1 "ml.grm.sml"*)
+|  ( 306, ( rest671)) => let val  result = MlyValue.optbar (fn _ => ((*#line 1268.19 "ml.grm"*)(*#line 4458.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 78, ( result, defaultPos, defaultPos), rest671)
 end
 |  ( 307, ( ( _, ( MlyValue.optbar' optbar'1, optbar'1left, optbar'1right)) :: rest671)) => let val  result = MlyValue.optbar (fn _ => let val  optbar'1 = optbar'1 ()
- in ((*#line 1264.19 "ml.grm"*)(*#line 4457.1 "ml.grm.sml"*)
+ in ((*#line 1269.19 "ml.grm"*)(*#line 4462.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 78, ( result, optbar'1left, optbar'1right), rest671)
 end
-|  ( 308, ( ( _, ( _, (BARleft as BAR1left), (BARright as BAR1right))) :: rest671)) => let val  result = MlyValue.optbar' (fn _ => ((*#line 1267.19 "ml.grm"*)if allowOptBar ()
+|  ( 308, ( ( _, ( _, (BARleft as BAR1left), (BARright as BAR1right))) :: rest671)) => let val  result = MlyValue.optbar' (fn _ => ((*#line 1272.19 "ml.grm"*)if allowOptBar ()
                     then ()
-                    else error (reg (BARleft, BARright), "Optional bar disallowed, compile with -default-ann 'allowOptBar true'")(*#line 4463.1 "ml.grm.sml"*)
+                    else error (reg (BARleft, BARright), "Optional bar disallowed, compile with -default-ann 'allowOptBar true'")(*#line 4468.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 79, ( result, BAR1left, BAR1right), rest671)
 end
-|  ( 309, ( rest671)) => let val  result = MlyValue.optsemicolon (fn _ => ((*#line 1272.19 "ml.grm"*)(*#line 4469.1 "ml.grm.sml"*)
+|  ( 309, ( rest671)) => let val  result = MlyValue.optsemicolon (fn _ => ((*#line 1277.19 "ml.grm"*)(*#line 4474.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 80, ( result, defaultPos, defaultPos), rest671)
 end
-|  ( 310, ( ( _, ( _, (SEMICOLONleft as SEMICOLON1left), (SEMICOLONright as SEMICOLON1right))) :: rest671)) => let val  result = MlyValue.optsemicolon (fn _ => ((*#line 1273.19 "ml.grm"*)if allowOptSemicolon ()
+|  ( 310, ( ( _, ( _, (SEMICOLONleft as SEMICOLON1left), (SEMICOLONright as SEMICOLON1right))) :: rest671)) => let val  result = MlyValue.optsemicolon (fn _ => ((*#line 1278.19 "ml.grm"*)if allowOptSemicolon ()
                     then ()
-                    else error (reg (SEMICOLONleft, SEMICOLONright), "Optional semicolon disallowed, compile with -default-ann 'allowOptSemicolon true'")(*#line 4473.1 "ml.grm.sml"*)
+                    else error (reg (SEMICOLONleft, SEMICOLONright), "Optional semicolon disallowed, compile with -default-ann 'allowOptSemicolon true'")(*#line 4478.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 80, ( result, SEMICOLON1left, SEMICOLON1right), rest671)
 end
 |  ( 311, ( ( _, ( MlyValue.const const1, const1left, const1right)) :: rest671)) => let val  result = MlyValue.constOrBool (fn _ => let val  (const as const1) = const1 ()
- in ((*#line 1278.13 "ml.grm"*)const(*#line 4479.1 "ml.grm.sml"*)
+ in ((*#line 1283.13 "ml.grm"*)const(*#line 4484.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 18, ( result, const1left, const1right), rest671)
 end
 |  ( 312, ( ( _, ( MlyValue.shortAlphanumId shortAlphanumId1, shortAlphanumId1left, shortAlphanumId1right)) :: rest671)) => let val  result = MlyValue.constOrBool (fn _ => let val  (shortAlphanumId as shortAlphanumId1) = shortAlphanumId1 ()
- in ((*#line 1280.10 "ml.grm"*)let
+ in ((*#line 1285.10 "ml.grm"*)let
             fun ok (b,s) =
                Const.makeRegion (Const.Node {value = Const.Bool b, yytext = s}, #2 shortAlphanumId)
          in
@@ -4492,299 +4497,299 @@ end
              | "true" => ok (true, "true")
              | s => (error (#2 shortAlphanumId, concat ["unknown boolean constant: ", s])
                      ; ok (false, "false"))
-         end(*#line 4485.1 "ml.grm.sml"*)
+         end(*#line 4490.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 18, ( result, shortAlphanumId1left, shortAlphanumId1right), rest671)
 end
 |  ( 313, ( ( _, ( MlyValue.const' const'1, (const'left as const'1left), (const'right as const'1right))) :: rest671)) => let val  result = MlyValue.const (fn _ => let val  (const' as const'1) = const'1 ()
- in ((*#line 1291.21 "ml.grm"*)Const.makeRegion (const', reg (const'left, const'right))(*#line 4500.1 "ml.grm.sml"*)
+ in ((*#line 1296.21 "ml.grm"*)Const.makeRegion (const', reg (const'left, const'right))(*#line 4505.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 13, ( result, const'1left, const'1right), rest671)
 end
 |  ( 314, ( ( _, ( MlyValue.int int1, int1left, int1right)) :: rest671)) => let val  result = MlyValue.const' (fn _ => let val  (int as int1) = int1 ()
- in ((*#line 1293.21 "ml.grm"*)let val (int, yytext) = int
+ in ((*#line 1298.21 "ml.grm"*)let val (int, yytext) = int
                     in Const.Node {value = Const.Int int, yytext = yytext}
-                    end(*#line 4506.1 "ml.grm.sml"*)
+                    end(*#line 4511.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 14, ( result, int1left, int1right), rest671)
 end
 |  ( 315, ( ( _, ( MlyValue.word word1, word1left, word1right)) :: rest671)) => let val  result = MlyValue.const' (fn _ => let val  (word as word1) = word1 ()
- in ((*#line 1296.21 "ml.grm"*)let val (word, yytext) = word
+ in ((*#line 1301.21 "ml.grm"*)let val (word, yytext) = word
                     in Const.Node {value = Const.Word word, yytext = yytext}
-                    end(*#line 4514.1 "ml.grm.sml"*)
+                    end(*#line 4519.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 14, ( result, word1left, word1right), rest671)
 end
 |  ( 316, ( ( _, ( MlyValue.REAL REAL1, REAL1left, REAL1right)) :: rest671)) => let val  result = MlyValue.const' (fn _ => let val  (REAL as REAL1) = REAL1 ()
- in ((*#line 1299.21 "ml.grm"*)let val {real, yytext} = REAL
+ in ((*#line 1304.21 "ml.grm"*)let val {real, yytext} = REAL
                     in Const.Node {value = Const.Real real, yytext = yytext}
-                    end(*#line 4522.1 "ml.grm.sml"*)
+                    end(*#line 4527.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 14, ( result, REAL1left, REAL1right), rest671)
 end
 |  ( 317, ( ( _, ( MlyValue.STRING STRING1, STRING1left, STRING1right)) :: rest671)) => let val  result = MlyValue.const' (fn _ => let val  (STRING as STRING1) = STRING1 ()
- in ((*#line 1302.21 "ml.grm"*)let val {string, yytext} = STRING
+ in ((*#line 1307.21 "ml.grm"*)let val {string, yytext} = STRING
                     in Const.Node {value = Const.String string, yytext = yytext}
-                    end(*#line 4530.1 "ml.grm.sml"*)
+                    end(*#line 4535.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 14, ( result, STRING1left, STRING1right), rest671)
 end
 |  ( 318, ( ( _, ( MlyValue.CHAR CHAR1, CHAR1left, CHAR1right)) :: rest671)) => let val  result = MlyValue.const' (fn _ => let val  (CHAR as CHAR1) = CHAR1 ()
- in ((*#line 1305.21 "ml.grm"*)let val {char, yytext} = CHAR
+ in ((*#line 1310.21 "ml.grm"*)let val {char, yytext} = CHAR
                     in Const.Node {value = Const.Char char, yytext = yytext}
-                    end(*#line 4538.1 "ml.grm.sml"*)
+                    end(*#line 4543.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 14, ( result, CHAR1left, CHAR1right), rest671)
 end
 |  ( 319, ( ( _, ( MlyValue.STRING STRING1, STRING1left, STRING1right)) :: rest671)) => let val  result = MlyValue.string (fn _ => let val  (STRING as STRING1) = STRING1 ()
- in ((*#line 1309.21 "ml.grm"*)let
+ in ((*#line 1314.21 "ml.grm"*)let
                        val {string, ...} = STRING
                     in
                        CharVector.tabulate
                        (Vector.length string, fn i =>
                         Char.fromInt (Int.fromIntInf (#char (Vector.sub (string, i)))))
-                    end(*#line 4546.1 "ml.grm.sml"*)
+                    end(*#line 4551.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 128, ( result, STRING1left, STRING1right), rest671)
 end
 |  ( 320, ( ( _, ( MlyValue.SHORTALPHANUMID SHORTALPHANUMID1, (SHORTALPHANUMIDleft as SHORTALPHANUMID1left), (SHORTALPHANUMIDright as SHORTALPHANUMID1right))) :: rest671)) => let val  result = MlyValue.shortAlphanumId (fn _ => let val  (SHORTALPHANUMID as SHORTALPHANUMID1) = SHORTALPHANUMID1 ()
- in ((*#line 1320.6 "ml.grm"*)shortIdFromTok (SHORTALPHANUMID, SHORTALPHANUMIDleft, SHORTALPHANUMIDright)(*#line 4558.1 "ml.grm.sml"*)
+ in ((*#line 1325.6 "ml.grm"*)shortIdFromTok (SHORTALPHANUMID, SHORTALPHANUMIDleft, SHORTALPHANUMIDright)(*#line 4563.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 95, ( result, SHORTALPHANUMID1left, SHORTALPHANUMID1right), rest671)
 end
 |  ( 321, ( ( _, ( MlyValue.SHORTSYMID SHORTSYMID1, (SHORTSYMIDleft as SHORTSYMID1left), (SHORTSYMIDright as SHORTSYMID1right))) :: rest671)) => let val  result = MlyValue.shortSymId (fn _ => let val  (SHORTSYMID as SHORTSYMID1) = SHORTSYMID1 ()
- in ((*#line 1323.6 "ml.grm"*)shortIdFromTok (SHORTSYMID, SHORTSYMIDleft, SHORTSYMIDright)(*#line 4564.1 "ml.grm.sml"*)
+ in ((*#line 1328.6 "ml.grm"*)shortIdFromTok (SHORTSYMID, SHORTSYMIDleft, SHORTSYMIDright)(*#line 4569.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 96, ( result, SHORTSYMID1left, SHORTSYMID1right), rest671)
 end
 |  ( 322, ( ( _, ( MlyValue.LONGALPHANUMID LONGALPHANUMID1, (LONGALPHANUMIDleft as LONGALPHANUMID1left), (LONGALPHANUMIDright as LONGALPHANUMID1right))) :: rest671)) => let val  result = MlyValue.longAlphanumId (fn _ => let val  (LONGALPHANUMID as LONGALPHANUMID1) = LONGALPHANUMID1 ()
- in ((*#line 1326.6 "ml.grm"*)longIdFromTok (LONGALPHANUMID, LONGALPHANUMIDleft, LONGALPHANUMIDright)(*#line 4570.1 "ml.grm.sml"*)
+ in ((*#line 1331.6 "ml.grm"*)longIdFromTok (LONGALPHANUMID, LONGALPHANUMIDleft, LONGALPHANUMIDright)(*#line 4575.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 61, ( result, LONGALPHANUMID1left, LONGALPHANUMID1right), rest671)
 end
 |  ( 323, ( ( _, ( MlyValue.LONGSYMID LONGSYMID1, (LONGSYMIDleft as LONGSYMID1left), (LONGSYMIDright as LONGSYMID1right))) :: rest671)) => let val  result = MlyValue.longSymId (fn _ => let val  (LONGSYMID as LONGSYMID1) = LONGSYMID1 ()
- in ((*#line 1329.6 "ml.grm"*)longIdFromTok (LONGSYMID, LONGSYMIDleft, LONGSYMIDright)(*#line 4576.1 "ml.grm.sml"*)
+ in ((*#line 1334.6 "ml.grm"*)longIdFromTok (LONGSYMID, LONGSYMIDleft, LONGSYMIDright)(*#line 4581.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 62, ( result, LONGSYMID1left, LONGSYMID1right), rest671)
 end
 |  ( 324, ( ( _, ( MlyValue.shortAlphanumId shortAlphanumId1, shortAlphanumId1left, shortAlphanumId1right)) :: rest671)) => let val  result = MlyValue.vidNoEqual (fn _ => let val  (shortAlphanumId as shortAlphanumId1) = shortAlphanumId1 ()
- in ((*#line 1331.32 "ml.grm"*)Vid.fromSymbol shortAlphanumId(*#line 4582.1 "ml.grm.sml"*)
+ in ((*#line 1336.32 "ml.grm"*)Vid.fromSymbol shortAlphanumId(*#line 4587.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 159, ( result, shortAlphanumId1left, shortAlphanumId1right), rest671)
 end
 |  ( 325, ( ( _, ( MlyValue.shortSymId shortSymId1, shortSymId1left, shortSymId1right)) :: rest671)) => let val  result = MlyValue.vidNoEqual (fn _ => let val  (shortSymId as shortSymId1) = shortSymId1 ()
- in ((*#line 1332.32 "ml.grm"*)Vid.fromSymbol shortSymId(*#line 4588.1 "ml.grm.sml"*)
+ in ((*#line 1337.32 "ml.grm"*)Vid.fromSymbol shortSymId(*#line 4593.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 159, ( result, shortSymId1left, shortSymId1right), rest671)
 end
-|  ( 326, ( ( _, ( _, (ASTERISKleft as ASTERISK1left), (ASTERISKright as ASTERISK1right))) :: rest671)) => let val  result = MlyValue.vidNoEqual (fn _ => ((*#line 1333.32 "ml.grm"*)Vid.fromSymbol (Symbol.asterisk,
-                                               reg (ASTERISKleft, ASTERISKright))(*#line 4594.1 "ml.grm.sml"*)
+|  ( 326, ( ( _, ( _, (ASTERISKleft as ASTERISK1left), (ASTERISKright as ASTERISK1right))) :: rest671)) => let val  result = MlyValue.vidNoEqual (fn _ => ((*#line 1338.32 "ml.grm"*)Vid.fromSymbol (Symbol.asterisk,
+                                               reg (ASTERISKleft, ASTERISKright))(*#line 4599.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 159, ( result, ASTERISK1left, ASTERISK1right), rest671)
 end
-|  ( 327, ( ( _, ( _, (EQUALOPleft as EQUALOP1left), (EQUALOPright as EQUALOP1right))) :: rest671)) => let val  result = MlyValue.vidEqual (fn _ => ((*#line 1335.32 "ml.grm"*)Vid.fromSymbol (Symbol.equal,
-                                               reg (EQUALOPleft, EQUALOPright))(*#line 4599.1 "ml.grm.sml"*)
+|  ( 327, ( ( _, ( _, (EQUALOPleft as EQUALOP1left), (EQUALOPright as EQUALOP1right))) :: rest671)) => let val  result = MlyValue.vidEqual (fn _ => ((*#line 1340.32 "ml.grm"*)Vid.fromSymbol (Symbol.equal,
+                                               reg (EQUALOPleft, EQUALOPright))(*#line 4604.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 158, ( result, EQUALOP1left, EQUALOP1right), rest671)
 end
 |  ( 328, ( ( _, ( MlyValue.vidNoEqual vidNoEqual1, vidNoEqual1left, vidNoEqual1right)) :: rest671)) => let val  result = MlyValue.vid (fn _ => let val  (vidNoEqual as vidNoEqual1) = vidNoEqual1 ()
- in ((*#line 1337.20 "ml.grm"*)vidNoEqual(*#line 4604.1 "ml.grm.sml"*)
+ in ((*#line 1342.20 "ml.grm"*)vidNoEqual(*#line 4609.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 157, ( result, vidNoEqual1left, vidNoEqual1right), rest671)
 end
 |  ( 329, ( ( _, ( MlyValue.vidEqual vidEqual1, vidEqual1left, vidEqual1right)) :: rest671)) => let val  result = MlyValue.vid (fn _ => let val  (vidEqual as vidEqual1) = vidEqual1 ()
- in ((*#line 1338.20 "ml.grm"*)vidEqual(*#line 4610.1 "ml.grm.sml"*)
+ in ((*#line 1343.20 "ml.grm"*)vidEqual(*#line 4615.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 157, ( result, vidEqual1left, vidEqual1right), rest671)
 end
 |  ( 330, ( ( _, ( MlyValue.vidNoEqual vidNoEqual1, vidNoEqual1left, vidNoEqual1right)) :: rest671)) => let val  result = MlyValue.longvidNoEqual (fn _ => let val  (vidNoEqual as vidNoEqual1) = vidNoEqual1 ()
- in ((*#line 1339.35 "ml.grm"*)Longvid.short vidNoEqual(*#line 4616.1 "ml.grm.sml"*)
+ in ((*#line 1344.35 "ml.grm"*)Longvid.short vidNoEqual(*#line 4621.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 70, ( result, vidNoEqual1left, vidNoEqual1right), rest671)
 end
 |  ( 331, ( ( _, ( MlyValue.longAlphanumId longAlphanumId1, longAlphanumId1left, longAlphanumId1right)) :: rest671)) => let val  result = MlyValue.longvidNoEqual (fn _ => let val  (longAlphanumId as longAlphanumId1) = longAlphanumId1 ()
- in ((*#line 1340.35 "ml.grm"*)Longvid.fromSymbols longAlphanumId(*#line 4622.1 "ml.grm.sml"*)
+ in ((*#line 1345.35 "ml.grm"*)Longvid.fromSymbols longAlphanumId(*#line 4627.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 70, ( result, longAlphanumId1left, longAlphanumId1right), rest671)
 end
 |  ( 332, ( ( _, ( MlyValue.longSymId longSymId1, longSymId1left, longSymId1right)) :: rest671)) => let val  result = MlyValue.longvidNoEqual (fn _ => let val  (longSymId as longSymId1) = longSymId1 ()
- in ((*#line 1341.35 "ml.grm"*)Longvid.fromSymbols longSymId(*#line 4628.1 "ml.grm.sml"*)
+ in ((*#line 1346.35 "ml.grm"*)Longvid.fromSymbols longSymId(*#line 4633.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 70, ( result, longSymId1left, longSymId1right), rest671)
 end
 |  ( 333, ( ( _, ( MlyValue.vidEqual vidEqual1, vidEqual1left, vidEqual1right)) :: rest671)) => let val  result = MlyValue.longvidEqual (fn _ => let val  (vidEqual as vidEqual1) = vidEqual1 ()
- in ((*#line 1342.33 "ml.grm"*)Longvid.short vidEqual(*#line 4634.1 "ml.grm.sml"*)
+ in ((*#line 1347.33 "ml.grm"*)Longvid.short vidEqual(*#line 4639.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 69, ( result, vidEqual1left, vidEqual1right), rest671)
 end
 |  ( 334, ( ( _, ( MlyValue.longvidNoEqual longvidNoEqual1, longvidNoEqual1left, longvidNoEqual1right)) :: rest671)) => let val  result = MlyValue.longvid (fn _ => let val  (longvidNoEqual as longvidNoEqual1) = longvidNoEqual1 ()
- in ((*#line 1343.28 "ml.grm"*)longvidNoEqual(*#line 4640.1 "ml.grm.sml"*)
+ in ((*#line 1348.28 "ml.grm"*)longvidNoEqual(*#line 4645.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 68, ( result, longvidNoEqual1left, longvidNoEqual1right), rest671)
 end
 |  ( 335, ( ( _, ( MlyValue.longvidEqual longvidEqual1, longvidEqual1left, longvidEqual1right)) :: rest671)) => let val  result = MlyValue.longvid (fn _ => let val  (longvidEqual as longvidEqual1) = longvidEqual1 ()
- in ((*#line 1344.28 "ml.grm"*)longvidEqual(*#line 4646.1 "ml.grm.sml"*)
+ in ((*#line 1349.28 "ml.grm"*)longvidEqual(*#line 4651.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 68, ( result, longvidEqual1left, longvidEqual1right), rest671)
 end
 |  ( 336, ( ( _, ( MlyValue.vid vid1, vid1left, vid1right)) :: rest671)) => let val  result = MlyValue.con (fn _ => let val  (vid as vid1) = vid1 ()
- in ((*#line 1346.13 "ml.grm"*)Vid.toCon vid(*#line 4652.1 "ml.grm.sml"*)
+ in ((*#line 1351.13 "ml.grm"*)Vid.toCon vid(*#line 4657.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 12, ( result, vid1left, vid1right), rest671)
 end
 |  ( 337, ( ( _, ( MlyValue.longvid longvid1, longvid1left, longvid1right)) :: rest671)) => let val  result = MlyValue.longcon (fn _ => let val  (longvid as longvid1) = longvid1 ()
- in ((*#line 1347.21 "ml.grm"*)Longvid.toLongcon longvid(*#line 4658.1 "ml.grm.sml"*)
+ in ((*#line 1352.21 "ml.grm"*)Longvid.toLongcon longvid(*#line 4663.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 60, ( result, longvid1left, longvid1right), rest671)
 end
 |  ( 338, ( ( _, ( MlyValue.TYVAR TYVAR1, (TYVARleft as TYVAR1left), (TYVARright as TYVAR1right))) :: rest671)) => let val  result = MlyValue.tyvar (fn _ => let val  (TYVAR as TYVAR1) = TYVAR1 ()
- in ((*#line 1349.17 "ml.grm"*)Tyvar.fromSymbol (Symbol.fromString TYVAR, reg (TYVARleft, TYVARright))(*#line 4664.1 "ml.grm.sml"*)
+ in ((*#line 1354.17 "ml.grm"*)Tyvar.fromSymbol (Symbol.fromString TYVAR, reg (TYVARleft, TYVARright))(*#line 4669.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 149, ( result, TYVAR1left, TYVAR1right), rest671)
 end
 |  ( 339, ( ( _, ( MlyValue.shortAlphanumId shortAlphanumId1, shortAlphanumId1left, shortAlphanumId1right)) :: rest671)) => let val  result = MlyValue.tycon (fn _ => let val  (shortAlphanumId as shortAlphanumId1) = shortAlphanumId1 ()
- in ((*#line 1351.27 "ml.grm"*)Tycon.fromSymbol shortAlphanumId(*#line 4670.1 "ml.grm.sml"*)
+ in ((*#line 1356.27 "ml.grm"*)Tycon.fromSymbol shortAlphanumId(*#line 4675.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 144, ( result, shortAlphanumId1left, shortAlphanumId1right), rest671)
 end
 |  ( 340, ( ( _, ( MlyValue.shortSymId shortSymId1, shortSymId1left, shortSymId1right)) :: rest671)) => let val  result = MlyValue.tycon (fn _ => let val  (shortSymId as shortSymId1) = shortSymId1 ()
- in ((*#line 1352.27 "ml.grm"*)Tycon.fromSymbol shortSymId(*#line 4676.1 "ml.grm.sml"*)
+ in ((*#line 1357.27 "ml.grm"*)Tycon.fromSymbol shortSymId(*#line 4681.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 144, ( result, shortSymId1left, shortSymId1right), rest671)
 end
 |  ( 341, ( ( _, ( MlyValue.tycon tycon1, tycon1left, tycon1right)) :: rest671)) => let val  result = MlyValue.longtycon (fn _ => let val  (tycon as tycon1) = tycon1 ()
- in ((*#line 1353.30 "ml.grm"*)Longtycon.short tycon(*#line 4682.1 "ml.grm.sml"*)
+ in ((*#line 1358.30 "ml.grm"*)Longtycon.short tycon(*#line 4687.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 66, ( result, tycon1left, tycon1right), rest671)
 end
 |  ( 342, ( ( _, ( MlyValue.longAlphanumId longAlphanumId1, longAlphanumId1left, longAlphanumId1right)) :: rest671)) => let val  result = MlyValue.longtycon (fn _ => let val  (longAlphanumId as longAlphanumId1) = longAlphanumId1 ()
- in ((*#line 1354.30 "ml.grm"*)Longtycon.fromSymbols longAlphanumId(*#line 4688.1 "ml.grm.sml"*)
+ in ((*#line 1359.30 "ml.grm"*)Longtycon.fromSymbols longAlphanumId(*#line 4693.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 66, ( result, longAlphanumId1left, longAlphanumId1right), rest671)
 end
 |  ( 343, ( ( _, ( MlyValue.shortAlphanumId shortAlphanumId1, shortAlphanumId1left, shortAlphanumId1right)) :: rest671)) => let val  result = MlyValue.idField (fn _ => let val  (shortAlphanumId as shortAlphanumId1) = shortAlphanumId1 ()
- in ((*#line 1356.29 "ml.grm"*)shortAlphanumId(*#line 4694.1 "ml.grm.sml"*)
+ in ((*#line 1361.29 "ml.grm"*)shortAlphanumId(*#line 4699.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 58, ( result, shortAlphanumId1left, shortAlphanumId1right), rest671)
 end
 |  ( 344, ( ( _, ( MlyValue.shortSymId shortSymId1, shortSymId1left, shortSymId1right)) :: rest671)) => let val  result = MlyValue.idField (fn _ => let val  (shortSymId as shortSymId1) = shortSymId1 ()
- in ((*#line 1357.29 "ml.grm"*)shortSymId(*#line 4700.1 "ml.grm.sml"*)
+ in ((*#line 1362.29 "ml.grm"*)shortSymId(*#line 4705.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 58, ( result, shortSymId1left, shortSymId1right), rest671)
 end
-|  ( 345, ( ( _, ( _, (ASTERISKleft as ASTERISK1left), (ASTERISKright as ASTERISK1right))) :: rest671)) => let val  result = MlyValue.idField (fn _ => ((*#line 1358.29 "ml.grm"*)(Symbol.asterisk,
-                             reg (ASTERISKleft, ASTERISKright))(*#line 4706.1 "ml.grm.sml"*)
+|  ( 345, ( ( _, ( _, (ASTERISKleft as ASTERISK1left), (ASTERISKright as ASTERISK1right))) :: rest671)) => let val  result = MlyValue.idField (fn _ => ((*#line 1363.29 "ml.grm"*)(Symbol.asterisk,
+                             reg (ASTERISKleft, ASTERISKright))(*#line 4711.1 "ml.grm.sml"*)
 ))
  in ( LrTable.NT 58, ( result, ASTERISK1left, ASTERISK1right), rest671)
 end
 |  ( 346, ( ( _, ( MlyValue.idField idField1, idField1left, idField1right)) :: rest671)) => let val  result = MlyValue.field (fn _ => let val  (idField as idField1) = idField1 ()
- in ((*#line 1360.29 "ml.grm"*)Field.Symbol (#1 idField)(*#line 4711.1 "ml.grm.sml"*)
+ in ((*#line 1365.29 "ml.grm"*)Field.Symbol (#1 idField)(*#line 4716.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 50, ( result, idField1left, idField1right), rest671)
 end
 |  ( 347, ( ( _, ( MlyValue.numericField numericField1, numericField1left, numericField1right)) :: rest671)) => let val  result = MlyValue.field (fn _ => let val  (numericField as numericField1) = numericField1 ()
- in ((*#line 1361.29 "ml.grm"*)Field.Int (numericField - 1)(*#line 4717.1 "ml.grm.sml"*)
+ in ((*#line 1366.29 "ml.grm"*)Field.Int (numericField - 1)(*#line 4722.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 50, ( result, numericField1left, numericField1right), rest671)
 end
 |  ( 348, ( ( _, ( MlyValue.shortAlphanumId shortAlphanumId1, shortAlphanumId1left, shortAlphanumId1right)) :: rest671)) => let val  result = MlyValue.strid (fn _ => let val  (shortAlphanumId as shortAlphanumId1) = shortAlphanumId1 ()
- in ((*#line 1363.27 "ml.grm"*)Strid.fromSymbol shortAlphanumId(*#line 4723.1 "ml.grm.sml"*)
+ in ((*#line 1368.27 "ml.grm"*)Strid.fromSymbol shortAlphanumId(*#line 4728.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 127, ( result, shortAlphanumId1left, shortAlphanumId1right), rest671)
 end
 |  ( 349, ( ( _, ( MlyValue.strid strid1, strid1left, strid1right)) :: rest671)) => let val  result = MlyValue.longstrid (fn _ => let val  (strid as strid1) = strid1 ()
- in ((*#line 1364.30 "ml.grm"*)Longstrid.short strid(*#line 4729.1 "ml.grm.sml"*)
+ in ((*#line 1369.30 "ml.grm"*)Longstrid.short strid(*#line 4734.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 63, ( result, strid1left, strid1right), rest671)
 end
 |  ( 350, ( ( _, ( MlyValue.longAlphanumId longAlphanumId1, longAlphanumId1left, longAlphanumId1right)) :: rest671)) => let val  result = MlyValue.longstrid (fn _ => let val  (longAlphanumId as longAlphanumId1) = longAlphanumId1 ()
- in ((*#line 1365.30 "ml.grm"*)Longstrid.fromSymbols longAlphanumId(*#line 4735.1 "ml.grm.sml"*)
+ in ((*#line 1370.30 "ml.grm"*)Longstrid.fromSymbols longAlphanumId(*#line 4740.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 63, ( result, longAlphanumId1left, longAlphanumId1right), rest671)
 end
 |  ( 351, ( ( _, ( MlyValue.shortAlphanumId shortAlphanumId1, shortAlphanumId1left, shortAlphanumId1right)) :: rest671)) => let val  result = MlyValue.sigid (fn _ => let val  (shortAlphanumId as shortAlphanumId1) = shortAlphanumId1 ()
- in ((*#line 1367.27 "ml.grm"*)Sigid.fromSymbol shortAlphanumId(*#line 4741.1 "ml.grm.sml"*)
+ in ((*#line 1372.27 "ml.grm"*)Sigid.fromSymbol shortAlphanumId(*#line 4746.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 105, ( result, shortAlphanumId1left, shortAlphanumId1right), rest671)
 end
 |  ( 352, ( ( _, ( MlyValue.shortAlphanumId shortAlphanumId1, shortAlphanumId1left, shortAlphanumId1right)) :: rest671)) => let val  result = MlyValue.fctid (fn _ => let val  (shortAlphanumId as shortAlphanumId1) = shortAlphanumId1 ()
- in ((*#line 1368.27 "ml.grm"*)Fctid.fromSymbol shortAlphanumId(*#line 4747.1 "ml.grm.sml"*)
+ in ((*#line 1373.27 "ml.grm"*)Fctid.fromSymbol shortAlphanumId(*#line 4752.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 49, ( result, shortAlphanumId1left, shortAlphanumId1right), rest671)
 end
 |  ( 353, ( ( _, ( MlyValue.vid vid1, vid1left, vid1right)) :: rest671)) => let val  result = MlyValue.vids (fn _ => let val  (vid as vid1) = vid1 ()
- in ((*#line 1370.33 "ml.grm"*)[vid](*#line 4753.1 "ml.grm.sml"*)
+ in ((*#line 1375.33 "ml.grm"*)[vid](*#line 4758.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 160, ( result, vid1left, vid1right), rest671)
 end
 |  ( 354, ( ( _, ( MlyValue.vids vids1, _, vids1right)) :: ( _, ( MlyValue.vid vid1, vid1left, _)) :: rest671)) => let val  result = MlyValue.vids (fn _ => let val  (vid as vid1) = vid1 ()
  val  (vids as vids1) = vids1 ()
- in ((*#line 1371.33 "ml.grm"*)vid::vids(*#line 4759.1 "ml.grm.sml"*)
+ in ((*#line 1376.33 "ml.grm"*)vid::vids(*#line 4764.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 160, ( result, vid1left, vids1right), rest671)
 end
 |  ( 355, ( ( _, ( MlyValue.sigid sigid1, sigid1left, sigid1right)) :: rest671)) => let val  result = MlyValue.sigids (fn _ => let val  (sigid as sigid1) = sigid1 ()
- in ((*#line 1373.33 "ml.grm"*)[sigid](*#line 4766.1 "ml.grm.sml"*)
+ in ((*#line 1378.33 "ml.grm"*)[sigid](*#line 4771.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 106, ( result, sigid1left, sigid1right), rest671)
 end
 |  ( 356, ( ( _, ( MlyValue.sigids sigids1, _, sigids1right)) :: ( _, ( MlyValue.sigid sigid1, sigid1left, _)) :: rest671)) => let val  result = MlyValue.sigids (fn _ => let val  (sigid as sigid1) = sigid1 ()
  val  (sigids as sigids1) = sigids1 ()
- in ((*#line 1374.33 "ml.grm"*)sigid :: sigids(*#line 4772.1 "ml.grm.sml"*)
+ in ((*#line 1379.33 "ml.grm"*)sigid :: sigids(*#line 4777.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 106, ( result, sigid1left, sigids1right), rest671)
 end
 |  ( 357, ( ( _, ( MlyValue.longstrid longstrid1, longstrid1left, longstrid1right)) :: rest671)) => let val  result = MlyValue.longstrids (fn _ => let val  (longstrid as longstrid1) = longstrid1 ()
- in ((*#line 1376.37 "ml.grm"*)[longstrid](*#line 4779.1 "ml.grm.sml"*)
+ in ((*#line 1381.37 "ml.grm"*)[longstrid](*#line 4784.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 65, ( result, longstrid1left, longstrid1right), rest671)
 end
 |  ( 358, ( ( _, ( MlyValue.longstrids longstrids1, _, longstrids1right)) :: ( _, ( MlyValue.longstrid longstrid1, longstrid1left, _)) :: rest671)) => let val  result = MlyValue.longstrids (fn _ => let val  (longstrid as longstrid1) = longstrid1 ()
  val  (longstrids as longstrids1) = longstrids1 ()
- in ((*#line 1377.37 "ml.grm"*)longstrid :: longstrids(*#line 4785.1 "ml.grm.sml"*)
+ in ((*#line 1382.37 "ml.grm"*)longstrid :: longstrids(*#line 4790.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 65, ( result, longstrid1left, longstrids1right), rest671)

@@ -1,0 +1,10 @@
+ann "allowPrim true" in
+  ann "allowFFI true" in
+    (* prim-basis.mlb *)
+    _prim
+    ../basis-library/primitive/prim-basis.mlb
+    minimal.sml
+  end
+end
+
+
