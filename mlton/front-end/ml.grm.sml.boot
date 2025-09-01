@@ -4145,7 +4145,7 @@ end)
 end
 |  ( 260, ( ( _, ( MlyValue.mode mode1, _, mode1right)) :: _ :: ( _, ( MlyValue.cpat cpat1, cpat1left, _)) :: rest671)) => let val  result = MlyValue.cpatnode (fn _ => let val  (cpat as cpat1) = cpat1 ()
  val  (mode as mode1) = mode1 ()
- in ((*#line 1155.33 "ml.grm"*)Pat.ModeConstraint (cpat, SOME mode)(*#line 4146.1 "ml.grm.sml"*)
+ in ((*#line 1155.33 "ml.grm"*)Pat.ModeConstraint (cpat, mode)(*#line 4146.1 "ml.grm.sml"*)
 )
 end)
  in ( LrTable.NT 20, ( result, cpat1left, mode1right), rest671)
