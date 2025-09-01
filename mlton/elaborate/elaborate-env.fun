@@ -38,6 +38,7 @@ in
    structure Fctid = Fctid
    structure Strid = Strid
    structure Longtycon = Longtycon
+   structure Mode = Mode
    structure Priority = Priority
    structure Sigid = Sigid
    structure Strid = Strid

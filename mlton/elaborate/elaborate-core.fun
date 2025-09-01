@@ -95,6 +95,7 @@ in
    structure Fixop = Fixop
    structure Longtycon = Longtycon
    structure Longvid = Longvid
+   structure Mode = Mode
    structure PrimKind = PrimKind
    structure ImportExportAttribute = PrimKind.ImportExportAttribute
    structure SymbolAttribute = PrimKind.SymbolAttribute

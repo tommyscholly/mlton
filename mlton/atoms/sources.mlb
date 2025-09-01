@@ -64,6 +64,8 @@ local
    var.fun
    func.sig
    label.sig
+   mode.sig
+   mode.fun
    ffi.sig
    ffi.fun
    cases.sig
@@ -90,8 +92,6 @@ local
    type-ops.fun
    hash-type.sig
    hash-type.fun
-   mode.sig
-   mode.fun
 in
    signature ADMITS_EQUALITY
    signature ATOMS
@@ -103,6 +103,7 @@ in
    signature ID
    signature INT_SIZE
    signature LABEL
+   signature MODE
    signature PRIM
    signature PRIM_CONS
    signature PRIM_TYCONS
@@ -120,7 +121,6 @@ in
    signature WORD_X_VECTOR
  
    structure LayoutPretty
-   structure Mode
 
    functor PrimCons
    functor PrimTycons

@@ -12,6 +12,7 @@ signature ELABORATE_ENV_STRUCTS =
       structure Ast: AST
       structure CoreML: CORE_ML
       structure TypeEnv: TYPE_ENV
+      sharing Ast.Mode = Ast.Mode
       sharing Ast.Record = CoreML.Record
       sharing Ast.SortedRecord = CoreML.SortedRecord
       sharing CoreML.Atoms = TypeEnv.Atoms

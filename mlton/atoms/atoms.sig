@@ -101,6 +101,7 @@ signature ATOMS =
       sharing Handler = Atoms.Handler
       sharing IntSize = Atoms.IntSize
       sharing Label = Atoms.Label
+      sharing Mode = Atoms.Mode
       sharing Prim = Atoms.Prim
       sharing Prod = Atoms.Prod
       sharing ProfileExp = Atoms.ProfileExp

@@ -44,11 +44,6 @@ structure Type =
       fun arrow (t1, t2) = Con (Longtycon.arrow, Vector.new2 (t1, t2))
    end
 
-structure Mode =
-   struct
-      open Mode
-   end
-
 structure DatBind = 
    struct
       open DatBind
