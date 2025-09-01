@@ -67,6 +67,8 @@ structure Atoms =
             fun newNoname () = newString "L"
          end
 
+      structure Mode = Mode ()
+
       structure Ffi = Ffi (structure CFunction = CFunction
                            structure CType = CType)
 

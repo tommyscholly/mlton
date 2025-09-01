@@ -1,4 +1,8 @@
-signature Mode =
+signature MODE_STRUCTS =
+   sig
+   end
+
+signature MODE =
    sig
       datatype t = Stack | Heap
       val layout: t -> Layout.t

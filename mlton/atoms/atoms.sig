@@ -30,6 +30,7 @@ signature ATOMS' =
       structure Handler: HANDLER
       structure IntSize: INT_SIZE
       structure Label: LABEL
+      structure Mode: MODE
       structure Prim: PRIM
       structure Prod: PROD
       structure ProfileExp: PROFILE_EXP
@@ -101,6 +102,7 @@ signature ATOMS =
       sharing Handler = Atoms.Handler
       sharing IntSize = Atoms.IntSize
       sharing Label = Atoms.Label
+      sharing Mode = Atoms.Mode
       sharing Prim = Atoms.Prim
       sharing Prod = Atoms.Prod
       sharing ProfileExp = Atoms.ProfileExp

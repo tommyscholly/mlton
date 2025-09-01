@@ -1,5 +1,7 @@
-structure Mode =
+functor Mode (S: MODE_STRUCTS): MODE =
    struct
+      open S
+
       datatype t = Stack | Heap
 
       fun layout m =
