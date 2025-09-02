@@ -1,3 +1,5 @@
+This is a fork of MLton, focusing on implementing a https://dl.acm.org/doi/pdf/10.1145/3674642[modal type system] into SML to support safe stack allocation.
+
 = http://mlton.org[MLton]
 
 ifdef::env-github[]
