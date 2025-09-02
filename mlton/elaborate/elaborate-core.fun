@@ -1027,10 +1027,12 @@ val elaboratePat:
                       Cpat.make (Cpat.Wild, Type.new (), Mode.Heap)
                  | Apat.ModeConstraint (pat, mode) =>
                       let
-                         val p' = loop pat
+                         val pat' = loop pat
+                         val node = Cpat.node pat'
+                         val ty = Cpat.ty pat'
                          (* TODO: constrain to modes *)
                       in
-                         p'
+                         Cpat.make (node, ty, mode)
                       end
              end) arg
          val p' = loop p
@@ -1500,6 +1502,7 @@ local
          ((Cexp.lambda o Lambda.make)
           {arg = getArg,
            argType = Type.unit,
+           argMode = Mode.Heap,
            body = mkFetch {ctypeCbTy = ctypeCbTy,
                            isBool = isBool,
                            expandedCbTy = expandedCbTy,
@@ -1508,6 +1511,7 @@ local
           (Cexp.lambda o Lambda.make)
           {arg = setArg,
            argType = expandedCbTy,
+           argMode = Mode.Heap,
            body = mkStore {ctypeCbTy = ctypeCbTy,
                            isBool = isBool,
                            ptrExp = ptrExp,
@@ -1768,6 +1772,7 @@ in
          wrap ((Cexp.lambda o Lambda.make)
                {arg = ptrArg,
                 argType = expandedPtrTy,
+                argMode = Mode.Heap,
                 body = symExp,
                 mayInline = true},
                elabedTy, Mode.Heap)
@@ -2495,6 +2500,9 @@ fun elaborateDec (d, {env = E, nest}) =
                                 (fbs, fn {clauses, ctxtFb, func, numArgs, regionFb} =>
                                  let
                                     val argTys = Vector.tabulate (numArgs, fn _ => Type.new ())
+                                    (* since unify modifies in place, i'm just
+                                     * using a ref here *)
+                                    val argModes = ref (Vector.tabulate (numArgs, fn _ => Mode.Heap))
                                     val resTy = Type.new ()
                                     val clauses =
                                        Vector.map
@@ -2519,9 +2527,12 @@ fun elaborateDec (d, {env = E, nest}) =
                                                        align [seq [str "argument: ", l2],
                                                               seq [str "previous: ", l1],
                                                               ctxtFb ()]))
+
                                                in
                                                   (pat, binds)
                                                end)
+                                          (* TODO: unify modes? *)
+                                           val _ = argModes := Vector.map2 (!argModes, pats, fn (_, pat) => Cpat.mode pat)
                                            val binds = Vector.concatV (Vector.rev bindss)
                                            val resultType =
                                               Option.map
@@ -2580,8 +2591,10 @@ fun elaborateDec (d, {env = E, nest}) =
                                         {isRebind = false})
                                     val _ =
                                        markFunc var
+
                                  in
                                     {argTys = argTys,
+                                     argModes = argModes,
                                      clauses = clauses,
                                      ctxtFb = ctxtFb,
                                      func = func,
@@ -2592,7 +2605,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                  end)
                              val fbs =
                                 Vector.map
-                                (fbs, fn {argTys, clauses, ctxtFb, func, funTy, regionFb, resTy, var, ...} =>
+                                (fbs, fn {argTys, argModes, clauses, ctxtFb, func, funTy, regionFb, resTy, var, ...} =>
                                  let
                                     val nest = Avar.toString func :: nest
                                     val resultTypeConstraint = Vector.exists (clauses, Option.isSome o #resultType)
@@ -2656,10 +2669,10 @@ fun elaborateDec (d, {env = E, nest}) =
                                             regionPat = regionPats}
                                         end)
                                     val args =
-                                       Vector.map
-                                       (argTys, fn argTy =>
+                                       Vector.map2
+                                       (argTys, !argModes, fn (argTy, argMode) =>
                                          (* TODO: analyze mode here, right now defaulting to Heap *)
-                                        (Var.newNoname (), argTy, Mode.Heap))
+                                        (Var.newNoname (), argTy, argMode))
                                     fun check () =
                                        unify
                                        (Vector.foldr (argTys, resTy, Type.arrow), funTy, fn (l1, l2) =>
@@ -2688,12 +2701,17 @@ fun elaborateDec (d, {env = E, nest}) =
                                         {name = nest,
                                          region = regionFb})
                                     val lambda = Vector.foldr (args, body, fn ((arg, argTy, mode), body) =>
-                                        Cexp.make
-                                            ( Cexp.Lambda (Lambda.make
-                                                {arg = arg, argType = argTy, body = body, mayInline = true}),
-                                                Type.arrow (argTy, Cexp.ty body),
-                                                mode
-                                            ))
+                                      Cexp.make
+                                        ( Cexp.Lambda (Lambda.make
+                                            { arg = arg
+                                            , argType = argTy
+                                            , argMode = mode
+                                            , body = body
+                                            , mayInline = true
+                                            })
+                                        , Type.arrow (argTy, Cexp.ty body)
+                                        , mode
+                                        ))
                                     val lambda =
                                        case Cexp.node lambda of
                                           Cexp.Lambda lambda => lambda
@@ -2989,6 +3007,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                     val lambda =
                                        Lambda.make {arg = arg,
                                                     argType = argType,
+                                                    argMode = Mode.Heap,
                                                     body = body,
                                                     mayInline = true}
                                  in
@@ -3237,6 +3256,7 @@ fun elaborateDec (d, {env = E, nest}) =
                    in
                       Cexp.make (Cexp.Lambda (Lambda.make {arg = arg,
                                                            argType = argType,
+                                                           argMode = Mode.Heap,
                                                            body = body,
                                                            mayInline = true}),
                                  Type.arrow (argType, Cexp.ty body), Mode.Heap)
@@ -3457,6 +3477,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                   (Cexp.lambda o Lambda.make)
                                   {arg = arg,
                                    argType = argType,
+                                   argMode = Mode.Heap,
                                    body = body,
                                    mayInline = true}
                                end
@@ -3646,6 +3667,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                ((Cexp.lambda o Lambda.make)
                                 {arg = fptr,
                                  argType = expandedFPtrTy,
+                                 argMode = Mode.Heap,
                                  body = etaExtraNoWrap {expandedTy = expandedCfTy,
                                                         extra = Vector.new1 fptrArg,
                                                         prim = import

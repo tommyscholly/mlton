@@ -20,8 +20,7 @@ fun maybeConstrain (x, t, m) =
    in
       if !Control.showTypes
          then seq [x, str ": ", Type.layout t, Mode.layout m]
-      (* TODO: just testing *)
-      else seq [x, Mode.layout m]
+      else x
    end
 
 fun layoutTargs (ts: Type.t vector) =
@@ -77,9 +76,9 @@ structure Pat =
                        case arg of
                           NONE => empty
                         | SOME p => seq [str " ", layout p]]
-             | Const f => seq [Const.layout (f ()), Mode.layout m]
+             | Const f => Const.layout (f ())
              | Layered (x, p) =>
-                  seq [maybeConstrain (Var.layout x, t, m), str " as ", layout p, Mode.layout m]
+                  seq [maybeConstrain (Var.layout x, t, m), str " as ", layout p]
              | List ps => list (Vector.toListMap (ps, layout))
              | Or ps => list (Vector.toListMap (ps, layout))
              | Record r =>
@@ -229,6 +228,7 @@ and expNode =
   | Vector of exp vector
 and lambda = Lam of {arg: Var.t,
                      argType: Type.t,
+                     argMode: Mode.t,
                      body: exp,
                      mayInline: bool}
 
@@ -280,7 +280,7 @@ in
                                               (Pat.layout pat, layoutExp exp)),
                           test = layoutExp test}
        | Con (c, targs) => seq [Con.layout c, layoutTargs targs]
-       | Const f => seq [Const.layout (f ()), Mode.layout mode]
+       | Const f => Const.layout (f ())
        | EnterLeave (e, si) =>
             seq [str "EnterLeave ",
                  tuple [layoutExp e, SourceInfo.layout si]]
@@ -313,9 +313,9 @@ in
                        val targs = targs ()
                     in
                        if Vector.isEmpty targs
-                          then seq [Var.layout (var ()), Mode.layout mode]
+                          then Var.layout (var ())
                        else seq [Var.layout (var ()), str " ",
-                                 Vector.layout Type.layout targs, Mode.layout mode]
+                                 Vector.layout Type.layout targs]
                     end
             else Var.layout (var ())
        | Vector es => vector (Vector.map (es, layoutExp))
@@ -325,17 +325,17 @@ in
       else
          align [seq [str "val rec", layoutTyvars (tyvars ())],
                 indent (align (Vector.toListMap
-                               (decs, fn {lambda as Lam {argType, body = Exp {ty = bodyType, ...}, ...}, var} =>
+                               (decs, fn {lambda as Lam {argType, argMode, body = Exp {ty = bodyType, ...}, ...}, var} =>
                                 align [seq [
                                     (*TODO: fix mode heap and formatting here *)
-                                    maybeConstrain (Var.layout var, Type.arrow (argType, bodyType), Mode.Heap), 
+                                    maybeConstrain (Var.layout var, Type.arrow (argType, bodyType), argMode), 
                                     str " = "],
                                  indent (layoutLambda lambda, 3)])),
                         3)]
-   and layoutLambda (Lam {arg, argType, body, ...}) =
+   and layoutLambda (Lam {arg, argType, argMode, body, ...}) =
       paren (align [seq [str "fn ", 
                          (*TODO: fix mode heap *)
-                         maybeConstrain (Var.layout arg, argType, Mode.Heap),
+                         maybeConstrain (Var.layout arg, argType, argMode),
                          str " =>"],
                     layoutExp body])
 
@@ -359,6 +359,7 @@ structure Lambda =
 
       val bogus = make {arg = Var.newNoname (),
                         argType = Type.unit,
+                        argMode = Mode.Heap,
                         body = Exp {node = Seq (Vector.new0 ()),
                                     ty = Type.unit,
                                     mode = Mode.Heap},
@@ -481,6 +482,7 @@ structure Exp =
                Lambda.make
                {arg = Var.newNoname (),
                 argType = Type.unit,
+                argMode = Mode.Heap,
                 body = iff (test,
                             (* TODO: same as above *)
                             make (Seq (Vector.new2 (expr, call)),
@@ -605,8 +607,8 @@ structure Dec =
                                              nest = nest,
                                              pat = pat,
                                              regionPat = regionPat})}
-            and loopLambda (Lam {arg, argType, body, mayInline}) =
-               Lam {arg = arg, argType = argType, body = loopExp body, mayInline = mayInline}
+            and loopLambda (Lam {arg, argType, argMode, body, mayInline}) =
+               Lam {arg = arg, argType = argType, argMode = argMode, body = loopExp body, mayInline = mayInline}
          in
             loopDec d
          end

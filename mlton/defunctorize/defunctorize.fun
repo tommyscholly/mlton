@@ -1095,7 +1095,8 @@ fun defunctorize (CoreML.Program.T {decs}) =
          end
       and loopLambda (l: Clambda.t) =
          let
-            val {arg, argType, body, mayInline} = Clambda.dest l
+            (* TODO: handle arg mode here *)
+            val {arg, argType, argMode, body, mayInline} = Clambda.dest l
             val (body, bodyType) = loopExp body
          in
             {arg = arg,

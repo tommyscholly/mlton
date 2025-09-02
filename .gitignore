@@ -2,3 +2,4 @@
 /build/
 /install/
 mlton-*.tgz
+*.parseAndElaborate.post.core-ml

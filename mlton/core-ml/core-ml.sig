@@ -58,6 +58,7 @@ signature CORE_ML =
             val isWild: t -> bool
             val layout: t -> Layout.t
             val make: node * Type.t * Mode.t -> t
+            val mode: t -> Mode.t
             val node: t -> node
             val var: Var.t * Type.t * Mode.t -> t
             val truee: t
@@ -129,6 +130,7 @@ signature CORE_ML =
             val layout: t -> Layout.t
             val layoutWithType: t -> Layout.t
             val make: node * Type.t * Mode.t -> t
+            val mode: t -> Mode.t
             val node: t -> node
             val orElse: t * t -> t
             val truee: t
@@ -146,10 +148,12 @@ signature CORE_ML =
             val bogus: t
             val dest: t -> {arg: Var.t,
                             argType: Type.t,
+                            argMode: Mode.t,
                             body: Exp.t,
                             mayInline: bool}
             val make: {arg: Var.t,
                        argType: Type.t,
+                       argMode: Mode.t,
                        body: Exp.t,
                        mayInline: bool} -> t
          end
