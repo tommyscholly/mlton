@@ -168,7 +168,7 @@ structure Pat =
              | Var {name, fixop} => seq [Fixop.layout fixop, layoutLongvid name]
              | Vector ps => vector (Vector.map (ps, layoutT))
              | Wild => str "_"
-             | ModeConstraint (p, m) => delimit (seq [layoutF p, str " :- ", Mode.layout m])
+             | ModeConstraint (p, m) => delimit (seq [layoutF p, Mode.layout m])
          end
       and layoutF p = layout (p, false)
       and layoutT p = layout (p, true)

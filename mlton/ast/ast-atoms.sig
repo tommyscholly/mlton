@@ -14,7 +14,6 @@ signature AST_ATOMS_STRUCTS =
       structure IntSize: INT_SIZE
       structure Mode: MODE
       structure RealSize: REAL_SIZE
-      structure Mode: MODE
       structure Record: RECORD
       structure SortedRecord: RECORD
       structure Symbol: SYMBOL

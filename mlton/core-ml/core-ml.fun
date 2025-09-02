@@ -14,12 +14,12 @@ open S
 
 structure Field = Record.Field
 
-fun maybeConstrain (x, t) =
+fun maybeConstrain (x, t, m) =
    let
       open Layout
    in
       if !Control.showTypes
-         then seq [x, str ": ", Type.layout t]
+         then seq [x, str ": ", Type.layout t, Mode.layout m]
       else x
    end
 
@@ -76,9 +76,9 @@ structure Pat =
                        case arg of
                           NONE => empty
                         | SOME p => seq [str " ", layout p]]
-             | Const f => seq [Const.layout (f ()), str " :- ", Mode.layout m]
+             | Const f => seq [Const.layout (f ()), Mode.layout m]
              | Layered (x, p) =>
-                  seq [maybeConstrain (Var.layout x, t), str " as ", layout p]
+                  seq [maybeConstrain (Var.layout x, t, m), str " as ", layout p]
              | List ps => list (Vector.toListMap (ps, layout))
              | Or ps => list (Vector.toListMap (ps, layout))
              | Record r =>
@@ -95,7 +95,7 @@ structure Pat =
                       record = r,
                       separator = " = "}
                   end
-             | Var x => maybeConstrain (Var.layout x, t)
+             | Var x => maybeConstrain (Var.layout x, t, m)
              | Vector ps => vector (Vector.map (ps, layout))
              | Wild => str "_"
          end
@@ -270,7 +270,7 @@ in
                                                str " ", Pat.layout pat,
                                                str " ="],
                                           layoutExp exp]]))]
-   and layoutExp (Exp {node, ...}) =
+   and layoutExp (Exp {node, mode, ...}) =
       case node of
          App (e1, e2) => paren (seq [layoutExp e1, str " ", layoutExp e2])
        | Case {rules, test, ...} =>
@@ -279,7 +279,7 @@ in
                                               (Pat.layout pat, layoutExp exp)),
                           test = layoutExp test}
        | Con (c, targs) => seq [Con.layout c, layoutTargs targs]
-       | Const f => Const.layout (f ())
+       | Const f => seq [Const.layout (f ()), Mode.layout mode]
        | EnterLeave (e, si) =>
             seq [str "EnterLeave ",
                  tuple [layoutExp e, SourceInfo.layout si]]
@@ -312,9 +312,9 @@ in
                        val targs = targs ()
                     in
                        if Vector.isEmpty targs
-                          then Var.layout (var ())
+                          then seq [Var.layout (var ()), Mode.layout mode]
                        else seq [Var.layout (var ()), str " ",
-                                 Vector.layout Type.layout targs]
+                                 Vector.layout Type.layout targs, Mode.layout mode]
                     end
             else Var.layout (var ())
        | Vector es => vector (Vector.map (es, layoutExp))
@@ -325,21 +325,25 @@ in
          align [seq [str "val rec", layoutTyvars (tyvars ())],
                 indent (align (Vector.toListMap
                                (decs, fn {lambda as Lam {argType, body = Exp {ty = bodyType, ...}, ...}, var} =>
-                                align [seq [maybeConstrain (Var.layout var, Type.arrow (argType, bodyType)), str " = "],
-                                       indent (layoutLambda lambda, 3)])),
+                                align [seq [
+                                    (*TODO: fix mode heap and formatting here *)
+                                    maybeConstrain (Var.layout var, Type.arrow (argType, bodyType), Mode.Heap), 
+                                    str " = "],
+                                 indent (layoutLambda lambda, 3)])),
                         3)]
    and layoutLambda (Lam {arg, argType, body, ...}) =
       paren (align [seq [str "fn ", 
-                         maybeConstrain (Var.layout arg, argType),
+                         (*TODO: fix mode heap *)
+                         maybeConstrain (Var.layout arg, argType, Mode.Heap),
                          str " =>"],
                     layoutExp body])
 
-   fun layoutExpWithType (exp as Exp {ty, ...}) =
+   fun layoutExpWithType (exp as Exp {ty, mode, ...}) =
       let
          val node = layoutExp exp
       in
          if !Control.showTypes
-            then seq [node, str " : ", Type.layout ty]
+            then seq [node, str " : ", Type.layout ty, Mode.layout mode]
          else node
       end
 end
