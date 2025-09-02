@@ -20,7 +20,8 @@ fun maybeConstrain (x, t, m) =
    in
       if !Control.showTypes
          then seq [x, str ": ", Type.layout t, Mode.layout m]
-      else x
+      (* TODO: just testing *)
+      else seq [x, Mode.layout m]
    end
 
 fun layoutTargs (ts: Type.t vector) =
@@ -78,7 +79,7 @@ structure Pat =
                         | SOME p => seq [str " ", layout p]]
              | Const f => seq [Const.layout (f ()), Mode.layout m]
              | Layered (x, p) =>
-                  seq [maybeConstrain (Var.layout x, t, m), str " as ", layout p]
+                  seq [maybeConstrain (Var.layout x, t, m), str " as ", layout p, Mode.layout m]
              | List ps => list (Vector.toListMap (ps, layout))
              | Or ps => list (Vector.toListMap (ps, layout))
              | Record r =>

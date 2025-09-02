@@ -6,8 +6,8 @@ functor Mode (S: MODE_STRUCTS): MODE =
 
       fun layout m =
          Layout.str (case m of
-                        Stack => ":- stack"
-                      | Heap => ":- heap")
+                        Stack => " :- stack"
+                      | Heap => " :- heap")
 
       fun equals (m1, m2) =
          case (m1, m2) of
