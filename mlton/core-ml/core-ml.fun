@@ -65,7 +65,6 @@ structure Pat =
       fun layout p =
          let
             val t = ty p
-            (* TODO: add mode *)
             val m = mode p
             open Layout
          in
@@ -107,12 +106,13 @@ structure Pat =
       fun tuple ps =
          if 1 = Vector.length ps
             then Vector.first ps
-            (* TODO: check the mode *)
-            else make (
-                Record (Record.tuple ps), 
-                Type.tuple (Vector.map (ps, ty)), 
-                Mode.Heap
-            )
+            else let
+               val mode = Vector.fold (ps, Mode.Stack, fn (p, m) => Mode.join (m, mode p))
+            in
+               make (Record (Record.tuple ps), 
+                     Type.tuple (Vector.map (ps, ty)), 
+                     mode)
+            end
 
       local
          fun bool c = make (Con {arg = NONE, con = c, targs = Vector.new0 ()},
@@ -418,16 +418,17 @@ structure Exp =
       fun tuple es =
          if 1 = Vector.length es
             then Vector.first es
-         (* TODO: analyze mode here, right now defaulting to Heap *)
-         else make (Record (Record.tuple es),
-                    Type.tuple (Vector.map (es, ty)), Mode.Heap)
+         else let
+            val mode = Vector.fold (es, Mode.Stack, fn (e, m) => Mode.join (m, mode e))
+         in
+            make (Record (Record.tuple es),
+                  Type.tuple (Vector.map (es, ty)), mode)
+         end
 
       val unit = tuple (Vector.new0 ())
 
       local
-         (* TODO: analyze mode here, right now defaulting to Heap *)
-         (* Personally, an "aggressive" optimization could default all bools to
-         * stack *)
+         (* TODO: an "aggressive" optimization could default all bools to stack *)
          fun bool c = make (Con (c, Vector.new0 ()), Type.bool, Mode.Heap)
       in
          val falsee: t = bool Con.falsee
@@ -435,17 +436,19 @@ structure Exp =
       end
 
       fun lambda (l as Lam {argType, body, ...}) =
-         (* TODO: lambdas should probably always be heap allocated, but still
-         * need to review *)
+         (* Lambdas are always heap-allocated because they can escape the scope
+          * in which they are defined. *)
          make (Lambda l, Type.arrow (argType, ty body), Mode.Heap)
 
       fun casee (z as {rules, ...}) =
          if Vector.isEmpty rules
             then Error.bug "CoreML.Exp.casee"
          else 
-            (* TODO: analyze mode here, right now defaulting to Heap *)
-            (* the mode possibly constrainted within the pattern should be used *)
-            make (Case z, ty (#exp (Vector.first rules)), Mode.Heap)
+            let
+               val mode = Vector.fold (rules, Mode.Stack, fn ({exp, ...}, m) => Mode.join (m, mode exp))
+            in
+               make (Case z, ty (#exp (Vector.first rules)), mode)
+            end
 
       fun iff (test, thenCase, elseCase): t =
          casee {ctxt = fn () => Layout.empty,
@@ -474,29 +477,26 @@ structure Exp =
          let
             val loop = Var.newNoname ()
             val loopTy = Type.arrow (Type.unit, Type.unit)
-            (* TODO: analyze mode here, right now defaulting to Heap *)
-            (* i think i need to understand more of what is happening here, but
-             * initially i dont see how this could ever be stack allocated *)
-            val call = make (App (var (loop, loopTy, Mode.Heap), unit), Type.unit, Mode.Heap)
+            (* TODO: is this join correct? *)
+            val mode = Mode.join (mode expr, mode test)
+            val call = make (App (var (loop, loopTy, mode), unit), Type.unit, mode)
             val lambda =
                Lambda.make
                {arg = Var.newNoname (),
                 argType = Type.unit,
-                argMode = Mode.Heap,
+                argMode = mode,
                 body = iff (test,
-                            (* TODO: same as above *)
                             make (Seq (Vector.new2 (expr, call)),
-                                  Type.unit, Mode.Heap),
+                                  Type.unit, mode),
                             unit),
                 mayInline = true}
          in
-            (* TODO: same as above *)
             make
             (Let (Vector.new1 (Fun {decs = Vector.new1 {lambda = lambda,
                                                         var = loop},
                                     tyvars = fn () => Vector.new0 ()}),
                   call),
-             Type.unit, Mode.Heap)
+             Type.unit, mode)
          end
 
       fun foreachVar (e: t, f: Var.t -> unit): unit =
@@ -544,11 +544,7 @@ structure Dec =
          let
             fun loopExp e =
                let
-                  (* TODO: eventually replace all mkMode with mk that takes in a
-                  * mode *)
-                  fun mk node = Exp.make (node, Exp.ty e, Mode.Heap)
-
-                  fun mkMode node m = Exp.make (node, Exp.ty e, m)
+                  fun mk node = Exp.make (node, Exp.ty e, Exp.mode e)
                in
                   case Exp.node e of
                      App (e1, e2) => mk (App (loopExp e1, loopExp e2))

@@ -604,7 +604,8 @@ structure DiagUtils =
       type t = {layoutPrettyType: Type.t -> LayoutPretty.t,
                 layoutPrettyTycon: Tycon.t -> Layout.t,
                 layoutPrettyTyvar: Tyvar.t -> Layout.t,
-                unify: Type.t * Type.t * (Layout.t * Layout.t -> Region.t * Layout.t * Layout.t) -> unit}
+                unify: Type.t * Type.t * (Layout.t * Layout.t -> Region.t * Layout.t * Layout.t) -> unit,
+                unifyModes: Mode.t * Mode.t * (Layout.t * Layout.t -> Region.t * Layout.t * Layout.t) -> unit}
       fun make E : t =
          let
             val {layoutPrettyTycon, ...} =
@@ -632,11 +633,21 @@ structure DiagUtils =
                            layoutPrettyTycon = layoutPrettyTycon,
                            layoutPrettyTyvar = layoutPrettyTyvar})
                end
+            fun unifyModes (m, m', error) =
+                if Mode.subsumes(m, m') then
+                    ()
+                else
+                    let
+                        val (r, msg, d) = error (Mode.layout m, Mode.layout m')
+                    in
+                        Control.error(r, msg, d)
+                    end
          in
             {layoutPrettyType = layoutPrettyType,
              layoutPrettyTycon = layoutPrettyTycon,
              layoutPrettyTyvar = layoutPrettyTyvar,
-             unify = unify}
+             unify = unify,
+             unifyModes = unifyModes}
          end
    end
 
@@ -647,10 +658,14 @@ val elaboratePat:
    fn () =>
    let
       val others: (Apat.t * (Avar.t * Var.t * Type.t) vector) list ref = ref []
+      fun inferMode (expectedMode: Mode.t): Mode.t =
+         case expectedMode of
+            Mode.Undetermined => Mode.Heap
+          | _ => expectedMode
    in
       fn (p: Apat.t, E: Env.t, {bind = bindInEnv, isRvb}) =>
       let
-         val {layoutPrettyType, unify, ...} = DiagUtils.make E
+         val {layoutPrettyType, unify, unifyModes, ...} = DiagUtils.make E
          fun ctxtTop () =
             seq [str "in: ", approximate (Apat.layout p)]
          val rename =
@@ -694,7 +709,7 @@ val elaboratePat:
             end
          fun elabType (t: Atype.t): Type.t =
             elaborateType (t, E, {bogusAsUnknown = true})
-         fun loop (arg: Apat.t) =
+         fun loop (arg: Apat.t, expectedMode: Mode.t) =
             Trace.traceInfo' (elabPatInfo, Apat.layout, Cpat.layout)
             (fn (p: Apat.t) =>
              let
@@ -726,7 +741,7 @@ val elaboratePat:
                              let
                                 val {args, instance} = Scheme.instantiate s
                                 val args = args ()
-                                val p = loop p
+                                val p = loop (p, Mode.Undetermined)
                                 val (argType, resultType) =
                                    case Type.deArrowOpt instance of
                                       SOME types => types
@@ -755,8 +770,7 @@ val elaboratePat:
                                 Cpat.make (Cpat.Con {arg = SOME p,
                                                      con = con,
                                                      targs = args},
-                                           (* TODO: check the mode *)
-                                           resultType, Mode.Heap)
+                                           resultType, Cpat.mode p)
                              end)
                  | Apat.Const c =>
                       elabConst
@@ -767,7 +781,7 @@ val elaboratePat:
                         true = Cpat.truee})
                  | Apat.Constraint (p, t) =>
                       let
-                         val p' = loop p
+                         val p' = loop (p, expectedMode)
                          val _ =
                             unifyPatternConstraint
                             (Cpat.ty p', elabType t)
@@ -776,7 +790,7 @@ val elaboratePat:
                       end
                  | Apat.FlatApp items =>
                       loop (Parse.parsePat
-                            (items, E, fn () => ctxt ()))
+                            (items, E, fn () => ctxt ()), expectedMode)
                  | Apat.Layered {var = x, constraint, pat, ...} =>
                       let
                          val t =
@@ -798,7 +812,7 @@ val elaboratePat:
                                   in
                                      Var.fromAst x
                                   end
-                         val pat' = loop pat
+                         val pat' = loop (pat, inferMode expectedMode)
                          val _ =
                             unifyPatternConstraint (Cpat.ty pat', t)
                       in
@@ -807,13 +821,13 @@ val elaboratePat:
                       end
                  | Apat.List ps =>
                       let
-                         val ps' = Vector.map (ps, loop)
+                         val ps' = Vector.map (ps, fn p => loop (p, Mode.Undetermined))
                       in
                          Cpat.make (Cpat.List ps',
                                     unifyList
                                     (Vector.map2 (ps, ps', fn (p, p') =>
                                                   (Cpat.ty p', Apat.region p)),
-                                     unify), Mode.Heap)
+                                     unify), inferMode expectedMode)
                       end
                  | Apat.Or ps =>
                       let
@@ -825,7 +839,7 @@ val elaboratePat:
                             (ps, fn p =>
                              let
                                 val _ = xts := []
-                                val p' = loop p
+                                val p' = loop (p, expectedMode)
                              in
                                 (p, p', !xts)
                              end)
@@ -899,9 +913,9 @@ val elaboratePat:
                          val _ = xts := xtsMerge
                       in
                          (* TODO: check the mode *)
-                         Cpat.make (Cpat.Or ps', t, Mode.Heap)
+                         Cpat.make (Cpat.Or ps', t, inferMode expectedMode)
                       end
-                 | Apat.Paren p => loop p
+                 | Apat.Paren p => loop (p, expectedMode)
                  | Apat.Record {flexible, items} =>
                       (* rules 36, 38, 39 and Appendix A, p.57 *)
                       let
@@ -930,7 +944,7 @@ val elaboratePat:
                                            NONE => p
                                          | SOME ty => Apat.constraint (p, ty)
                                      end)))
-                         val ps = Vector.map (ps, loop)
+                         val ps = Vector.map (ps, fn p => loop (p, Mode.Undetermined))
                          val r = SortedRecord.zip (fs, Vector.map (ps, Cpat.ty))
                          val ty =
                             if flexible
@@ -955,10 +969,10 @@ val elaboratePat:
                          (* TODO: check the mode *)
                          Cpat.make
                          (Cpat.Record (Record.fromVector (Vector.zip (fs, ps))),
-                          ty, Mode.Heap)
+                          ty, inferMode expectedMode)
                       end
                  | Apat.Tuple ps =>
-                      Cpat.tuple (Vector.map (ps, loop))
+                      Cpat.tuple (Vector.map (ps, fn p => loop (p, Mode.Undetermined)))
                  | Apat.Var {name, ...} =>
                       let
                          val (strids, x) = Ast.Longvid.split name
@@ -967,7 +981,7 @@ val elaboratePat:
                                val (x, t) = bind (Ast.Vid.toVar x)
                             in
                                (* TODO: check the mode *)
-                               Cpat.make (Cpat.Var x, t, Mode.Heap)
+                               Cpat.make (Cpat.Var x, t, inferMode expectedMode)
                             end
                       in
                          case Env.peekLongcon (E, Ast.Longvid.toLongcon name) of
@@ -983,8 +997,7 @@ val elaboratePat:
                                               Ast.Longvid.layout name],
                                          empty)
                                   in
-                                     (* TODO: check the mode *)
-                                     Cpat.make (Cpat.Wild, Type.new (), Mode.Heap)
+                                     Cpat.make (Cpat.Wild, Type.new (), inferMode expectedMode)
                                   end
                           | SOME (c, s) =>
                                if List.isEmpty strids andalso isRvb
@@ -1006,36 +1019,38 @@ val elaboratePat:
                                           (Cpat.Con {arg = NONE,
                                                      con = c,
                                                      targs = args ()},
-                                           (* TODO: check the mode *)
-                                           instance, Mode.Heap)
+                                           instance, inferMode expectedMode)
                                     end
                       end
                  | Apat.Vector ps =>
                       let
                          val _ = check (ElabControl.allowVectorPats, "Vector patterns", Apat.region p)
-                         val ps' = Vector.map (ps, loop)
+                         val ps' = Vector.map (ps, fn p => loop (p, Mode.Undetermined))
                       in
                          Cpat.make (Cpat.Vector ps',
                                     unifyVector
                                     (Vector.map2 (ps, ps', fn (p, p') =>
                                                   (Cpat.ty p', Apat.region p)),
-                                     (* TODO: check the mode *)
-                                     unify), Mode.Heap)
+                                     unify), inferMode expectedMode)
                       end
                  | Apat.Wild =>
                        (* TODO: check the mode *)
-                      Cpat.make (Cpat.Wild, Type.new (), Mode.Heap)
+                      Cpat.make (Cpat.Wild, Type.new (), inferMode expectedMode)
                  | Apat.ModeConstraint (pat, mode) =>
                       let
-                         val pat' = loop pat
+                         val pat' = loop (pat, mode)
+                         val _ = unifyModes (expectedMode, mode, fn (l, l') =>
+                             (Apat.region pat,
+                              str "mode constraint mismatch",
+                              align [seq [str "expected: ", l],
+                                     seq [str "found:    ", l']]))
                          val node = Cpat.node pat'
                          val ty = Cpat.ty pat'
-                         (* TODO: constrain to modes *)
                       in
                          Cpat.make (node, ty, mode)
                       end
              end) arg
-         val p' = loop p
+         val p' = loop (p, (Mode.Undetermined))
          val xts = Vector.fromList (!xts)
          val _ =
             Vector.foreach
@@ -3114,7 +3129,7 @@ fun elaborateDec (d, {env = E, nest}) =
          (fn (e: Aexp.t, nest, maybeName, modeConstraint: Mode.t) =>
           let
              fun elab e = elabExp (e, nest, NONE, modeConstraint)
-             val {layoutPrettyType, layoutPrettyTycon, layoutPrettyTyvar, unify} =
+             val {layoutPrettyType, layoutPrettyTycon, layoutPrettyTyvar, unify, unifyModes} =
                 DiagUtils.make E
              val layoutPrettyTypeBracket = fn ty =>
                 seq [str "[", #1 (layoutPrettyType ty), str "]"]
