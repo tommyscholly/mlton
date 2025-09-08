@@ -8,5 +8,5 @@ signature MODE =
       val layout: t -> Layout.t
       val equals: t * t -> bool
       val join: t * t -> t
-      val subsumes: t * t -> bool
+      val subsumes: t * t -> t option
    end

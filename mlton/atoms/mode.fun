@@ -2,13 +2,13 @@ functor Mode (S: MODE_STRUCTS): MODE =
    struct
       open S
 
-      datatype t = Stack | Heap | Undetermined
+      datatype t = Stack | Heap | Undetermined (* expand this to support more modes *)
 
       fun layout m =
          Layout.str (case m of
                         Stack => " :- stack"
                       | Heap => " :- heap"
-                      | Undetermined => "")
+                      | Undetermined => " :- undetermined")
 
       fun equals (m1, m2) =
          case (m1, m2) of
@@ -27,10 +27,13 @@ functor Mode (S: MODE_STRUCTS): MODE =
 
       fun subsumes (parent, child) =
          case (parent, child) of
-            (_, Undetermined) => true
-          | (Stack, _) => true
-          | (Heap, Heap) => true
-          | (Undetermined, _) => false
-          | (Heap, Stack) => false
+            (m, Undetermined) => SOME m
+          (* if the parent is undetermined, it takes the mode of the child *)
+          | (Undetermined, m) => SOME m
+          (* an expression in stack mode can contain heap mode data *)
+          | (Stack, Heap) => SOME Heap
+          | (Heap, Stack) => NONE
+          | (Heap, Heap) => SOME Heap
+          | (Stack, Stack) => SOME Stack
 
    end

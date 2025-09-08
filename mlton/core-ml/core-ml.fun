@@ -313,7 +313,7 @@ in
                        val targs = targs ()
                     in
                        if Vector.isEmpty targs
-                          then Var.layout (var ())
+                          then seq [Var.layout (var ()), Mode.layout mode]
                        else seq [Var.layout (var ()), str " ",
                                  Vector.layout Type.layout targs]
                     end
