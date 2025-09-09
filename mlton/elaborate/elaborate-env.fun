@@ -1370,7 +1370,7 @@ structure Structure =
                          plist: PropertyList.t,
                          strs: (Ast.Strid.t, t) Info.t,
                          types: (Ast.Tycon.t, TypeStr.t) Info.t,
-                         vals: (Ast.Vid.t, Vid.t * Scheme.t) Info.t}
+                         vals: (Ast.Vid.t, Vid.t * Scheme.t * Mode.t) Info.t}
 
       val ffi: t option ref = ref NONE
 
@@ -1386,7 +1386,7 @@ structure Structure =
          [("interface", Option.layout Interface.layout interface),
           ("types", Info.layout (Ast.Tycon.layout, TypeStr.layout) types),
           ("vals", (Info.layout (Ast.Vid.layout,
-                                 Layout.tuple2 (Vid.layout, Scheme.layout))
+                                 Layout.tuple3 (Vid.layout, Scheme.layout, Mode.layout))
                     vals)),
           ("strs", Info.layout (Strid.layout, layout) strs)]
 
@@ -1416,7 +1416,7 @@ structure Structure =
          fun make (from, de) (S, x) =
             case peekVid (S, from x) of
                NONE => NONE
-             | SOME (vid, s) => Option.map (de vid, fn z => (z, s))
+             | SOME (vid, s, m) => Option.map (de vid, fn z => (z, s, m))
       in
          val peekCon = make (Ast.Vid.fromCon, Vid.deCon)
          val peekExn = make (Ast.Vid.fromCon, Vid.deExn)
@@ -1486,7 +1486,7 @@ structure Structure =
                                (name, Interface.TypeStr.fromEnv strStr))
                            val vals =
                               doit
-                              (vals, fn {domain = name, range = (strVid, strScheme), ...} =>
+                              (vals, fn {domain = name, range = (strVid, strScheme, _), ...} =>
                                (name, (Status.fromVid strVid, Interface.Scheme.fromEnv strScheme)))
                            val strs =
                               doit
@@ -1688,7 +1688,8 @@ structure Structure =
                                | Status.Var => Vid.Var (var name)
                         in
                            {domain = name,
-                            range = (vid, Interface.Scheme.toEnv scheme),
+                            (* todo: evaluate *)
+                            range = (vid, Interface.Scheme.toEnv scheme, Mode.Undetermined),
                             time = time,
                             uses = Uses.new ()}
                         end)
@@ -1764,7 +1765,7 @@ structure Basis =
                          sigs: (Ast.Sigid.t, Interface.t) Info.t,
                          strs: (Ast.Strid.t, Structure.t) Info.t,
                          types: (Ast.Tycon.t, TypeStr.t) Info.t,
-                         vals: (Ast.Vid.t, Vid.t * Scheme.t) Info.t}
+                         vals: (Ast.Vid.t, Vid.t * Scheme.t * Mode.t) Info.t}
 
       fun layout (T {bass, fcts, sigs, strs, types, vals, ...}) =
          Layout.record
@@ -1773,7 +1774,7 @@ structure Basis =
           ("sigs", Info.layout (Ast.Sigid.layout, Interface.layout) sigs),
           ("strs", Info.layout (Ast.Strid.layout, Structure.layout) strs),
           ("types", Info.layout (Ast.Tycon.layout, TypeStr.layout) types),
-          ("vals", (Info.layout (Ast.Vid.layout, Layout.tuple2 (Vid.layout, Scheme.layout)) vals))]
+          ("vals", (Info.layout (Ast.Vid.layout, Layout.tuple3 (Vid.layout, Scheme.layout, Mode.layout)) vals))]
    end
 
 (* ------------------------------------------------- *)
@@ -2026,7 +2027,7 @@ structure All =
        | Sig of (Sigid.t, Interface.t) Values.t
        | Str of (Strid.t, Structure.t) Values.t
        | Tyc of (Ast.Tycon.t, TypeStr.t) Values.t
-       | Val of (Ast.Vid.t, Vid.t * Scheme.t) Values.t
+       | Val of (Ast.Vid.t, Vid.t * Scheme.t * Mode.t) Values.t
 
       val basOpt = fn Bas z => SOME z | _ => NONE
       val fctOpt = fn Fct z => SOME z | _ => NONE
@@ -2052,7 +2053,7 @@ datatype t =
          sigs: (Ast.Sigid.t, Interface.t) NameSpace.t,
          strs: (Ast.Strid.t, Structure.t) NameSpace.t,
          types: (Ast.Tycon.t, TypeStr.t) NameSpace.t,
-         vals: (Ast.Vid.t, Vid.t * Scheme.t) NameSpace.t}
+         vals: (Ast.Vid.t, Vid.t * Scheme.t * Mode.t) NameSpace.t}
 
 fun sizeMessage (E: t): Layout.t =
    let
@@ -2336,20 +2337,20 @@ in
    fun peekVar (E, x) =
       case peekVid (E, Ast.Vid.fromVar x) of
          NONE => NONE
-       | SOME (vid, s) => Option.map (Vid.deVar vid, fn x => (x, s))
+       | SOME (vid, s, m) => Option.map (Vid.deVar vid, fn x => (x, s, m))
 end
 
-fun peekCon (T {vals, ...}, c: Ast.Con.t): (Con.t * Scheme.t) option =
+fun peekCon (T {vals, ...}, c: Ast.Con.t): (Con.t * Scheme.t * Mode.t) option =
    case NameSpace.peek (vals, Ast.Vid.fromCon c,
-                        {markUse = fn (vid, _) => isSome (Vid.deCon vid)}) of
+                        {markUse = fn (vid, _, _) => isSome (Vid.deCon vid)}) of
       NONE => NONE
-    | SOME (vid, s) => Option.map (Vid.deCon vid, fn c => (c, s))
+    | SOME (vid, s, m) => Option.map (Vid.deCon vid, fn c => (c, s, m))
 
-fun peekExn (T {vals, ...}, c: Ast.Con.t): (Con.t * Scheme.t) option =
+fun peekExn (T {vals, ...}, c: Ast.Con.t): (Con.t * Scheme.t * Mode.t) option =
    case NameSpace.peek (vals, Ast.Vid.fromCon c,
-                        {markUse = fn (vid, _) => isSome (Vid.deExn vid)}) of
+                        {markUse = fn (vid, _, _) => isSome (Vid.deExn vid)}) of
       NONE => NONE
-    | SOME (vid, s) => Option.map (Vid.deExn vid, fn c => (c, s))
+    | SOME (vid, s, m) => Option.map (Vid.deExn vid, fn c => (c, s, m))
 
 structure PeekResult =
    struct
@@ -2515,7 +2516,7 @@ in
                      Vector.foreach
                      (Cons.dest cons, fn {con, name, scheme, uses} =>
                       extendVals (E, Ast.Vid.fromCon name,
-                                  (Vid.Con con, scheme),
+                                  (Vid.Con con, scheme, Mode.Undetermined),
                                   Uses.Extend.old uses))
                 | _ => ()
             end
@@ -2527,23 +2528,23 @@ in
       end
 end
 
-fun extendExn (E, c, c', s) =
-   extendVals (E, Ast.Vid.fromCon c, (Vid.Exn c', s), Uses.Extend.new)
+fun extendExn (E, c, c', s, mode) =
+   extendVals (E, Ast.Vid.fromCon c, (Vid.Exn c', s, mode), Uses.Extend.new)
 
-fun extendVar (E, x, x', s, ir) =
-   extendVals (E, Ast.Vid.fromVar x, (Vid.Var x', s),
+fun extendVar (E, x, x', s, mode, ir) =
+   extendVals (E, Ast.Vid.fromVar x, (Vid.Var x', s, mode),
                Uses.Extend.fromIsRebind ir)
 
 val extendVar =
    Trace.trace
    ("ElaborateEnv.extendVar",
-    fn (_, x, x', s, _) =>
-    Layout.tuple [Ast.Var.layout x, Var.layout x', Scheme.layout s],
+    fn (_, x, x', s, m, _) =>
+    Layout.tuple [Ast.Var.layout x, Var.layout x', Scheme.layout s, Mode.layout m],
     Unit.layout)
    extendVar
 
-fun extendOverload (E, p, x, yts, s) =
-   extendVals (E, Ast.Vid.fromVar x, (Vid.Overload (p, yts), s),
+fun extendOverload (E, p, x, yts, s, mode) =
+   extendVals (E, Ast.Vid.fromVar x, (Vid.Overload (p, yts), s, mode),
                Uses.Extend.new)
 
 (* ------------------------------------------------- *)
@@ -3419,7 +3420,7 @@ fun output (E: t, out, {compact, def, flat, onlyCurrent, prefixUnset}): unit =
          (strids, name, tyStr,
           {compact = compact, def = def})
       val outputValDefn =
-         fn (strids, name, (vid, scheme)) =>
+         fn (strids, name, (vid, scheme, _)) =>
          (maybeOutputl o layoutValDefn)
          (strids, name, (vid, scheme),
           {compact = compact, con = flat, def = def})
@@ -3465,8 +3466,8 @@ fun output (E: t, out, {compact, def, flat, onlyCurrent, prefixUnset}): unit =
           output (domain, range))
       val () = doit (types, fn (name, tyStr) =>
                      outputTypeDefn ([], name, tyStr))
-      val () = doit (vals, fn (name, (vid, scheme)) =>
-                     outputValDefn ([], name, (vid, scheme)))
+      val () = doit (vals, fn (name, (vid, scheme, mode)) =>
+                     outputValDefn ([], name, (vid, scheme, mode)))
       val () = doit (sigs, outputSigDefn)
       val () =  doit (strs, fn (name, S) =>
                       if flat
@@ -3551,7 +3552,7 @@ fun processDefUse (E as T f) =
          fun mkExtraFromScheme so =
             case so of
                NONE => []
-             | SOME (_, s) => [layoutPrettyScheme s]
+             | SOME (_, s, _) => [layoutPrettyScheme s]
       in
          val _ = doit (#vals, mkExtraFromScheme)
       end
@@ -3671,7 +3672,8 @@ fun newCons (T {vals, ...}, v) =
              NameSpace.newUses
              (vals,
               {def = Ast.Vid.fromCon name,
-               range = (Vid.Con con, scheme),
+               (* todo: remove undetermined *)
+               range = (Vid.Con con, scheme, Mode.Undetermined),
                forceUsed = forceUsed})
        in
           {con = con,
@@ -3754,8 +3756,8 @@ fun makeOpaque (S: Structure.t, I: Interface.t, {prefix: string}) =
                 end)
             val vals =
                Info.map2 
-               (vals, vals', fn ((v, _), (_, s')) =>
-                (v, s'))
+               (vals, vals', fn ((v, _, m), (_, s', _)) =>
+                (v, s', m))
          in
             Structure.T {interface = Structure.interface S',
                          plist = PropertyList.new (),
@@ -4340,9 +4342,10 @@ fun transparentCut (E: t, S: Structure.t, I: Interface.t,
                    {diag = Option.map (spec, fn spec =>
                                        {spec = SOME spec,
                                         thing = thing}),
-                    range = (vid, rlzScheme)}
+                    (* todo: evaluate *)
+                    range = (vid, rlzScheme, Mode.Undetermined)}
                 end,
-                doit = fn (strName, (strVid, strScheme), sigName, (sigStatus, sigScheme)) =>
+                doit = fn (strName, (strVid, strScheme, _), sigName, (sigStatus, sigScheme)) =>
                 let
                    val rlzScheme = Interface.Scheme.toEnv sigScheme
                    val unifyError = ref NONE
@@ -4463,7 +4466,8 @@ fun transparentCut (E: t, S: Structure.t, I: Interface.t,
                                          notes])
                               end
                 in
-                   (vid, rlzScheme)
+                   (* todo: evaluate *)
+                   (vid, rlzScheme, Mode.Undetermined)
                 end}
             val strs =
                map {strInfo = strStrs,
@@ -4691,8 +4695,8 @@ fun functorClosure
                   plist = PropertyList.new (),
                   strs = Info.map (strs, replaceStructure),
                   types = Info.map (types, replaceTypeStr),
-                  vals = Info.map (vals, fn (status, s) =>
-                                   (status, replaceScheme s))}))
+                  vals = Info.map (vals, fn (status, s, m) =>
+                                   (status, replaceScheme s, m))}))
             val resultStructure = Option.map (resultStructure, replaceStructure)
             val _ = destroy1 ()
             val _ = destroy2 ()
