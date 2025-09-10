@@ -208,7 +208,7 @@ local
                                {forceUsed = false, isRebind = false})
                val scheme = Scheme.fromType Type.exn
                val _ = List.foreach (primitiveExcons, fn c =>
-                                     extendExn (E, Con.toAst c, c, scheme))
+                                     extendExn (E, Con.toAst c, c, scheme, CoreML.Mode.Heap))
             in
                ()
             end

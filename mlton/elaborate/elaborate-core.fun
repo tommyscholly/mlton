@@ -167,7 +167,7 @@ structure Tyvar =
 fun patModeConstraint (p: Apat.t): Mode.t =
    case Apat.node p of
       Apat.ModeConstraint (p, mode) => mode
-    | _ => Mode.Heap
+    | _ => Mode.Undetermined
 
 fun matchDiagsFromNoMatch noMatch =
    case noMatch of
@@ -605,7 +605,7 @@ structure DiagUtils =
                 layoutPrettyTycon: Tycon.t -> Layout.t,
                 layoutPrettyTyvar: Tyvar.t -> Layout.t,
                 unify: Type.t * Type.t * (Layout.t * Layout.t -> Region.t * Layout.t * Layout.t) -> unit,
-                unifyModes: Mode.t * Mode.t * (Layout.t * Layout.t -> Region.t * Layout.t * Layout.t) -> unit}
+                unifyModes: Mode.t * Mode.t * (Layout.t * Layout.t -> Region.t * Layout.t * Layout.t) -> Mode.t}
       fun make E : t =
          let
             val {layoutPrettyTycon, ...} =
@@ -634,13 +634,13 @@ structure DiagUtils =
                            layoutPrettyTyvar = layoutPrettyTyvar})
                end
             fun unifyModes (m, m', error) =
-                if Mode.subsumes(m, m') then
-                    ()
-                else
+               case Mode.subsumes(m, m') of
+                  SOME m => m
+                | NONE =>
                     let
                         val (r, msg, d) = error (Mode.layout m, Mode.layout m')
                     in
-                        Control.error(r, msg, d)
+                        (Control.error(r, msg, d); Mode.Undetermined)
                     end
          in
             {layoutPrettyType = layoutPrettyType,
@@ -653,17 +653,13 @@ structure DiagUtils =
 
 val elaboratePat:
    unit
-   -> Apat.t * Env.t * {bind: bool, isRvb: bool}
-   -> Cpat.t * (Avar.t * Var.t * Type.t) vector =
+   -> Apat.t * Env.t * Mode.t * {bind: bool, isRvb: bool}
+   -> Cpat.t * (Avar.t * Var.t * Type.t * Mode.t) vector =
    fn () =>
    let
-      val others: (Apat.t * (Avar.t * Var.t * Type.t) vector) list ref = ref []
-      fun inferMode (expectedMode: Mode.t): Mode.t =
-         case expectedMode of
-            Mode.Undetermined => Mode.Heap
-          | _ => expectedMode
+      val others: (Apat.t * (Avar.t * Var.t * Type.t * Mode.t) vector) list ref = ref []
    in
-      fn (p: Apat.t, E: Env.t, {bind = bindInEnv, isRvb}) =>
+      fn (p: Apat.t, E: Env.t, patExpMode: Mode.t, {bind = bindInEnv, isRvb}) =>
       let
          val {layoutPrettyType, unify, unifyModes, ...} = DiagUtils.make E
          fun ctxtTop () =
@@ -679,8 +675,8 @@ val elaboratePat:
                           end
                 | SOME (_, x') => x'
             end
-         val xts: (Avar.t * Var.t * Type.t) list ref = ref []
-         fun bindToType (x: Avar.t, t: Type.t): Var.t =
+         val xts: (Avar.t * Var.t * Type.t * Mode.t) list ref = ref []
+         fun bindToType (x: Avar.t, t: Type.t, m: Mode.t): Var.t =
             let
                val _ =
                   Avid.checkRedefineSpecial
@@ -690,26 +686,26 @@ val elaboratePat:
                     keyword = if isRvb then "val rec" else "pattern"})
                val x' = rename x
                val () =
-                  case List.peek (!xts, fn (y, _, _) => Avar.equals (x, y)) of
+                  case List.peek (!xts, fn (y, _, _, _) => Avar.equals (x, y)) of
                      NONE => ()
                    | SOME _ =>
                         Control.error
                         (Avar.region x,
                          seq [str "duplicate variable in pattern: ", Avar.layout x],
                          ctxtTop ())
-               val _ = List.push (xts, (x, x', t))
+               val _ = List.push (xts, (x, x', t, m))
             in
                x'
             end
-         fun bind (x: Avar.t): Var.t * Type.t =
+         fun bind (x: Avar.t, m: Mode.t): Var.t * Type.t =
             let
                val t = Type.new ()
             in
-               (bindToType (x, t), t)
+               (bindToType (x, t, m), t)
             end
          fun elabType (t: Atype.t): Type.t =
             elaborateType (t, E, {bogusAsUnknown = true})
-         fun loop (arg: Apat.t, expectedMode: Mode.t) =
+         fun loop (arg: Apat.t) =
             Trace.traceInfo' (elabPatInfo, Apat.layout, Cpat.layout)
             (fn (p: Apat.t) =>
              let
@@ -737,11 +733,11 @@ val elaboratePat:
                    Apat.App {con = c, arg = p, ...} =>
                       (case Env.lookupLongcon (E, c) of
                           NONE => dontCare ()
-                        | SOME (con, s) =>
+                        | SOME (con, s, _) =>
                              let
                                 val {args, instance} = Scheme.instantiate s
                                 val args = args ()
-                                val p = loop (p, Mode.Undetermined)
+                                val p = loop p
                                 val (argType, resultType) =
                                    case Type.deArrowOpt instance of
                                       SOME types => types
@@ -776,12 +772,12 @@ val elaboratePat:
                       elabConst
                       (c,
                        {layoutPrettyType = #1 o layoutPrettyType},
-                       fn (resolve, ty) => Cpat.make (Cpat.Const resolve, ty, Mode.Heap),
+                       fn (resolve, ty) => Cpat.make (Cpat.Const resolve, ty, patExpMode),
                        {false = Cpat.falsee,
                         true = Cpat.truee})
                  | Apat.Constraint (p, t) =>
                       let
-                         val p' = loop (p, expectedMode)
+                         val p' = loop p
                          val _ =
                             unifyPatternConstraint
                             (Cpat.ty p', elabType t)
@@ -790,7 +786,7 @@ val elaboratePat:
                       end
                  | Apat.FlatApp items =>
                       loop (Parse.parsePat
-                            (items, E, fn () => ctxt ()), expectedMode)
+                            (items, E, fn () => ctxt ()))
                  | Apat.Layered {var = x, constraint, pat, ...} =>
                       let
                          val t =
@@ -798,10 +794,11 @@ val elaboratePat:
                                NONE => Type.new ()
                              | SOME t => elabType t
                          val xc = Avid.toCon (Avid.fromVar x)
+                         val mode = ref patExpMode
                          val x =
                             case Env.peekLongcon (E, Ast.Longcon.short xc) of
-                               NONE => bindToType (x, t)
-                             | SOME _ =>
+                               NONE => bindToType (x, t, patExpMode)
+                             | SOME (_, _, m) =>
                                   let
                                      val _ =
                                         Control.error
@@ -809,25 +806,25 @@ val elaboratePat:
                                          seq [str "constructor cannot be redefined by as: ",
                                               Avar.layout x],
                                          ctxt ())
+                                       val _ = mode := m
                                   in
                                      Var.fromAst x
                                   end
-                         val pat' = loop (pat, inferMode expectedMode)
+                         val pat' = loop pat
                          val _ =
                             unifyPatternConstraint (Cpat.ty pat', t)
                       in
-                         (* TODO: check the mode *)
-                         Cpat.make (Cpat.Layered (x, pat'), t, Mode.Heap)
+                         Cpat.make (Cpat.Layered (x, pat'), t, Cpat.mode pat')
                       end
                  | Apat.List ps =>
                       let
-                         val ps' = Vector.map (ps, fn p => loop (p, Mode.Undetermined))
+                         val ps' = Vector.map (ps, fn p => loop p)
                       in
                          Cpat.make (Cpat.List ps',
                                     unifyList
                                     (Vector.map2 (ps, ps', fn (p, p') =>
                                                   (Cpat.ty p', Apat.region p)),
-                                     unify), inferMode expectedMode)
+                                     unify), patExpMode)
                       end
                  | Apat.Or ps =>
                       let
@@ -839,7 +836,7 @@ val elaboratePat:
                             (ps, fn p =>
                              let
                                 val _ = xts := []
-                                val p' = loop (p, expectedMode)
+                                val p' = loop p
                              in
                                 (p, p', !xts)
                              end)
@@ -849,10 +846,10 @@ val elaboratePat:
                             Vector.fold
                             (ps, [], fn ((p, _, xtsPat), xtsPats) =>
                              List.fold
-                             (xtsPat, xtsPats, fn ((x, x', t), xtsPats) =>
-                              case List.peek (xtsPats, fn (y, _, _, _) => Avar.equals (x, y)) of
-                                 NONE => (x, x', t, ref [x])::xtsPats
-                               | SOME (_, _, t', l) =>
+                             (xtsPat, xtsPats, fn ((x, x', t, m), xtsPats) =>
+                              case List.peek (xtsPats, fn (y, _, _, _, _) => Avar.equals (x, y)) of
+                                 NONE => (x, x', t, ref m, ref [x])::xtsPats
+                               | SOME (_, _, t', mRef, l) =>
                                     let
                                        val _ = List.push (l, x)
                                        val _ =
@@ -864,12 +861,20 @@ val elaboratePat:
                                             align [seq [str "variable: ", l],
                                                    seq [str "previous: ", l'],
                                                    seq [str "in: ", approximate (Apat.layout p)]]))
+                                       val newMode = unifyModes (!mRef, m, fn (l, l') =>
+                                           (Avar.region x,
+                                            seq [str "or-pattern with variable of different mode: ",
+                                                 Avar.layout x],
+                                            align [seq [str "previous: ", l],
+                                                   seq [str "mode:     ", l'],
+                                                   seq [str "in: ", approximate (Apat.layout p)]]))
+                                       val _ = mRef := newMode
                                     in
                                        xtsPats
                                     end))
                          val _ =
                             List.foreach
-                            (xtsPats, fn (x, _, _, l) =>
+                            (xtsPats, fn (x, _, _, _, l) =>
                              if List.length (!l) <> n
                                 then let
                                         val _ =
@@ -895,9 +900,9 @@ val elaboratePat:
                                       seq [str "in: ", approximate (Apat.layout p)]])))
                          val xtsMerge =
                             List.fold
-                            (xtsPats, xtsOrig, fn ((x, x', t, l), xtsMerge) =>
-                             case List.peek (xtsMerge, fn (y, _, _) => Avar.equals (x, y)) of
-                                NONE => (x, x', t)::xtsMerge
+                            (xtsPats, xtsOrig, fn ((x, x', t, mRef, l), xtsMerge) =>
+                             case List.peek (xtsMerge, fn (y, _, _, _) => Avar.equals (x, y)) of
+                                NONE => (x, x', t, !mRef)::xtsMerge
                               | SOME _ =>
                                    let
                                       val _ =
@@ -908,14 +913,14 @@ val elaboratePat:
                                            seq [str "duplicate variable in pattern: ", Avar.layout x],
                                            ctxtTop ()))
                                    in
-                                      (x, x', t)::xtsMerge
+                                      (x, x', t, !mRef)::xtsMerge
                                    end)
                          val _ = xts := xtsMerge
                       in
                          (* TODO: check the mode *)
-                         Cpat.make (Cpat.Or ps', t, inferMode expectedMode)
+                         Cpat.make (Cpat.Or ps', t, patExpMode)
                       end
-                 | Apat.Paren p => loop (p, expectedMode)
+                 | Apat.Paren p => loop p
                  | Apat.Record {flexible, items} =>
                       (* rules 36, 38, 39 and Appendix A, p.57 *)
                       let
@@ -944,7 +949,7 @@ val elaboratePat:
                                            NONE => p
                                          | SOME ty => Apat.constraint (p, ty)
                                      end)))
-                         val ps = Vector.map (ps, fn p => loop (p, Mode.Undetermined))
+                         val ps = Vector.map (ps, fn p => loop p)
                          val r = SortedRecord.zip (fs, Vector.map (ps, Cpat.ty))
                          val ty =
                             if flexible
@@ -969,19 +974,18 @@ val elaboratePat:
                          (* TODO: check the mode *)
                          Cpat.make
                          (Cpat.Record (Record.fromVector (Vector.zip (fs, ps))),
-                          ty, inferMode expectedMode)
+                          ty, patExpMode)
                       end
                  | Apat.Tuple ps =>
-                      Cpat.tuple (Vector.map (ps, fn p => loop (p, Mode.Undetermined)))
+                      Cpat.tuple (Vector.map (ps, fn p => loop p))
                  | Apat.Var {name, ...} =>
                       let
                          val (strids, x) = Ast.Longvid.split name
-                         fun var () =
+                         fun var (): Cpat.t =
                             let
-                               val (x, t) = bind (Ast.Vid.toVar x)
+                               val (x, t) = bind (Ast.Vid.toVar x, patExpMode)
                             in
-                               (* TODO: check the mode *)
-                               Cpat.make (Cpat.Var x, t, inferMode expectedMode)
+                               Cpat.make (Cpat.Var x, t, patExpMode)
                             end
                       in
                          case Env.peekLongcon (E, Ast.Longvid.toLongcon name) of
@@ -997,9 +1001,9 @@ val elaboratePat:
                                               Ast.Longvid.layout name],
                                          empty)
                                   in
-                                     Cpat.make (Cpat.Wild, Type.new (), inferMode expectedMode)
+                                     Cpat.make (Cpat.Wild, Type.new (), patExpMode)
                                   end
-                          | SOME (c, s) =>
+                          | SOME (c, s, m) =>
                                if List.isEmpty strids andalso isRvb
                                   then var ()
                                else let
@@ -1019,27 +1023,27 @@ val elaboratePat:
                                           (Cpat.Con {arg = NONE,
                                                      con = c,
                                                      targs = args ()},
-                                           instance, inferMode expectedMode)
+                                           instance, m)
                                     end
                       end
                  | Apat.Vector ps =>
                       let
                          val _ = check (ElabControl.allowVectorPats, "Vector patterns", Apat.region p)
-                         val ps' = Vector.map (ps, fn p => loop (p, Mode.Undetermined))
+                         val ps' = Vector.map (ps, fn p => loop p)
                       in
                          Cpat.make (Cpat.Vector ps',
                                     unifyVector
                                     (Vector.map2 (ps, ps', fn (p, p') =>
                                                   (Cpat.ty p', Apat.region p)),
-                                     unify), inferMode expectedMode)
+                                     unify), patExpMode)
                       end
                  | Apat.Wild =>
                        (* TODO: check the mode *)
-                      Cpat.make (Cpat.Wild, Type.new (), inferMode expectedMode)
+                      Cpat.make (Cpat.Wild, Type.new (), patExpMode)
                  | Apat.ModeConstraint (pat, mode) =>
                       let
-                         val pat' = loop (pat, mode)
-                         val _ = unifyModes (expectedMode, mode, fn (l, l') =>
+                         val pat' = loop pat
+                         val mode = unifyModes (mode, patExpMode, fn (l, l') =>
                              (Apat.region pat,
                               str "mode constraint mismatch",
                               align [seq [str "expected: ", l],
@@ -1050,14 +1054,14 @@ val elaboratePat:
                          Cpat.make (node, ty, mode)
                       end
              end) arg
-         val p' = loop (p, (Mode.Undetermined))
+         val p' = loop p
          val xts = Vector.fromList (!xts)
          val _ =
             Vector.foreach
-            (xts, fn (x, _, _) =>
+            (xts, fn (x, _, _, _) =>
              case (List.peekMap
                    (!others, fn (p, v) =>
-                    if Vector.exists (v, fn (y, _, _) =>
+                    if Vector.exists (v, fn (y, _, _, _) =>
                                       Avar.equals (x, y))
                        then SOME p
                     else NONE)) of
@@ -1075,8 +1079,8 @@ val elaboratePat:
          val _ =
             if bindInEnv
                then Vector.foreach
-                    (xts, fn (x, x', t) =>
-                     Env.extendVar (E, x, x', Scheme.fromType t,
+                    (xts, fn (x, x', t, m) =>
+                     Env.extendVar (E, x, x', Scheme.fromType t, m,
                                     {isRebind = false}))
             else ()
       in
@@ -2363,9 +2367,9 @@ fun elaborateDec (d, {env = E, nest}) =
                                       EbRhs.Def c =>
                                          (case Env.lookupLongexn (E, c) of
                                              NONE => decs
-                                           | SOME (exn', scheme) =>
+                                           | SOME (exn', scheme, mode) =>
                                                 let
-                                                   val _ = Env.extendExn (E, exn, exn', scheme)
+                                                   val _ = Env.extendExn (E, exn, exn', scheme, mode)
                                                 in
                                                    decs
                                                 end)
@@ -2383,7 +2387,8 @@ fun elaborateDec (d, {env = E, nest}) =
                                                          Type.arrow (t, Type.exn))
                                                      end
                                             val scheme = Scheme.fromType ty
-                                            val _ = Env.extendExn (E, exn, exn', scheme)
+                                            (* exceptions should always be heap allocated? *)
+                                            val _ = Env.extendExn (E, exn, exn', scheme, Mode.Undetermined)
                                          in
                                             Decs.add (decs,
                                                       Cdec.Exception {arg = arg,
@@ -2531,7 +2536,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                                   val regionPat = Apat.region pat
                                                   val (pat, binds) =
                                                      elaboratePat
-                                                     (pat, E,
+                                                     (pat, E, (Vector.sub (!argModes, i)),
                                                       {bind = false,
                                                        isRvb = false})
                                                   val _ =
@@ -2542,13 +2547,13 @@ fun elaborateDec (d, {env = E, nest}) =
                                                        align [seq [str "argument: ", l2],
                                                               seq [str "previous: ", l1],
                                                               ctxtFb ()]))
-
                                                in
                                                   (pat, binds)
                                                end)
                                           (* TODO: unify modes? *)
                                            val _ = argModes := Vector.map2 (!argModes, pats, fn (_, pat) => Cpat.mode pat)
                                            val binds = Vector.concatV (Vector.rev bindss)
+                                           val binds = binds : (Avar.t * Var.t * Type.t * Mode.t) vector
                                            val resultType =
                                               Option.map
                                               (resultType, fn resultType =>
@@ -2603,6 +2608,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                        Env.extendVar
                                        (E, func, var,
                                         Scheme.fromType funTy,
+                                        Mode.Undetermined,
                                         {isRebind = false})
                                     val _ =
                                        markFunc var
@@ -2633,10 +2639,9 @@ fun elaborateDec (d, {env = E, nest}) =
                                               Env.scope
                                               (E, fn () =>
                                                (Vector.foreach
-                                                (binds, fn (x, x', ty) =>
+                                                (binds, fn (x, x', ty, mode) =>
                                                  Env.extendVar
-                                                 (E, x, x', Scheme.fromType ty,
-                                                  {isRebind = false}))
+                                                 (E, x, x', Scheme.fromType ty, mode, {isRebind = false}))
                                                   (* TODO: check the mode *)
                                                 ; elabExp (body, nest, NONE, Mode.Heap)))
                                            val body =
@@ -2764,7 +2769,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                 (fbs, schemes,
                                  fn ({func, var, ...}, scheme) =>
                                  (Env.extendVar
-                                  (E, func, var, scheme,
+                                  (E, func, var, scheme, Mode.Heap,
                                    {isRebind = true})
                                   ; unmarkFunc var))
                              val decs =
@@ -2807,8 +2812,9 @@ fun elaborateDec (d, {env = E, nest}) =
                       TyvarEnv.scope
                       (tyvars, fn tyvars' =>
                        let
-                          val {unify, ...} = DiagUtils.make E
+                          val {unify, unifyModes, ...} = DiagUtils.make E
                           val () = check (ElabControl.allowOverload, "_overload", region)
+                          val existingMode = ref Mode.Undetermined
                           (* Lookup the overloads before extending the var in case
                            * x appears in the xs.
                            *)
@@ -2817,11 +2823,28 @@ fun elaborateDec (d, {env = E, nest}) =
                              (Vector.map
                               (xs, fn x =>
                                case Env.lookupLongvid (E, x) of
+                                 (* TODO: use modes *)
                                   NONE => Vector.new0 ()
-                                | SOME (Vid.Var v, t) =>
-                                     Vector.new1 (Longvid.region x, (v, t))
-                                | SOME (Vid.Overload (_, vs), _) =>
-                                     Vector.map (vs, fn vt => (Longvid.region x, vt))
+                                | SOME (Vid.Var v, t, m) =>
+                                     (
+                                        existingMode := unifyModes (!existingMode, m, fn (l, l') =>
+                                          (Longvid.region x,
+                                           str "overload with variable of different mode",
+                                           align [seq [str "variable: ", l],
+                                                  seq [str "previous: ", l'],
+                                                  seq [str "in: ", approximate (Longvid.layout x)]]));
+                                        Vector.new1 (Longvid.region x, (v, t))
+                                     )
+                                | SOME (Vid.Overload (_, vs), _, m) =>
+                                     (
+                                        existingMode := unifyModes (!existingMode, m, fn (l, l') =>
+                                          (Longvid.region x,
+                                           str "overload with variable of different mode",
+                                           align [seq [str "variable: ", l],
+                                                  seq [str "previous: ", l'],
+                                                  seq [str "in: ", approximate (Longvid.layout x)]]));
+                                        Vector.map (vs, fn vt => (Longvid.region x, vt))
+                                     )
                                 | _ =>
                                      (Control.error
                                       (Longvid.region x,
@@ -2852,7 +2875,7 @@ fun elaborateDec (d, {env = E, nest}) =
                               end)
                           val _ =
                              Env.extendOverload
-                             (E, p, x, Vector.map (ovlds, fn (_, vt) => vt), s)
+                             (E, p, x, Vector.map (ovlds, fn (_, vt) => vt), s, !existingMode)
                        in
                           Decs.empty
                        end)
@@ -2922,13 +2945,14 @@ fun elaborateDec (d, {env = E, nest}) =
                                        seq [str "in: ", approximate (layRvb ())]
                                     val regionPat = Apat.region pat
                                     val (pat, bound) =
-                                       elaboratePat (pat, E, {bind = false, isRvb = true})
+                                       elaboratePat (pat, E, Mode.Undetermined, {bind = false, isRvb = true})
                                     val (nest, var) =
                                        if Vector.length bound = 1
                                           andalso (Type.isUnknown (Cpat.ty pat)
                                                    orelse Type.isArrow (Cpat.ty pat))
                                           then let
-                                                  val (x, x', _) = Vector.first bound
+                                                  (* TODO: maybe use the mode? *)
+                                                  val (x, x', _, _) = Vector.first bound
                                                in
                                                   (Avar.toString x :: nest, x')
                                                end
@@ -2936,7 +2960,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                     val _ = markFunc var
                                     val bound =
                                        Vector.map
-                                       (bound, fn (x, _, ty) =>
+                                       (bound, fn (x, _, ty, m) =>
                                         let
                                            val xVid = Avid.fromVar x
                                            val _ =
@@ -2944,10 +2968,10 @@ fun elaborateDec (d, {env = E, nest}) =
                                               (xVid, "val rec", ctxtRvb)
                                            val _ =
                                               Env.extendVar
-                                              (E, x, var, Scheme.fromType ty,
+                                              (E, x, var, Scheme.fromType ty, m,
                                                {isRebind = false})
                                         in
-                                           (x, var, ty)
+                                           (x, var, ty, m)
                                         end)
                                  in
                                     {bound = bound,
@@ -2964,8 +2988,9 @@ fun elaborateDec (d, {env = E, nest}) =
                                 (vbs,
                                  fn {ctxtVb, exp, layPat, pat, regionExp, regionPat, ...} =>
                                  let
+                                    val expMode = Cexp.mode exp
                                     val (pat, bound) =
-                                       elaboratePat (pat, E, {bind = false, isRvb = false})
+                                       elaboratePat (pat, E, expMode, {bind = false, isRvb = false})
                                     val _ =
                                        unify
                                        (Cpat.ty pat, Cexp.ty exp, fn (p, e) =>
@@ -3055,7 +3080,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                 close
                                 (tyvars',
                                  Vector.map
-                                 (boundVars, fn ((var, _, ty), {isExpansive, ...}) =>
+                                 (boundVars, fn ((var, _, ty, _), {isExpansive, ...}) =>
                                   {isExpansive = isExpansive,
                                    ty = ty,
                                    var = var}),
@@ -3071,9 +3096,9 @@ fun elaborateDec (d, {env = E, nest}) =
                              val _ =
                                 Vector.foreach2
                                 (boundVars, schemes,
-                                 fn (((x, x', _), {isRebind, ...}), scheme) =>
+                                 fn (((x, x', _, m), {isRebind, ...}), scheme) =>
                                  Env.extendVar
-                                 (E, x, x', scheme,
+                                 (E, x, x', scheme, m,
                                   {isRebind = isRebind}))
                              val _ =
                                 Vector.foreach
@@ -3834,7 +3859,7 @@ fun elaborateDec (d, {env = E, nest}) =
                    in
                       case Env.lookupLongvid (E, id) of
                          NONE => dontCare ()
-                       | SOME (vid, scheme) =>
+                       | SOME (vid, scheme, mode) =>
                             let
                                val {args, instance} = Scheme.instantiate scheme
                                fun con c = Cexp.Con (c, args ())
@@ -3891,7 +3916,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                                    | SOME f => f)
                             in
                                (* TODO: check the mode *)
-                               Cexp.make (e, instance, Mode.Heap)
+                               Cexp.make (e, instance, mode)
                             end
                    end
               | Aexp.Vector es =>
@@ -3987,8 +4012,9 @@ fun elaborateDec (d, {env = E, nest}) =
                  let
                     fun layPat () = approximate (Apat.layout pat)
                     val patOrig = pat
+                    val modeConstraint = patModeConstraint patOrig
                     val (pat, _) =
-                       elaboratePat () (pat, E, {bind = true, isRvb = false})
+                       elaboratePat () (pat, E, modeConstraint, {bind = true, isRvb = false})
                     val _ =
                        unify
                        (Cpat.ty pat, argType, fn (l1, l2) =>
@@ -3997,7 +4023,6 @@ fun elaborateDec (d, {env = E, nest}) =
                          align [seq [str "pattern:  ", l1],
                                 seq [str "previous: ", l2]]))
                     val expOrig = exp
-                    val modeConstraint = patModeConstraint patOrig
                     val exp = elabExp (exp, nest, NONE, modeConstraint)
                     val _ =
                        unify
