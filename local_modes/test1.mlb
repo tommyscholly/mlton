@@ -1,0 +1,8 @@
+ann "allowPrim true" in
+  ann "allowFFI true" in
+    (* prim-basis.mlb *)
+    _prim
+    ../basis-library/primitive/primitive.mlb
+    test1.sml
+  end
+end
