@@ -181,7 +181,7 @@ fun casee {ctxt: unit -> Layout.t,
              | RaiseBind => raiseExn (fn _ => Xexp.bind, SOME "Bind")
              | RaiseMatch => raiseExn (fn _ => Xexp.match, SOME "Match")
          end
-      fun matchCompile () =                                  
+      fun matchCompile () =
          let
             val testVar = Var.newNoname ()
             val decs = ref []
@@ -657,6 +657,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
              | Con _ => ()
              | Const _ => ()
              | EnterLeave (e, _) => loopExp e
+             | Exclave e => loopExp e
              | Handle {handler, try, ...} => (loopExp handler; loopExp try)
              | Lambda l => loopLambda l
              | Let (ds, e) => (Vector.foreach (ds, loopDec); loopExp e)
@@ -1064,6 +1065,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                          ty = ty}
 
                      end
+                | Exclave e => #1 (loopExp e)
                 | Raise e => Xexp.raisee {exn = #1 (loopExp e), extend = true, ty = ty}
                 | Record r =>
                      (* The components of the record have to be evaluated left to 
@@ -1096,7 +1098,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
       and loopLambda (l: Clambda.t) =
          let
             (* TODO: handle arg mode here *)
-            val {arg, argType, argMode, body, mayInline} = Clambda.dest l
+            val {arg, argType, body, mayInline, ...} = Clambda.dest l
             val (body, bodyType) = loopExp body
          in
             {arg = arg,

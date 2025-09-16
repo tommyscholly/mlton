@@ -52,6 +52,21 @@ fun maybeConstrain (e, tyo) =
       NONE => e
     | SOME ty => layoutConstraint (e, ty)
 
+fun layoutModeConstraint (t, mode) =
+   mayAlign [seq [t, str ":-"], Mode.layout mode]
+
+(* fun maybeConstrainMode (e, modo) = *)
+(*    case modo of *)
+(*       NONE => e *)
+(*     | SOME mode => layoutModeConstraint (e, mode) *)
+
+fun maybeConstrainBoth (e, tyo, modo) =
+   case (tyo, modo) of
+      (NONE, NONE) => e
+    | (SOME ty, NONE) => layoutConstraint (e, ty)
+    | (NONE, SOME mode) => layoutModeConstraint (e, mode)
+    | (SOME ty, SOME mode) => layoutModeConstraint (layoutConstraint (e, ty), mode)
+
 fun layoutLongvid x =
    str (let val s = Longvid.toString x
         in if s = "*" then " * "
@@ -345,7 +360,9 @@ datatype expNode =
   | Case of exp * match
   | Const of Const.t
   | Constraint of exp * Type.t
+  | Exclave of exp
   | FlatApp of exp vector
+  | ModeConstraint of exp * Mode.t
   | Fn of match
   | Handle of exp * match
   | If of exp * exp * exp
@@ -372,7 +389,8 @@ and decNode =
   | Fun of {tyvars: Tyvar.t vector,
             fbs: {body: exp,
                   pats: Pat.t vector,
-                  resultType: Type.t option} vector vector}
+                  resultType: Type.t option,
+                  resultMode: Mode.t option} vector vector}
   | Local of dec * dec
   | Open of Longstrid.t vector
   | Overload of Priority.t * Var.t *
@@ -421,7 +439,9 @@ fun expNodeName e =
     | Case _ => "Case"
     | Const _ => "Const"
     | Constraint _ => "Constraint"
+    | Exclave _ => "Exclave"
     | FlatApp _ => "FlatApp"
+    | ModeConstraint _ => "ModeConstraint"
     | Fn _ => "Fn"
     | Handle _ => "Handle"
     | If _ => "If"
@@ -480,6 +500,10 @@ fun layoutExp arg =
        | Const c => Const.layout c
        | Constraint (expr, constraint) =>
             delimit (layoutConstraint (layoutExpF expr, constraint))
+       | Exclave expr =>
+            delimit (seq [str "exclave_ ", layoutExpF expr])
+       | ModeConstraint (expr, mode) =>
+            delimit (layoutModeConstraint (layoutExpF expr, mode))
        | FlatApp es =>
             if Vector.length es = 1
                then layoutExp (Vector.first es, isDelimited)
@@ -582,9 +606,9 @@ and layoutFun {tyvars, fbs} =
 and layoutFb clauses =
    alignPrefix (Vector.toListMap (clauses, layoutClause), "| ")
 
-and layoutClause ({pats, resultType, body}) =
-   mayAlign [seq [maybeConstrain (Pat.layoutFlatApp pats,
-                                  resultType),
+and layoutClause ({pats, resultType, resultMode, body}) =
+   mayAlign [seq [maybeConstrainBoth (Pat.layoutFlatApp pats,
+                                      resultType, resultMode),
                   str " ="],
              layoutExpF body] (* this has to be layoutExpF in case body
                                  is a case expression *)
@@ -615,7 +639,9 @@ fun checkSyntaxExp (e: exp): unit =
        | Case (e, m) => (c e; checkSyntaxMatch m)
        | Const _ => ()
        | Constraint (e, t) => (c e; Type.checkSyntax t)
+       | Exclave e => c e
        | FlatApp es => Vector.foreach (es, c)
+       | ModeConstraint (e, _) => c e
        | Fn m => checkSyntaxMatch m
        | Handle (e, m) => (c e; checkSyntaxMatch m)
        | If (e1, e2, e3) => (c e1; c e2; c e3)
@@ -671,7 +697,7 @@ and checkSyntaxDec (d: dec): unit =
                                  {ctxt = mkCtxt (d, layoutDec)})
           ; Vector.foreach (fbs, fn clauses =>
                             Vector.foreach
-                            (clauses, fn {body, pats, resultType} =>
+                            (clauses, fn {body, pats, resultType, ...} =>
                              (checkSyntaxExp body
                               ; Vector.foreach (pats, Pat.checkSyntax)
                               ; Option.app (resultType, Type.checkSyntax)))))

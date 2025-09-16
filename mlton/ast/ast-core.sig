@@ -143,7 +143,9 @@ signature AST_CORE =
              | Case of t * match
              | Const of Const.t
              | Constraint of t * Type.t
+             | Exclave of t
              | FlatApp of t vector
+             | ModeConstraint of t * Mode.t
              | Fn of match
              | Handle of t * match
              | If of t * t * t
@@ -212,7 +214,8 @@ signature AST_CORE =
              | Fun of {tyvars: Tyvar.t vector,
                        fbs: {body: Exp.t,
                              pats: Pat.t vector,
-                             resultType: Type.t option} vector vector}
+                             resultType: Type.t option,
+                             resultMode: Mode.t option} vector vector}
              | Local of t * t
              | Open of Longstrid.t vector
              | Overload of Priority.t *
@@ -236,7 +239,8 @@ signature AST_CORE =
                {tyvars: Tyvar.t vector,
                 fbs: {body: Exp.t,
                       pats: Pat.t vector,
-                      resultType: Type.t option} vector vector}
+                      resultType: Type.t option,
+                      resultMode: Mode.t option} vector vector}
                -> (unit -> Layout.t) vector
             val layoutVal:
                {rvbs: {match: Match.t,

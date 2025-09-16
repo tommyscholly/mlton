@@ -351,6 +351,7 @@ real=(~?)(({decnum}{frac}?{exp})|({decnum}{frac}{exp}?));
 <INITIAL>"local" => (tok (Tokens.LOCAL, yytext, source, yypos));
 <INITIAL>"stack_mode" => (tok (Tokens.STACK, yytext, source, yypos));
 <INITIAL>"heap_mode" => (tok (Tokens.HEAP, yytext, source, yypos));
+<INITIAL>"exclave_" => (tok (Tokens.EXCLAVE, yytext, source, yypos));
 <INITIAL>"nonfix" => (tok (Tokens.NONFIX, yytext, source, yypos));
 <INITIAL>"of" => (tok (Tokens.OF, yytext, source, yypos));
 <INITIAL>"op" => (tok (Tokens.OP, yytext, source, yypos));

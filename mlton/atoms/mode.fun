@@ -31,7 +31,7 @@ functor Mode (S: MODE_STRUCTS): MODE =
           (* if the parent is undetermined, it takes the mode of the child *)
           | (Undetermined, m) => SOME m
           (* an expression in stack mode can contain heap mode data *)
-          | (Stack, Heap) => SOME Heap
+          | (Stack, Heap) => SOME Stack
           | (Heap, Stack) => NONE
           | (Heap, Heap) => SOME Heap
           | (Stack, Stack) => SOME Stack

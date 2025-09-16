@@ -231,7 +231,7 @@ fun ('down, 'up)
                                let
                                   val (clauses, u) =
                                      loops
-                                     (clauses, fn {body, pats, resultType} =>
+                                     (clauses, fn {body, pats, resultType, resultMode} =>
                                       let
                                          val (body, u) = loopExp (body, down)
                                          val u' =
@@ -242,7 +242,8 @@ fun ('down, 'up)
                                       in
                                          ({body = body,
                                            pats = pats,
-                                           resultType = resultType},
+                                           resultType = resultType,
+                                           resultMode = resultMode},
                                           combineUp (u, combineUp (u', u'')))
                                       end)
                                  in
@@ -338,7 +339,9 @@ fun ('down, 'up)
                            (doit (Constraint (e, t)),
                             combineUp (u, u'))
                         end
+                   | Exclave e => do1 (loop e, Exclave)
                    | FlatApp es => doVec (es, FlatApp)
+                   | ModeConstraint (e, mode) => do1 (loop e, fn e => ModeConstraint (e, mode))
                    | Fn m => do1 (loopMatch m, Fn)
                    | Handle (e, m) => do2 (loop e, loopMatch m, Handle)
                    | If (e1, e2, e3) => do3 (loop e1, loop e2, loop e3, If)

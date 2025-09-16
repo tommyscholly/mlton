@@ -100,6 +100,7 @@ signature CORE_ML =
              | PrimApp of {args: t vector,
                            prim: Type.t Prim.t,
                            targs: Type.t vector}
+             | Exclave of t
              | Raise of t
              | Record of t Record.t
              | Seq of t vector

@@ -163,6 +163,7 @@ fun consTopdec (d, dss) =
 type rule = Pat.t * Exp.t
 type clause = {pats : Pat.t vector,
                resultType : Type.t option,
+               resultMode : Mode.t option,
                body : Exp.t}
 type clauses = clause vector
 type eb = Con.t * EbRhs.t
@@ -256,7 +257,7 @@ type 'a whereAndEqns = WhereEquation.t list * 'a list
                yytext: string}
     | ABSTYPE | AND | ANDALSO | ARROW | AS | ASTERISK | BAR | CASE | COLON
     | COLONGT | (* modes *) COLONDASH | STACK | HEAP | COMMA | DATATYPE | DOTDOTDOT | ELSE | END | EOF | EQUALOP
-    | EQTYPE | EXCEPTION | DO | DARROW | FN | FUN | FUNCTOR | HANDLE | HASH
+    | EQTYPE | EXCLAVE | EXCEPTION | DO | DARROW | FN | FUN | FUNCTOR | HANDLE | HASH
     | HASHLBRACKET | IF | IN | INCLUDE | INFIX | INFIXR | LBRACE | LBRACKET | LET
     | LOCAL | LPAREN | NONFIX | ORELSE | OF | OP | OPEN | OVERLOAD | RAISE
     | RBRACE | RBRACKET | REC | RPAREN | SEMICOLON | SHARING | SIG | SIGNATURE
@@ -286,6 +287,7 @@ type 'a whereAndEqns = WhereEquation.t list * 'a list
        | const' of Const.node
        | constr of Con.t * Type.t option
        | constraint of Type.t option
+       | resultConstraint of Type.t option * Mode.t option
        | constrs of (Con.t * Type.t option) list
        | constOrBool of Const.t
        | cpat of Pat.t
@@ -456,11 +458,12 @@ type 'a whereAndEqns = WhereEquation.t list * 'a list
 %left ANDALSO
 %right AS
 %left COLON
+%right COLONDASH
 
 %name ML
 
 %keyword ABSTYPE AND AS CASE DATATYPE DOTDOTDOT ELSE END
-  EQTYPE EXCEPTION  DO  DARROW  FN  FUN  FUNCTOR  HANDLE
+  EQTYPE EXCLAVE EXCEPTION  DO  DARROW  FN  FUN  FUNCTOR  HANDLE
   IF IN INCLUDE  INFIX  INFIXR  LET  LOCAL  NONFIX  OF  OP
   OPEN OVERLOAD  RAISE  REC  SHARING  SIG  SIGNATURE  STRUCT
   STRUCTURE THEN TYPE VAL WHILE WHERE WITH WITHTYPE
@@ -801,10 +804,16 @@ rvalbind : REC rvalbind                (rvalbind)
              ({pat = pat, match = match} :: rvalbind)
 
 constraint :                    (NONE)
-           | COLON ty           (SOME ty)
+          | COLON ty           (SOME ty)
+
+resultConstraint :                         (NONE, NONE)
+                | COLON ty                 (SOME ty, NONE)
+                | COLONDASH mode           (NONE, SOME mode)
+                | COLON ty COLONDASH mode  (SOME ty, SOME mode)
 
 mode : STACK                    (Mode.Stack)
      | HEAP                     (Mode.Heap)
+     | LPAREN mode RPAREN       (mode)
 
 funs    : clausesTop               ([clausesTop])
         | clausesTop AND funs      (clausesTop :: funs)
@@ -815,9 +824,14 @@ clausesTop: clauses (Vector.fromList clauses)
 clauses : clause                ([clause])
         | clause BAR clauses    (clause :: clauses)
 
-clause  : apats constraint EQUALOP exp  ({pats = Vector.fromList apats,
-                                          resultType = constraint,
-                                          body = exp})
+clause  : apats constraint EQUALOP exp      ({pats = Vector.fromList apats,
+                                              resultType = constraint,
+                                              resultMode = NONE,
+                                              body = exp})
+        | apats resultConstraint EQUALOP exp ({pats = Vector.fromList apats,
+                                              resultType = #1 resultConstraint,
+                                              resultMode = #2 resultConstraint,
+                                              body = exp})
 
 typBind : tbs
           (TypBind.makeRegion' (TypBind.T tbs, tbsleft, tbsright))
@@ -1013,12 +1027,14 @@ expnode : exp HANDLE match      (Exp.Handle (exp, match))
         | exp ORELSE exp        (Exp.Orelse (exp1, exp2))
         | exp ANDALSO exp       (Exp.Andalso (exp1, exp2))
         | exp COLON ty          (Exp.Constraint (exp, ty))
+        | exp COLONDASH mode    (Exp.ModeConstraint (exp, mode))
         | app_exp               (Exp.FlatApp (Vector.fromList app_exp))
         | FN match              (Exp.Fn match)
         | CASE exp OF match     (Exp.Case (exp, match))
         | WHILE exp DO exp      (Exp.While {test = exp1, expr = exp2})
         | IF exp THEN exp ELSE exp (Exp.If (exp1, exp2, exp3))
         | RAISE exp             (Exp.Raise exp)
+        | EXCLAVE exp           (Exp.Exclave exp)
 
 app_exp : aexp             ([Exp.makeRegion' (aexp, aexpleft, aexpright)])
         | aexp app_exp     (Exp.makeRegion' (aexp, aexpleft, aexpright)

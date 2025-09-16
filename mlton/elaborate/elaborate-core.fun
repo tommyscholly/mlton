@@ -166,7 +166,7 @@ structure Tyvar =
 
 fun patModeConstraint (p: Apat.t): Mode.t =
    case Apat.node p of
-      Apat.ModeConstraint (p, mode) => mode
+      Apat.ModeConstraint (_, mode) => mode
     | _ => Mode.Undetermined
 
 fun matchDiagsFromNoMatch noMatch =
@@ -2335,7 +2335,7 @@ fun elaborateDec (d, {env = E, nest}) =
                          val _ = check (ElabControl.allowDoDecls, "do declarations", Adec.region d)
                          val {unify, ...} = DiagUtils.make E
                          (* TODO: check the mode *)
-                         val exp' = elabExp (exp, nest, NONE, Mode.Heap)
+                         val exp' = elabExp (exp, nest, NONE, Mode.Undetermined, false)
                          val _ =
                             unify
                             (Cexp.ty exp', Type.unit, fn (l1, _) =>
@@ -2422,7 +2422,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                        seq [str "in: ", approximate (layFb ())]
                                     val clauses =
                                        Vector.map
-                                       (clauses, fn {body, pats, resultType} =>
+                                       (clauses, fn {body, pats, resultType, resultMode} =>
                                         let
                                            fun layPats () =
                                               approximate (Apat.layoutFlatApp pats)
@@ -2441,6 +2441,10 @@ fun elaborateDec (d, {env = E, nest}) =
                                                        NONE => empty
                                                      | SOME rt => seq [str ": ",
                                                                        Atype.layout rt],
+                                                    case resultMode of
+                                                       NONE => empty
+                                                     | SOME rm => seq [str " :- ",
+                                                                       Mode.layout rm],
                                                     str " = ",
                                                     Aexp.layout body])
                                            val regionClause =
@@ -2456,7 +2460,8 @@ fun elaborateDec (d, {env = E, nest}) =
                                             pats = pats,
                                             regionClause = regionClause,
                                             regionPats = regionPats,
-                                            resultType = resultType}
+                                            resultType = resultType,
+                                            resultMode = resultMode}
                                         end)
                                     val regionFb =
                                        Region.append
@@ -2522,11 +2527,11 @@ fun elaborateDec (d, {env = E, nest}) =
                                     val argTys = Vector.tabulate (numArgs, fn _ => Type.new ())
                                     (* since unify modifies in place, i'm just
                                      * using a ref here *)
-                                    val argModes = ref (Vector.tabulate (numArgs, fn _ => Mode.Heap))
+                                    val argModes = ref (Vector.tabulate (numArgs, fn _ => Mode.Undetermined))
                                     val resTy = Type.new ()
                                     val clauses =
                                        Vector.map
-                                       (clauses, fn {body, layPats, layPatsPrefix, pats, regionPats, resultType, ...} =>
+                                       (clauses, fn {body, layPats, layPatsPrefix, pats, regionPats, resultType, resultMode, ...} =>
                                         let
                                            val elaboratePat = elaboratePat ()
                                            val (pats, bindss) =
@@ -2572,6 +2577,9 @@ fun elaborateDec (d, {env = E, nest}) =
                                                in
                                                   (resultType, regionResultType)
                                                end)
+                                           (* Handle mode constraints - validate if needed *)
+                                           val resultMode = resultMode
+                                           (* TODO: Add mode constraint validation here *)
                                         in
                                            {binds = binds,
                                             body = body,
@@ -2579,7 +2587,8 @@ fun elaborateDec (d, {env = E, nest}) =
                                             layPatsPrefix = layPatsPrefix,
                                             pats = pats,
                                             regionPats = regionPats,
-                                            resultType = resultType}
+                                            resultType = resultType,
+                                            resultMode = resultMode}
                                         end)
                                     val funTy =
                                        let
@@ -2632,7 +2641,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                     val resultTypeConstraint = Vector.exists (clauses, Option.isSome o #resultType)
                                     val rules =
                                        Vector.map
-                                       (clauses, fn {binds, body, layPats, layPatsPrefix, pats, regionPats, resultType} =>
+                                       (clauses, fn {binds, body, layPats, layPatsPrefix, pats, regionPats, resultType, resultMode} =>
                                         let
                                            val regionBody = Aexp.region body
                                            val body =
@@ -2642,8 +2651,12 @@ fun elaborateDec (d, {env = E, nest}) =
                                                 (binds, fn (x, x', ty, mode) =>
                                                  Env.extendVar
                                                  (E, x, x', Scheme.fromType ty, mode, {isRebind = false}))
-                                                  (* TODO: check the mode *)
-                                                ; elabExp (body, nest, NONE, Mode.Heap)))
+                                                  (* use resultMode constraint if specified *)
+                                                ; elabExp (body, nest, NONE,
+                                                          (case resultMode of
+                                                             SOME mode => mode
+                                                           | NONE =>
+                                                                 Mode.Undetermined), true)))
                                            val body =
                                               Cexp.enterLeave
                                               (body,
@@ -2682,12 +2695,29 @@ fun elaborateDec (d, {env = E, nest}) =
                                                               align [seq [str "expression: ", l2],
                                                                      seq [str "previous:   ", l1],
                                                                      ctxtFb ()]))
-                                        in
-                                           {exp = body,
-                                            layPat = SOME layPats,
-                                            pat = Cpat.tuple pats,
-                                            regionPat = regionPats}
-                                        end)
+                                                   (* TODO: Add mode constraint validation *)
+                                                   val _ =
+                                                      case resultMode of
+                                                         SOME expectedMode =>
+                                                            let
+                                                               val actualMode = Cexp.mode body
+                                                            in
+                                                               if Option.isSome (Mode.subsumes (expectedMode, actualMode))
+                                                                  then ()
+                                                               else Control.error
+                                                                    (regionBody,
+                                                                     str "function clause expression and result mode constraint disagree",
+                                                                     align [seq [str "expression mode: ", Mode.layout actualMode],
+                                                                            seq [str "constraint mode: ", Mode.layout expectedMode],
+                                                                            ctxtFb ()])
+                                                            end
+                                                       | NONE => ()
+                                                in
+                                                   {exp = body,
+                                                    layPat = SOME layPats,
+                                                    pat = Cpat.tuple pats,
+                                                    regionPat = regionPats}
+                                                end)
                                     val args =
                                        Vector.map2
                                        (argTys, !argModes, fn (argTy, argMode) =>
@@ -2909,7 +2939,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                     val regionPat = Apat.region pat
                                     val regionExp = Aexp.region exp
                                     val patMode = patModeConstraint pat
-                                    val exp = elabExp (exp, nest, Apat.getName pat, patMode)
+                                    val exp = elabExp (exp, nest, Apat.getName pat, patMode, false)
                                     val exp =
                                        Cexp.enterLeave
                                        (exp,
@@ -3140,21 +3170,22 @@ fun elaborateDec (d, {env = E, nest}) =
           in
              decs
           end) arg
-      and elabExp (arg: Aexp.t * Nest.t * string option * Mode.t) : Cexp.t =
+      and elabExp (arg: Aexp.t * Nest.t * string option * Mode.t * bool) : Cexp.t =
          Trace.traceInfo
          (elabExpInfo,
-          Layout.tuple4
+          Layout.tuple5
           (Aexp.layout,
            Nest.layout,
            Option.layout String.layout,
-           Mode.layout),
+           Mode.layout,
+           Bool.layout),
           Cexp.layoutWithType,
           Trace.assertTrue)
 
-         (fn (e: Aexp.t, nest, maybeName, modeConstraint: Mode.t) =>
+         (fn (e: Aexp.t, nest, maybeName, modeConstraint: Mode.t, inFunction: bool) =>
           let
-             fun elab e = elabExp (e, nest, NONE, modeConstraint)
-             val {layoutPrettyType, layoutPrettyTycon, layoutPrettyTyvar, unify, unifyModes} =
+             fun elab e = elabExp (e, nest, NONE, modeConstraint, inFunction)
+             val {layoutPrettyType, layoutPrettyTycon, layoutPrettyTyvar, unify, ...} =
                 DiagUtils.make E
              val layoutPrettyTypeBracket = fn ty =>
                 seq [str "[", #1 (layoutPrettyType ty), str "]"]
@@ -3228,9 +3259,27 @@ fun elaborateDec (d, {env = E, nest}) =
                                 str " applied to incorrect argument"],
                            align [seq [str "expects: ", l1],
                                   seq [str "but got: ", l2]]))
+                      (* TODO: maybe use better heuristics for function calls *)
+                      val resultMode =
+                         if isCon
+                         then modeConstraint (* Constructors use context mode *)
+                         else
+                            (* For function applications:
+                             * 1. If there's a specific mode constraint from context, use it
+                             * 2. Otherwise, try to infer from the function and arguments
+                             * 3. Since result mode info isn't in types yet, default to heap
+                             *)
+                            if not (Mode.equals (modeConstraint, Mode.Undetermined))
+                            then modeConstraint
+                            else
+                               Mode.Heap
+                               (* (* infer based on context *) *)
+                               (* case (Cexp.node cef, Cexp.mode cea) of *)
+                               (*    (* If argument is stack and function is simple, likely stack result *) *)
+                               (*    (Cexp.Var _, Mode.Stack) => Mode.Stack *)
+                               (*  | _ => Mode.Heap (* Default to heap for function calls returns *) *)
                    in
-                      (* TODO: check the mode *)
-                      Cexp.make (Cexp.App (cef, cea), resultType, Mode.Heap)
+                      Cexp.make (Cexp.App (cef, cea), resultType, resultMode)
                    end
               | Aexp.Case (e, m) =>
                    let
@@ -3252,13 +3301,16 @@ fun elaborateDec (d, {env = E, nest}) =
                                   region = Amatch.region m,
                                   rules = rules,
                                   test = e}
-                   end
+                end
               | Aexp.Const c =>
                    elabConst
                    (c,
                     {layoutPrettyType = #1 o layoutPrettyType},
-                    (* TODO: check the mode *)
-                    fn (resolve, ty) => Cexp.make (Cexp.Const resolve, ty, modeConstraint),
+                    (* Use the mode constraint for constants *)
+                    fn (resolve, ty) => Cexp.make (Cexp.Const resolve, ty,
+                                                   if Mode.equals (modeConstraint, Mode.Undetermined)
+                                                   then Mode.Stack (* Constants default to stack *)
+                                                   else modeConstraint),
                     {false = Cexp.falsee,
                      true = Cexp.truee})
               | Aexp.Constraint (e, t') =>
@@ -3273,8 +3325,54 @@ fun elaborateDec (d, {env = E, nest}) =
                            align [seq [str "expression: ", l1],
                                   seq [str "constraint: ", l2]]))
                    in
-                      (* TODO: check the mode *)
-                      Cexp.make (Cexp.node e, t', Mode.Heap)
+                      (* Type constraint preserves the mode constraint *)
+                      Cexp.make (Cexp.node e, t', modeConstraint)
+                   end
+              | Aexp.ModeConstraint (e, mode) =>
+                  let
+                     val e' = elab e
+                      val _ =
+                         (* Check that the expression mode matches the constraint *)
+                         case Mode.subsumes(Cexp.mode e', mode) of
+                            SOME _ => ()
+                          | NONE =>
+                               Control.error
+                               (region,
+                                str "expression and mode constraint disagree",
+                                seq [str "expression mode: ", Mode.layout (Cexp.mode e'),
+                                     str ", constraint mode: ", Mode.layout mode])
+                   in
+                      (* Apply the mode constraint *)
+                      Cexp.make (Cexp.node e', Cexp.ty e', mode)
+                   end
+              | Aexp.Exclave e =>
+                   let
+                      val e' = elab e
+                      val _ =
+                         (* Check that the expression being exclave'd has stack mode *)
+                         case Cexp.mode e' of
+                            Mode.Stack => ()
+                          | Mode.Heap =>
+                               Control.error
+                               (region,
+                                str "exclave_ can only be applied to stack-allocated expressions",
+                                seq [str "expression has heap mode: ", layoutPrettyTypeBracket (Cexp.ty e')])
+                          | Mode.Undetermined =>
+                               Control.error
+                               (region,
+                                str "exclave_ can only be applied to stack-allocated expressions",
+                                seq [str "expression has undetermined mode: ", layoutPrettyTypeBracket (Cexp.ty e')])
+                      val _ =
+                        if inFunction then
+                          ()
+                        else
+                          Control.error
+                            (region,
+                             str "exclave_ can only be used in a function tail position",
+                             empty)
+                   in
+                      (* exclave allows stack data to be returned, so preserve stack mode *)
+                      Cexp.make (Cexp.Exclave e', Cexp.ty e', Mode.Stack)
                    end
               | Aexp.FlatApp items => elab (Parse.parseExp (items, E, ctxt))
               | Aexp.Fn match =>
@@ -3407,8 +3505,8 @@ fun elaborateDec (d, {env = E, nest}) =
                                          ty
                                       end
                           in
-                             (* TODO: check the mode *)
-                             Cexp.make (Cexp.Let (d', e'), ty, Mode.Heap)
+                             (* Let expressions inherit the body's mode *)
+                             Cexp.make (Cexp.Let (d', e'), ty, Cexp.mode e')
                           end)
                    in
                       res
@@ -3444,8 +3542,8 @@ fun elaborateDec (d, {env = E, nest}) =
                       val cer = doit (er, "right")
                       val e = Cexp.orElse (cel, cer)
                    in
-                      (* TODO: check the mode *)
-                      Cexp.make (Cexp.node e, Type.bool, Mode.Heap)
+                      (* Orelse expression uses the mode constraint *)
+                      Cexp.make (Cexp.node e, Type.bool, modeConstraint)
                    end
               | Aexp.Paren e => elab e
               | Aexp.Prim kind =>
@@ -3540,8 +3638,11 @@ fun elaborateDec (d, {env = E, nest}) =
                                           name = name,
                                           region = region}
                          in
-                            (* TODO: check the mode *)
-                            Cexp.make (Cexp.Const finish, elabedTy, Mode.Heap)
+                            (* Prim constants use the mode constraint, default to stack *)
+                            Cexp.make (Cexp.Const finish, elabedTy,
+                                      if Mode.equals (modeConstraint, Mode.Undetermined)
+                                      then Mode.Stack
+                                      else modeConstraint)
                          end
                       val check = fn (c, n) => check (c, n, region)
                       datatype z = datatype Ast.PrimKind.t
@@ -3799,8 +3900,8 @@ fun elaborateDec (d, {env = E, nest}) =
                       val resultType = Type.new ()
                    in
                       Cexp.enterLeave
-                      (* TODO: check the mode *)
-                      (Cexp.make (Cexp.Raise exn, resultType, Mode.Heap),
+                      (* Raise expressions use the mode constraint *)
+                      (Cexp.make (Cexp.Raise exn, resultType, modeConstraint),
                        profileBody andalso !Control.profileRaise,
                        fn () => SourceInfo.function {name = "<raise>" :: nest,
                                                      region = region})
@@ -3813,8 +3914,8 @@ fun elaborateDec (d, {env = E, nest}) =
                          (SortedRecord.fromVector
                           (Record.toVector (Record.map (r, Cexp.ty))))
                    in
-                      (* TODO: check the mode *)
-                      Cexp.make (Cexp.Record r, ty, Mode.Heap)
+                      (* Record uses the mode constraint *)
+                      Cexp.make (Cexp.Record r, ty, modeConstraint)
                    end
               | Aexp.Selector f => elab (Aexp.selector (f, region))
               | Aexp.Seq es =>
@@ -3848,14 +3949,14 @@ fun elaborateDec (d, {env = E, nest}) =
                              | Control.Elaborate.DiagEIW.Warn => doit Control.warning
                          end
                    in
-                      (* TODO: check the mode *)
-                      Cexp.make (Cexp.Seq es', Cexp.ty (Vector.sub (es', last)), Mode.Heap)
+                      (* Sequence uses the mode constraint *)
+                      Cexp.make (Cexp.Seq es', Cexp.ty (Vector.sub (es', last)), modeConstraint)
                    end
               | Aexp.Var {name = id, ...} =>
                    let
                       fun dontCare () =
                          (* TODO: check the mode *)
-                         Cexp.var (Var.newNoname (), Type.new (), Mode.Heap)
+                         Cexp.var (Var.newNoname (), Type.new (), Mode.Undetermined)
                    in
                       case Env.lookupLongvid (E, id) of
                          NONE => dontCare ()
@@ -3915,8 +4016,24 @@ fun elaborateDec (d, {env = E, nest}) =
                                                      NONE => args
                                                    | SOME f => f)
                             in
-                               (* TODO: check the mode *)
-                               Cexp.make (e, instance, mode)
+                               (* Use the variable's stored mode, but validate against constraint *)
+                               let
+                                  val finalMode =
+                                     if Mode.equals (modeConstraint, Mode.Undetermined)
+                                     then mode
+                                     else case Mode.subsumes (modeConstraint, mode) of
+                                        (* mode is subsumed, mode is fine *)
+                                        SOME _ => mode
+                                      | NONE =>
+                                          (Control.error
+                                           (region,
+                                            str "variable mode disagrees with constraint",
+                                            seq [str "variable mode: ", Mode.layout mode,
+                                                 str ", constraint: ", Mode.layout modeConstraint]);
+                                           mode)
+                               in
+                                  Cexp.make (e, instance, finalMode)
+                               end
                             end
                    end
               | Aexp.Vector es =>
@@ -3928,9 +4045,11 @@ fun elaborateDec (d, {env = E, nest}) =
                                  unifyVector
                                  (Vector.map2 (es, es', fn (e, e') =>
                                                (Cexp.ty e', Aexp.region e)),
-                                  unify), 
-                                 (* TODO: check the mode *)
-                                  Mode.Heap)
+                                  unify),
+                                 (* Vectors use mode constraint, default to heap for complex structures *)
+                                 if Mode.equals (modeConstraint, Mode.Undetermined)
+                                 then Mode.Heap
+                                 else modeConstraint)
                    end
               | Aexp.While {expr, test} =>
                    let
@@ -4023,7 +4142,7 @@ fun elaborateDec (d, {env = E, nest}) =
                          align [seq [str "pattern:  ", l1],
                                 seq [str "previous: ", l2]]))
                     val expOrig = exp
-                    val exp = elabExp (exp, nest, NONE, modeConstraint)
+                    val exp = elabExp (exp, nest, NONE, modeConstraint, false)
                     val _ =
                        unify
                        (Cexp.ty exp, resultType, fn (l1, l2) =>

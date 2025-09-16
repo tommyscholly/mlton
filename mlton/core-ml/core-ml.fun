@@ -221,6 +221,7 @@ and expNode =
   | PrimApp of {args: exp vector,
                 prim: Type.t Prim.t,
                 targs: Type.t vector}
+  | Exclave of exp
   | Raise of exp
   | Record of exp Record.t
   | Seq of exp vector
@@ -297,6 +298,7 @@ in
             Pretty.primApp {args = Vector.map (args, layoutExp),
                             prim = Prim.layout prim,
                             targs = Vector.map (targs, Type.layout)}
+       | Exclave e => seq [str "exclave_ ", layoutExp e]
        | Raise e => Pretty.raisee (layoutExp e)
        | Record r =>
             Record.layout
@@ -327,13 +329,11 @@ in
                 indent (align (Vector.toListMap
                                (decs, fn {lambda as Lam {argType, argMode, body = Exp {ty = bodyType, ...}, ...}, var} =>
                                 align [seq [
-                                    (*TODO: fix mode heap and formatting here *)
-                                    maybeConstrain (Var.layout var, Type.arrow (argType, bodyType), argMode), 
-                                    str " = "],
+                                    maybeConstrain (Var.layout var, Type.arrow (argType, bodyType), argMode), str " = "],
                                  indent (layoutLambda lambda, 3)])),
                         3)]
    and layoutLambda (Lam {arg, argType, argMode, body, ...}) =
-      paren (align [seq [str "fn ", 
+      paren (align [seq [str "fn ",
                          (*TODO: fix mode heap *)
                          maybeConstrain (Var.layout arg, argType, argMode),
                          str " =>"],
@@ -404,6 +404,7 @@ structure Exp =
           | Con _ => false
           | Const _ => false
           | EnterLeave _ => true
+          | Exclave e => isExpansive e
           | Handle _ => true
           | Lambda _ => false
           | Let _ => true
@@ -510,6 +511,7 @@ structure Exp =
                 | Con _ => ()
                 | Const _ => ()
                 | EnterLeave (e, _) => loop e
+                | Exclave e => loop e
                 | Handle {handler, try, ...} => (loop handler; loop try)
                 | Lambda l => loopLambda l
                 | Let (ds, e) =>
@@ -575,6 +577,7 @@ structure Dec =
                         mk (PrimApp {args = Vector.map (args, loopExp),
                                      prim = prim,
                                      targs = targs})
+                   | Exclave exp => mk (Exclave (loopExp exp))
                    | Raise exp => mk (Raise (loopExp exp))
                    | Record r => mk (Record (Record.map (r, loopExp)))
                    | Seq exps => mk (Seq (Vector.map (exps, loopExp)))
@@ -641,42 +644,5 @@ structure Program =
             align
             [Control.sizeMessage ("coreML program", program)]
          end
-
-(*       fun typeCheck (T {decs, ...}) =
- *       let
- *          fun checkExp (e: Exp.t): Ty.t =
- *             let
- *                val (n, t) = Exp.dest e
- *                val 
- *                datatype z = datatype Exp.t
- *                val t' =
- *                   case n of
- *                      App (e1, e2) =>
- *                         let
- *                            val t1 = checkExp e1
- *                            val t2 = checkExp e2
- *                         in
- *                            case Type.deArrowOpt t1 of
- *                               NONE => error "application of non-function"
- *                             | SOME (u1, u2) =>
- *                                  if Type.equals (u1, t2)
- *                                     then t2
- *                                  else error "function/argument mismatch"
- *                         end
- *                    | Case {rules, test} =>
- *                         let
- *                            val {pat, exp} = Vector.first rules
- *                         in
- *                            Vector.foreach (rules, fn {pat, exp} =>
- *                                            Type.equals
- *                                            (checkPat pat, 
- *                         end
- *             in
- *                                   
- *             end
- *       in
- *       end
- *)
    end
-
 end

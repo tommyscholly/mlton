@@ -55,6 +55,7 @@ val FN:  'a * 'a -> (svalue,'a) token
 val DARROW:  'a * 'a -> (svalue,'a) token
 val DO:  'a * 'a -> (svalue,'a) token
 val EXCEPTION:  'a * 'a -> (svalue,'a) token
+val EXCLAVE:  'a * 'a -> (svalue,'a) token
 val EQTYPE:  'a * 'a -> (svalue,'a) token
 val EQUALOP:  'a * 'a -> (svalue,'a) token
 val EOF:  'a * 'a -> (svalue,'a) token
