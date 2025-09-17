@@ -7,7 +7,7 @@
  * See the file MLton-LICENSE for details.
  *)
 
-functor CoreML (S: CORE_ML_STRUCTS): CORE_ML = 
+functor CoreML (S: CORE_ML_STRUCTS): CORE_ML =
 struct
 
 open S
@@ -109,8 +109,8 @@ structure Pat =
             else let
                val mode = Vector.fold (ps, Mode.Stack, fn (p, m) => Mode.join (m, mode p))
             in
-               make (Record (Record.tuple ps), 
-                     Type.tuple (Vector.map (ps, ty)), 
+               make (Record (Record.tuple ps),
+                     Type.tuple (Vector.map (ps, ty)),
                      mode)
             end
 
@@ -308,9 +308,9 @@ in
              record = r,
              separator = " = "}
        | Seq es => Pretty.seq (Vector.map (es, layoutExp))
-       | Var (var, targs) => 
+       | Var (var, targs) =>
             if !Control.showTypes
-               then let 
+               then let
                        open Layout
                        val targs = targs ()
                     in
@@ -444,11 +444,25 @@ structure Exp =
       fun casee (z as {rules, ...}) =
          if Vector.isEmpty rules
             then Error.bug "CoreML.Exp.casee"
-         else 
+         else
             let
-               val mode = Vector.fold (rules, Mode.Stack, fn ({exp, ...}, m) => Mode.join (m, mode exp))
+               val case_mode = ref Mode.Undetermined
+               val _ = Vector.foreach (rules, fn {exp, ...} =>
+                 let
+                   val m = mode exp
+                 in
+                   if Mode.equals (m, Mode.Undetermined) then
+                     () (* skip undetermined modes *)
+                   else if Mode.equals (!case_mode, Mode.Undetermined) then
+                     case_mode := m
+                   else if not (Mode.equals (m, !case_mode)) then
+                     (* use Mode.join to combine inconsistent modes *)
+                     case_mode := Mode.join (m, !case_mode)
+                   else
+                     ()
+                 end)
             in
-               make (Case z, ty (#exp (Vector.first rules)), mode)
+               make (Case z, ty (#exp (Vector.first rules)), !case_mode)
             end
 
       fun iff (test, thenCase, elseCase): t =

@@ -2617,7 +2617,7 @@ fun elaborateDec (d, {env = E, nest}) =
                                        Env.extendVar
                                        (E, func, var,
                                         Scheme.fromType funTy,
-                                        Mode.Undetermined,
+                                        functionResultMode,
                                         {isRebind = false})
                                     val _ =
                                        markFunc var
@@ -3272,8 +3272,20 @@ fun elaborateDec (d, {env = E, nest}) =
                             if not (Mode.equals (modeConstraint, Mode.Undetermined))
                             then modeConstraint
                             else
-                               Mode.Heap
-                               (* (* infer based on context *) *)
+                               (* for function applications, use the stored function result mode *)
+                               let
+                                  val functionMode =
+                                     case Cexp.node cef of
+                                        Cexp.Var (varFn, _) =>
+                                           (* try to get the function's stored result mode *)
+                                           Cexp.mode cef
+                                      | _ => Cexp.mode cef
+                               in
+                                  if Mode.equals (functionMode, Mode.Undetermined)
+                                  then Mode.Heap (* default to heap if undetermined *)
+                                  else functionMode
+                               end
+
                                (* case (Cexp.node cef, Cexp.mode cea) of *)
                                (*    (* If argument is stack and function is simple, likely stack result *) *)
                                (*    (Cexp.Var _, Mode.Stack) => Mode.Stack *)
@@ -3309,7 +3321,15 @@ fun elaborateDec (d, {env = E, nest}) =
                     (* Use the mode constraint for constants *)
                     fn (resolve, ty) => Cexp.make (Cexp.Const resolve, ty,
                                                    if Mode.equals (modeConstraint, Mode.Undetermined)
-                                                   then Mode.Stack (* Constants default to stack *)
+                                                   (* lower down, there should
+                                                   * be a mode specifically for
+                                                   * constants, as they can be
+                                                   * stack allocated, but dont
+                                                   * constraint the mode like
+                                                   * other stack values.
+                                                   * perhaps an "unallocated"
+                                                   * mode for constants? *)
+                                                   then Mode.Undetermined
                                                    else modeConstraint),
                     {false = Cexp.falsee,
                      true = Cexp.truee})
