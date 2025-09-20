@@ -2204,6 +2204,8 @@ struct
              let
                fun elab e =
                  elabExp (e, nest, NONE, modeConstraint, inFunction)
+               fun elab_m (e, m) =
+                 elabExp (e, nest, NONE, m, inFunction)
                val {layoutPrettyType, layoutPrettyTycon, layoutPrettyTyvar, unify, ...} = DiagUtils.make E
                val layoutPrettyTypeBracket = fn ty => seq [str "[", #1 (layoutPrettyType ty), str "]"]
                fun ctxt () =
@@ -2348,18 +2350,16 @@ struct
                    end
                | Aexp.Exclave e =>
                    let
-                     val e' = elab e
+                     val e' = elab_m (e, Mode.Undetermined)
                      val _ =
                        (* Check that the expression being exclave'd is not
                        * leaking local variables *)
                        case Cexp.mode e' of
                          Mode.Heap => ()
+                       | Mode.Undetermined => ()
                        | Mode.Stack =>
                            Control.error (region, str "exclave_ can only be applied to expressions that do not leak local variables", seq
                              [str "expression has stack mode: ", layoutPrettyTypeBracket (Cexp.ty e')])
-                       | Mode.Undetermined =>
-                           Control.error (region, str "exclave_ can only be applied to expressions that do not leak local variables", seq
-                             [str "expression has undetermined mode: ", layoutPrettyTypeBracket (Cexp.ty e')])
                      val _ = if inFunction then () else Control.error (region, str "exclave_ can only be used in a function tail position", empty)
                    in
                      (* exclave allows an expression to execute in the callers
@@ -2448,8 +2448,13 @@ struct
                                in
                                  ty
                                end
+                         val () =
+                           case Cexp.mode e' of
+                             Mode.Stack =>
+                               Control.error (region, str "let expression would escape stack-allocated data", align
+                                 [seq [str "expression has stack mode and would escape let binding scope"], ctxt ()])
+                           | _ => ()
                        in
-                         (* Let expressions inherit the body's mode *)
                          Cexp.make (Cexp.Let (d', e'), ty, Cexp.mode e')
                        end)
                    in
@@ -2459,8 +2464,7 @@ struct
                    let
                      val es' = Vector.map (es, elab)
                    in
-                     (* TODO: check the mode *)
-                     Cexp.make (Cexp.List es', unifyList (Vector.map2 (es, es', fn (e, e') => (Cexp.ty e', Aexp.region e)), unify), Mode.Heap)
+                     Cexp.make (Cexp.List es', unifyList (Vector.map2 (es, es', fn (e, e') => (Cexp.ty e', Aexp.region e)), unify), modeConstraint)
                    end
                | Aexp.Orelse (el, er) =>
                    let
@@ -2538,12 +2542,8 @@ struct
                        (* TODO: check the mode *)
                        wrap (etaNoWrap {expandedTy = expandedTy, prim = prim}, elabedTy, Mode.Heap)
                      val lookConst = fn {default, elabedTy, expandedTy, name} =>
-                       let
-                         val finish = lookConst {default = default, expandedTy = expandedTy, name = name, region = region}
-                       in
-                         (* Prim constants use the mode constraint, default to stack *)
-                         Cexp.make
-                           (Cexp.Const finish, elabedTy, if Mode.equals (modeConstraint, Mode.Undetermined) then Mode.Stack else modeConstraint)
+                       let val finish = lookConst {default = default, expandedTy = expandedTy, name = name, region = region}
+                       in (* Prim constants use the mode constraint, default to stack *) Cexp.make (Cexp.Const finish, elabedTy, modeConstraint)
                        end
                      val check = fn (c, n) => check (c, n, region)
                      datatype z = datatype Ast.PrimKind.t

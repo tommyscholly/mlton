@@ -12,7 +12,5 @@ fun return_stack_list (l: int32 list :- stack_mode) :- stack_mode = l
 val l = exclave_list ()
 val ll = return_stack_list l
 
-(* fun should_fail () :- stack_mode = *)
-(*   let val l = exclave_list () *)
-(*   in exclave_ l *)
-(*   end *)
+fun should_fail () =
+    let val x :- stack_mode = [1, 2, 3] in x end
