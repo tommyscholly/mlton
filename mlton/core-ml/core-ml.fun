@@ -107,7 +107,7 @@ structure Pat =
          if 1 = Vector.length ps
             then Vector.first ps
             else let
-               val mode = Vector.fold (ps, Mode.Stack, fn (p, m) => Mode.join (m, mode p))
+               val mode = Vector.fold (ps, Mode.Undetermined, fn (p, m) => Mode.join (m, mode p))
             in
                make (Record (Record.tuple ps),
                      Type.tuple (Vector.map (ps, ty)),
@@ -420,7 +420,7 @@ structure Exp =
          if 1 = Vector.length es
             then Vector.first es
          else let
-            val mode = Vector.fold (es, Mode.Stack, fn (e, m) => Mode.join (m, mode e))
+            val mode = Vector.fold (es, Mode.Undetermined, fn (e, m) => Mode.join (m, mode e))
          in
             make (Record (Record.tuple es),
                   Type.tuple (Vector.map (es, ty)), mode)
