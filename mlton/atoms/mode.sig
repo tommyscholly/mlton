@@ -4,7 +4,7 @@ signature MODE_STRUCTS =
 
 signature MODE =
    sig
-      datatype t = Stack | Heap | Undetermined
+      datatype t = Stack | Heap | Undetermined | Constant
       val layout: t -> Layout.t
       val equals: t * t -> bool
       val join: t * t -> t

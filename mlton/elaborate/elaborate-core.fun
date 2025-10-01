@@ -1414,7 +1414,7 @@ struct
         (* Don't create the source info if we're profiling some IL. *)
         orelse ! Control.profileIL <> Control.ProfileSource
       then e
-      else make (EnterLeave (e, si ()), ty e, Mode.Undetermined)
+      else make (EnterLeave (e, si ()), ty e, mode e)
   end
 
   (* This property must be outside of elaborateDec, since we don't want it to
@@ -1666,7 +1666,7 @@ struct
                                      | SOME t => let val t = elabType (t, {bogusAsUnknown = false}) in (SOME t, Type.arrow (t, Type.exn)) end
                                    val scheme = Scheme.fromType ty
                                    (* exceptions should always be heap allocated? *)
-                                   val _ = Env.extendExn (E, exn, exn', scheme, Mode.Undetermined)
+                                   val _ = Env.extendExn (E, exn, exn', scheme, Mode.Heap)
                                  in
                                    Decs.add (decs, Cdec.Exception {arg = arg, con = exn'})
                                  end
@@ -2321,7 +2321,7 @@ struct
                      , {layoutPrettyType = #1 o layoutPrettyType}
                      , fn (resolve, ty) =>
                          Cexp.make
-                           (Cexp.Const resolve, ty, if Mode.equals (modeConstraint, Mode.Undetermined) then Mode.Undetermined else modeConstraint)
+                           (Cexp.Const resolve, ty, Mode.Constant)
                      , {false = Cexp.falsee, true = Cexp.truee}
                      )
                | Aexp.Constraint (e, t') =>
@@ -2355,11 +2355,10 @@ struct
                        (* Check that the expression being exclave'd is not
                        * leaking local variables *)
                        case Cexp.mode e' of
-                         Mode.Heap => ()
-                       | Mode.Undetermined => ()
-                       | Mode.Stack =>
+                         Mode.Stack =>
                            Control.error (region, str "exclave_ can only be applied to expressions that do not leak local variables", seq
                              [str "expression has stack mode: ", layoutPrettyTypeBracket (Cexp.ty e')])
+                        | _ => ()
                      val _ = if inFunction then () else Control.error (region, str "exclave_ can only be used in a function tail position", empty)
                    in
                      (* exclave allows an expression to execute in the callers

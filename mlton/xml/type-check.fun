@@ -39,6 +39,12 @@ fun typeCheck (program as Program.T {datatypes, body}): unit =
                                     then ()
                                  else Type.error ("tyvar not in scope",
                                                   Tyvar.layout a)}
+      fun checkMode (constraint: Mode.t, expMode: Mode.t): unit =
+         if Mode.equals (constraint, expMode)
+            then ()
+         else Type.error ("mode constraint mismatch",
+                          Layout.align [Mode.layout constraint,
+                                        Mode.layout expMode])
       fun checkTypes v = Vector.foreach (v, checkType)
       val {get = getCon: Con.t -> {tyvars: Tyvar.t vector, ty: Type.t},
            set, ...} =
@@ -75,7 +81,7 @@ fun typeCheck (program as Program.T {datatypes, body}): unit =
                          ("ty", Type.layout ty)], 
           Layout.ignore)
          setVar
-      fun checkVarExp (VarExp.T {var, targs}): Type.t =
+      fun checkVarExp (VarExp.T {var, targs, ...}): Type.t =
          let
             val _ = checkTypes targs
             val {tyvars, ty} = getVar var
@@ -294,11 +300,11 @@ fun typeCheck (program as Program.T {datatypes, body}): unit =
                    ; Vector.foreach (decs, fn {ty, lambda, ...} =>
                                      check (ty, checkLambda lambda))
                    ; unbindTyvars tyvars)
-             | MonoVal {var, ty, exp} =>
+             | MonoVal {var, ty, exp, mode} =>
                   (checkType ty
                    ; check (ty, checkPrimExp (exp, ty))
                    ; setVar (var, {tyvars = Vector.new0 (), ty = ty}))
-             | PolyVal {tyvars, var, ty, exp} =>
+             | PolyVal {tyvars, var, ty, mode, exp} =>
                   (bindTyvars tyvars
                    ; checkType ty
                    ; check (ty, checkExp exp)

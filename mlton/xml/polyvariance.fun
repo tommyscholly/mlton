@@ -120,7 +120,7 @@ fun shouldDuplicate (program as Program.T {body, ...}, hofo, small, product)
                fn [] => loopVar result
                 | dec :: decs =>
                      case dec of
-                        MonoVal {var, ty, exp} =>
+                        MonoVal {var, ty, mode, exp} =>
                            (case exp of
                                Lambda l =>
                                   (new {var = var, ty = ty, lambda = l}
@@ -298,7 +298,7 @@ fun transform (program as Program.T {datatypes, body},
             [] => {decs = [], result = loopVar result}
           | d :: ds =>
                case d of
-                  MonoVal {var, ty, exp} =>
+                  MonoVal {var, ty, mode, exp} =>
                      (case exp of
                          Lambda l =>
                             let
@@ -307,13 +307,13 @@ fun transform (program as Program.T {datatypes, body},
                                val decs =
                                   case varInfo var of
                                      Replace var =>
-                                        MonoVal {var = var, ty = ty,
+                                        MonoVal {var = var, ty = ty, mode = mode,
                                                  exp = Lambda (loopLambda l)}
                                         :: decs
                                    | Dup {duplicates, ...} =>
                                         List.fold
                                         (!duplicates, decs, fn (var, decs) =>
-                                         MonoVal {var = var, ty = ty,
+                                         MonoVal {var = var, ty = ty, mode = mode,
                                                   exp = Lambda (loopLambda l)}
                                          :: decs)
                             in {decs = decs, result = result}
@@ -372,7 +372,7 @@ fun transform (program as Program.T {datatypes, body},
                                    | Var x => Var (loopVar x)
                                val var = bind var
                                val {decs, result} = loopDecs (ds, result)
-                            in {decs = (MonoVal {var = var, ty = ty, exp = exp}
+                            in {decs = (MonoVal {var = var, ty = ty, mode = mode, exp = exp}
                                         :: decs),
                                 result = result}
                             end)

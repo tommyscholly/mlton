@@ -45,7 +45,7 @@ signature MATCH_COMPILE_STRUCTS =
             val equal: t * t -> t
             val iff: {test: t, thenn: t, elsee: t, ty: Type.t} -> t
             val lett: {var: Var.t, exp: t, body: t} -> t
-            val var: Var.t * Type.t -> t
+            val var: Var.t * Type.t * Mode.t -> t
             val vectorLength: t -> t
          end
       structure NestedPat: NESTED_PAT

@@ -167,7 +167,7 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
       val {get = varKeep: Var.t -> bool vector option,
            set = setVarKeep, ...} =
          Property.getSetOnce (Var.plist, Property.initConst NONE)
-      fun fixVarExp (I.VarExp.T {targs, var}): O.VarExp.t =
+      fun fixVarExp (I.VarExp.T {targs, var, mode}): O.VarExp.t =
          let
             val targs =
                case varKeep var of
@@ -175,7 +175,7 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
                 | SOME bv => keep (targs, bv)
          in
             O.VarExp.T {targs = Vector.map (targs, fixType),
-                        var = var}
+                        var = var, mode = mode}
          end
       val fixVarExp =
          Trace.trace 
@@ -215,11 +215,11 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
                   O.Dec.Fun {decs = decs,
                              tyvars = tyvars}
                end
-          | I.Dec.MonoVal {exp, ty, var} =>
+          | I.Dec.MonoVal {exp, ty, var, mode} =>
                O.Dec.MonoVal {exp = fixPrimExp exp,
                               ty = fixType ty,
-                              var = var}
-          | I.Dec.PolyVal {exp, ty, tyvars, var} =>
+                              var = var, mode = mode}
+          | I.Dec.PolyVal {exp, ty, tyvars, mode, var} =>
                let
                   val exp = fixExp exp
                   val ty = fixType ty
@@ -229,6 +229,7 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
                   O.Dec.PolyVal {exp = exp,
                                  ty = ty,
                                  tyvars = keep (tyvars, bv),
+                                 mode = mode,
                                  var = var}
                end
       and fixExp (e: I.Exp.t): O.Exp.t =

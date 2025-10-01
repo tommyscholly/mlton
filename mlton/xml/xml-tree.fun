@@ -62,13 +62,13 @@ structure Type =
       val parse = parse ()
    end
 
-fun maybeConstrain (pre, var, ty, post) =
+fun maybeConstrain (pre, var, ty, mode, post) =
    let
       open Layout
    in
       if !Control.showTypes
          then mayAlign [seq [pre, Var.layout var, str ":"],
-                        indent (seq [Type.layout ty, post], 2)]
+                        indent (seq [Type.layout ty, Mode.layout mode, post], 2)]
       else seq [pre, Var.layout var, post]
    end
 
@@ -104,7 +104,7 @@ structure Pat =
                     NONE => empty
                   | SOME (var, ty) =>
                        seq [str " ",
-                            paren (maybeConstrain (empty, var, ty, empty))]]
+                            paren (maybeConstrain (empty, var, ty, Mode.Undetermined, empty))]]
       end
 
       local
@@ -126,7 +126,7 @@ structure Pat =
 
       local
          fun make c = T {con = c, targs = Vector.new0 (), arg = NONE}
-      in 
+      in
          val falsee = make Con.falsee
          val truee = make Con.truee
       end
@@ -135,14 +135,16 @@ structure Pat =
 structure VarExp =
    struct
       datatype t = T of {targs: Type.t vector,
-                         var: Var.t}
+                         var: Var.t,
+                         mode: Mode.t}
 
-      fun equals (T {targs = targs1, var = var1},
-                  T {targs = targs2, var = var2}) =
+      fun equals (T {targs = targs1, var = var1, mode = mode1},
+                  T {targs = targs2, var = var2, mode = mode2}) =
          Var.equals (var1, var2)
          andalso Vector.equals (targs1, targs2, Type.equals)
+         andalso Mode.equals (mode1, mode2)
 
-      fun mono var = T {var = var, targs = Vector.new0 ()}
+      fun mono var = T {var = var, targs = Vector.new0 (), mode = Mode.Undetermined}
 
       local
          fun make f (T r) = f r
@@ -150,11 +152,11 @@ structure VarExp =
          val var = make #var
       end
 
-      fun layout (T {var, targs, ...}) =
+      fun layout (T {var, targs, mode, ...}) =
          let
             open Layout
          in
-            seq [Var.layout var, layoutTargs targs]
+            seq [Var.layout var, layoutTargs targs, Mode.layout mode]
          end
 
       val parse =
@@ -165,7 +167,7 @@ structure VarExp =
             T <$>
             (Var.parseExcept varExcepts >>= (fn var =>
              parseTargs >>= (fn targs =>
-             pure {var = var, targs = targs})))
+             pure {var = var, targs = targs, mode = Mode.Undetermined})))
          end
    end
 
@@ -208,10 +210,12 @@ and dec =
             tyvars: Tyvar.t vector}
   | MonoVal of {exp: primExp,
                 ty: Type.t,
+                mode: Mode.t,
                 var: Var.t}
   | PolyVal of {exp: exp,
                 ty: Type.t,
                 tyvars: Tyvar.t vector,
+                mode: Mode.t,
                 var: Var.t}
 and lambda = Lam of {arg: Var.t,
                      argType: Type.t,
@@ -240,18 +244,18 @@ in
                              then seq [str "fun ", layoutTyvars tyvars]
                              else str "and "
                     in
-                       mayAlign [maybeConstrain (pre, var, ty, str " ="),
+                       mayAlign [maybeConstrain (pre, var, ty, Mode.Undetermined, str " ="),
                                  indent (layoutLambda lambda, 2)]
                     end))
-       | MonoVal {exp, ty, var} =>
-            mayAlign [maybeConstrain (str "val ", var, ty, str " ="),
+       | MonoVal {exp, ty, mode, var} =>
+            mayAlign [maybeConstrain (str "val ", var, ty, mode, str " ="),
                       indent (layoutPrimExp exp, 2)]
-       | PolyVal {exp, ty, tyvars, var} =>
+       | PolyVal {exp, ty, tyvars, mode, var} =>
             mayAlign [maybeConstrain (seq [str "val ",
                                            if !Control.showTypes
                                               then layoutTyvars tyvars
                                               else empty],
-                                      var, ty, str " ="),
+                                      var, ty, mode, str " ="),
                       indent (layoutExp exp, 2)]
    and layoutExp (Exp {decs, result}) =
       if List.isEmpty decs
@@ -296,7 +300,7 @@ in
        | Handle {catch, handler, try} =>
             mayAlign [layoutExp try,
                       mayAlign [maybeConstrain
-                                (str "handle ", #1 catch, #2 catch, str " =>"),
+                                (str "handle ", #1 catch, #2 catch, Mode.Heap, str " =>"),
                                 indent (layoutExp handler, 2)]]
        | Lambda l => layoutLambda l
        | PrimApp {args, prim, targs} =>
@@ -327,7 +331,7 @@ in
    and layoutLambda (Lam {arg, argType, body, mayInline, ...}) =
       mayAlign [maybeConstrain (seq [str "fn ",
                                      str (if not mayInline then "noinline " else "")],
-                                arg, argType, str " =>"),
+                                arg, argType, Mode.Undetermined, str " =>"),
                 indent (layoutExp body, 2)]
 
 end
@@ -362,7 +366,7 @@ in
         Type.parse >>= (fn ty =>
         sym "=" *>
         delay parsePrimExp >>= (fn exp =>
-        pure {var = var, ty = ty, exp = exp})))),
+        pure {var = var, ty = ty, exp = exp, mode = Mode.Undetermined})))),
        PolyVal <$>
        (kw "val" *>
         parseTyvars >>= (fn tyvars =>
@@ -371,7 +375,7 @@ in
         Type.parse >>= (fn ty =>
         sym "=" *>
         delay parseExp >>= (fn exp =>
-        pure {tyvars = tyvars, var = var, ty = ty, exp = exp})))))]
+        pure {tyvars = tyvars, var = var, ty = ty, exp = exp, mode = Mode.Undetermined})))))]
    and parseExp () =
       Exp <$>
       ((kw "let" *>
@@ -492,7 +496,7 @@ structure Exp =
 
       fun fromPrimExp (exp: PrimExp.t, ty: Type.t): t =
          let val var = Var.newNoname ()
-         in Exp {decs = [Dec.MonoVal {var = var, ty = ty, exp = exp}],
+         in Exp {decs = [Dec.MonoVal {var = var, ty = ty, exp = exp, mode = Mode.Heap}],
                  result = VarExp.mono var}
          end
 
@@ -529,6 +533,7 @@ structure Exp =
             fun prof f =
                MonoVal {exp = Profile (f si),
                         ty = Type.unit,
+                        mode = Mode.Heap,
                         var = Var.newNoname ()}
             val exn = Var.newNoname ()
             val res = Var.newNoname ()
@@ -537,6 +542,7 @@ structure Exp =
                              MonoVal {exp = Raise {exn = VarExp.mono exn,
                                                    extend = false},
                                       ty = ty,
+                                      mode = Mode.Heap,
                                       var = res}],
                      result = VarExp.mono res}
             val touch =
@@ -545,14 +551,17 @@ structure Exp =
                      let
                         val unit = Var.newNoname ()
                      in
+                        (* hardcoding heap because these are just for profiling *)
                         [MonoVal {exp = Tuple (Vector.new0 ()),
                                   ty = Type.unit,
+                                  mode = Mode.Heap,
                                   var = unit},
                          MonoVal
                          {exp = PrimApp {args = Vector.new1 (VarExp.mono unit),
                                          prim = Prim.MLton_touch,
                                          targs = Vector.new1 Type.unit},
                           ty = Type.unit,
+                          mode = Mode.Heap,
                           var = Var.newNoname ()}]
                      end
                else []
@@ -619,9 +628,9 @@ structure Exp =
                           ; Option.app (default, loopExp))))
             and loopDec d =
                case d of
-                  MonoVal {var, ty, exp} =>
+                  MonoVal {var, ty, mode, exp} =>
                      (monoVar (var, ty); loopPrimExp (var, ty, exp))
-                | PolyVal {var, tyvars, ty, exp} =>
+                | PolyVal {var, tyvars, ty, mode, exp} =>
                      (handleBoundVar (var, tyvars, ty)
                       ; loopExp exp)
                 | Exception _ => ()
@@ -714,12 +723,12 @@ structure Exp =
                                   ty = ty, var = var}),
                                 tyvars = tyvars})
                 | MonoVal {exp = Profile _, ...} => NONE
-                | MonoVal {exp, ty, var} =>
+                | MonoVal {exp, ty, mode, var} =>
                      SOME (MonoVal {exp = dropProfilePrimExp exp,
-                                    ty = ty, var = var})
-                | PolyVal {exp, ty, tyvars, var} =>
+                                    ty = ty, mode = mode, var = var})
+                | PolyVal {exp, ty, tyvars, mode, var} =>
                      SOME (PolyVal {exp = dropProfileExp exp, ty = ty,
-                                    tyvars = tyvars, var = var})
+                                    tyvars = tyvars, mode = mode, var = var})
             and dropProfileLambda (Lam {arg, argType, body, mayInline, plist}) =
                Lam {arg = arg, argType = argType,
                     body = dropProfileExp body,
@@ -757,7 +766,7 @@ structure Exp =
                 | Case {cases, default, ...} =>
                      (Cases.foreach' (cases, clearExp, clearPat)
                       ; Option.app (default, clearExp))
-                | Handle {try, catch, handler, ...} => 
+                | Handle {try, catch, handler, ...} =>
                      (clearExp try
                       ; Var.clear (#1 catch)
                       ; clearExp handler)
@@ -812,14 +821,17 @@ structure DirectExp =
          struct
             type t = PrimExp.t * Type.t -> Exp.t
 
-            fun nameGen (k: VarExp.t * Type.t -> Exp.t): t =
-               fn (e, t) =>
-               case e of
+            fun nameGen (k: VarExp.t * Type.t -> Exp.t) : t =
+              fn (e, t) =>
+                case e of
                   Var x => k (x, t)
-                | _ => let val x = Var.newNoname ()
-                       in Exp.prefix (k (VarExp.mono x, t),
-                                      MonoVal {var = x, ty = t, exp = e})
-                       end
+                | _ =>
+                    let
+                      val x = Var.newNoname ()
+                    in
+                      Exp.prefix (k (VarExp.mono x, t), MonoVal
+                        {var = x, ty = t, exp = e, mode = Mode.Undetermined})
+                    end
 
             fun name (k: VarExp.t * Type.t -> Exp.t): t = nameGen k
 
@@ -847,10 +859,10 @@ structure DirectExp =
 
       fun varExp (x, t) = simple (Var x, t)
 
-      fun var {var, targs, ty} =
-         varExp (VarExp.T {var = var, targs = targs}, ty)
+      fun var {var, targs, ty, mode} =
+         varExp (VarExp.T {var = var, targs = targs, mode = mode}, ty)
 
-      fun monoVar (x, t) = var {var = x, targs = Vector.new0 (), ty = t}
+      fun monoVar (x, t, m) = var {var = x, targs = Vector.new0 (), ty = t, mode = m}
 
       fun convertsGen (es: t vector,
                        k: (VarExp.t * Type.t) vector -> Exp.t): Exp.t =
@@ -891,7 +903,7 @@ structure DirectExp =
                      (ConApp {con = con, targs = targs, arg = arg}, ty))
 
       local
-         fun make c () = 
+         fun make c () =
             conApp {con = c,
                     targs = Vector.new0 (),
                     arg = NONE,
@@ -992,9 +1004,17 @@ structure DirectExp =
       fun vall {var, exp}: Dec.t list =
          let val t = ref Type.unit
             val Exp {decs, result} =
-               sendName (exp, fn (x, t') => (t := t';                    
+               sendName (exp, fn (x, t') => (t := t';
                                              Exp {decs = [], result = x}))
-         in decs @ [MonoVal {var = var, ty = !t, exp = Var result}]
+         in decs @ [MonoVal {var = var, ty = !t, exp = Var result, mode = Mode.Heap}]
+         end
+
+      fun vall' {var, exp, mode}: Dec.t list =
+         let val t = ref Type.unit
+            val Exp {decs, result} =
+               sendName (exp, fn (x, t') => (t := t';
+                                             Exp {decs = [], result = x}))
+         in decs @ [MonoVal {var = var, ty = !t, exp = Var result, mode = mode}]
          end
 
       fun sequence es =
@@ -1016,10 +1036,16 @@ structure DirectExp =
       fun lett {decs, body} = fn k => Exp.prefixs (send (body, k), decs)
 
       fun let1 {var, exp, body} =
-         fn k => 
+         fn k =>
          send (exp, fn (exp, ty) =>
                Exp.prefix (send (body, k),
-                           Dec.MonoVal {var = var, ty = ty, exp = exp}))
+                           Dec.MonoVal {var = var, ty = ty, exp = exp, mode = Mode.Heap}))
+
+      fun let1' {var, exp, body, mode} =
+         fn k =>
+         send (exp, fn (exp, ty) =>
+               Exp.prefix (send (body, k),
+                           Dec.MonoVal {var = var, ty = ty, exp = exp, mode = mode}))
 
       fun lambda {arg, argType, body, bodyType, mayInline} =
          simple (Lambda (Lambda.make {arg = arg,
@@ -1039,12 +1065,12 @@ structure DirectExp =
          (body,
           case Vector.length components of
              0 => []
-           | 1 => [MonoVal {var = Vector.first components, ty = t, exp = e}]
+           | 1 => [MonoVal {var = Vector.first components, ty = t, exp = e, mode = Mode.Heap}]
            | _ =>
                 let
                    val ts = Type.deTuple t
                    val tupleVar = Var.newNoname ()
-                in MonoVal {var = tupleVar, ty = t, exp = e}
+                in MonoVal {var = tupleVar, ty = t, exp = e, mode = Mode.Heap}
                    ::
                    #2 (Vector.fold2
                        (components, ts, (0, []),
@@ -1052,12 +1078,43 @@ structure DirectExp =
                         (i + 1,
                          MonoVal {var = x, ty = t,
                                   exp = Select {tuple = VarExp.mono tupleVar,
-                                                offset = i}}
+                                                offset = i},
+                                  mode = Mode.Heap}
+                         :: ac)))
+                end)
+
+      fun detupleGen' (e: PrimExp.t,
+                       t: Type.t,
+                       components: Var.t vector,
+                       body: Exp.t,
+                       mode: Mode.t): Exp.t =
+         Exp.prefixs
+         (body,
+          case Vector.length components of
+             0 => []
+           | 1 => [MonoVal {var = Vector.first components, ty = t, exp = e, mode = mode}]
+           | _ =>
+                let
+                   val ts = Type.deTuple t
+                   val tupleVar = Var.newNoname ()
+                in MonoVal {var = tupleVar, ty = t, exp = e, mode = mode}
+                   ::
+                   #2 (Vector.fold2
+                       (components, ts, (0, []),
+                        fn (x, t, (i, ac)) =>
+                        (i + 1,
+                         MonoVal {var = x, ty = t,
+                                  exp = Select {tuple = VarExp.mono tupleVar,
+                                                offset = i},
+                                  mode = mode}
                          :: ac)))
                 end)
 
       fun detupleBind {tuple, components, body} =
          fn k => send (tuple, fn (e, t) => detupleGen (e, t, components, body k))
+
+      fun detupleBind' {tuple, components, body, mode} =
+         fn k => send (tuple, fn (e, t) => detupleGen' (e, t, components, body k, mode))
 
       fun detuple {tuple: t, body}: t =
          fn k =>

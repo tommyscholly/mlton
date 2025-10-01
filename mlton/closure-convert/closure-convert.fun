@@ -207,7 +207,7 @@ structure VarInfo =
 val traceLoopBind =
    Trace.trace
    ("ClosureConvert.loopBind",
-    fn {exp, ty = _: Stype.t, var} =>
+    fn {exp, ty = _: Stype.t, mode = _: Mode.t, var} =>
     Layout.record [("var", Var.layout var),
                    ("exp", SprimExp.layout exp)],
     Unit.layout)
@@ -297,7 +297,7 @@ fun closureConvert
                end
             and loopBind arg =
                traceLoopBind
-               (fn {var, ty, exp} =>
+               (fn {var, ty, mode, exp} =>
                let
                   fun set v = newVar (var, v)
                   fun new () =

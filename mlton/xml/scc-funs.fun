@@ -75,12 +75,12 @@ fun sccFuns (Program.T {datatypes, body}) =
                (List.fold
                 (decs, [], fn (dec, decs) =>
                  case dec of
-                    MonoVal {var, ty, exp} =>
-                       MonoVal {var = var, ty = ty,
+                    MonoVal {var, ty, exp, mode} =>
+                       MonoVal {var = var, ty = ty, mode = mode,
                                 exp = loopPrimExp exp} :: decs
-                  | PolyVal {var, tyvars, ty, exp} =>
+                  | PolyVal {var, tyvars, ty, mode, exp} =>
                        PolyVal {var = var, tyvars = tyvars, ty = ty,
-                                exp = loopExp exp} :: decs
+                                mode = mode, exp = loopExp exp} :: decs
                   | Exception _ => dec :: decs
                   | Fun {tyvars, decs = lambdas} =>
                        let val g = Graph.new ()

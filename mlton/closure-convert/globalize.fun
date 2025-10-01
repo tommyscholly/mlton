@@ -65,7 +65,7 @@ fun globalize {program = Program.T {datatypes, body, ...},
          traceLoopDec
          (fn (d, once) =>
            case d of
-              MonoVal {var, ty, exp} =>
+              MonoVal {var, ty, mode, exp} =>
                  let
                     val (global, once) =
                        case exp of

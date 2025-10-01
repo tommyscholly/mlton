@@ -7,7 +7,7 @@
  * See the file MLton-LICENSE for details.
  *)
 
-functor Defunctorize (S: DEFUNCTORIZE_STRUCTS): DEFUNCTORIZE = 
+functor Defunctorize (S: DEFUNCTORIZE_STRUCTS): DEFUNCTORIZE =
 struct
 
 open S
@@ -28,6 +28,7 @@ in
    structure Ctype = Type
    structure WordSize = WordSize
    structure WordX = WordX
+   structure Mode = Mode
 end
 
 structure Field = Record.Field
@@ -146,16 +147,16 @@ fun casee {ctxt: unit -> Layout.t,
                if let
                      open Control
                   in
-                     !profile <> ProfileNone 
+                     !profile <> ProfileNone
                      andalso !profileIL = ProfileSource
                      andalso !profileRaise
                   end
                   then case mayWrap of
                           NONE => exp
-                        | SOME kind => 
-                             enterLeave 
+                        | SOME kind =>
+                             enterLeave
                              (exp, caseType,
-                              SourceInfo.function 
+                              SourceInfo.function
                               {name = (concat ["<raise ", kind, ">"]) :: nest,
                                region = region})
                else exp
@@ -167,7 +168,7 @@ fun casee {ctxt: unit -> Layout.t,
                           layPat = NONE,
                           numPats = ref 0,
                           numUses = ref 0,
-                          pat = NestedPat.make (NestedPat.Var e, testType),
+                          pat = NestedPat.make (NestedPat.Var e, testType, Mode.Heap),
                           regionPat = Region.bogus}]
          end
       val cases =
@@ -177,7 +178,7 @@ fun casee {ctxt: unit -> Layout.t,
             case noMatch of
                Impossible => cases
              | RaiseAgain =>
-                  raiseExn (fn e => Xexp.monoVar (e, Xtype.exn), NONE)
+                  raiseExn (fn e => Xexp.monoVar (e, Xtype.exn, Mode.Heap), NONE)
              | RaiseBind => raiseExn (fn _ => Xexp.bind, SOME "Bind")
              | RaiseMatch => raiseExn (fn _ => Xexp.match, SOME "Match")
          end
@@ -199,16 +200,18 @@ fun casee {ctxt: unit -> Layout.t,
                       Xdec.MonoVal
                       {var = func,
                        ty = funcType,
+                       mode = Mode.Undetermined,
                        exp =
                        XprimExp.Lambda
                        (Xlambda.make
                         {arg = arg,
                          argType = argType,
                          body = (Xexp.toExp
-                                 (Xexp.detupleBind
-                                  {tuple = Xexp.monoVar (arg, argType),
+                                 (Xexp.detupleBind'
+                                  {tuple = Xexp.monoVar (arg, argType, Mode.Heap),
                                    components = vars,
-                                   body = e ()})),
+                                   body = e (),
+                                   mode = Mode.Heap})),
                          mayInline = true})}
                    fun finish np =
                       (numPats := np
@@ -216,11 +219,11 @@ fun casee {ctxt: unit -> Layout.t,
                          (if 0 = !numUses then List.push (decs, dec ()) else ()
                           ; Int.inc numUses
                           ; (Xexp.app
-                             {func = Xexp.monoVar (func, funcType),
+                             {func = Xexp.monoVar (func, funcType, Mode.Heap),
                               arg =
                               Xexp.tuple {exps = (Vector.map
                                                   (args, fn (x, t) =>
-                                                   Xexp.monoVar (rename x, t))),
+                                                   Xexp.monoVar (rename x, t, Mode.Heap))),
                                           ty = argType},
                               ty = caseType})))
                 in
@@ -249,14 +252,15 @@ fun casee {ctxt: unit -> Layout.t,
                           nonexhaustiveExamples dropOnlyExns
                        end
          in
-            (Xexp.let1 {var = testVar,
-                        exp = test,
-                        body = Xexp.lett {decs = !decs,
-                                          body = Xexp.fromExp (body, caseType)}},
+            (Xexp.let1' {var = testVar,
+                         exp = test,
+                         body = Xexp.lett {decs = !decs,
+                                           body = Xexp.fromExp (body, caseType)},
+                         mode = Mode.Heap},
              nonexhaustiveExamples)
          end
       datatype z = datatype NestedPat.node
-      fun lett (x, e) = Xexp.let1 {var = x, exp = test, body = e}
+      fun lett (x, e) = Xexp.let1' {var = x, exp = test, body = e, mode = Mode.Heap}
       fun wild e = lett (Var.newNoname (), e)
       val (exp, nonexhaustiveExamples) =
          if Vector.isEmpty cases
@@ -292,6 +296,7 @@ fun casee {ctxt: unit -> Layout.t,
                                             Xdec.MonoVal
                                             {var = x,
                                              ty = ty,
+                                             mode = NestedPat.mode p,
                                              exp = (XprimExp.Select
                                                     {tuple = tuple,
                                                      offset = i})}
@@ -299,11 +304,12 @@ fun casee {ctxt: unit -> Layout.t,
                                       | Wild => (i + 1, decs)
                                       | _ => Error.bug "Defunctorize.casee: flat record")
                               in
-                                 exhaustive (Xexp.let1
+                                 exhaustive (Xexp.let1'
                                              {var = t, exp = test,
                                               body = Xexp.lett
                                               {decs = decs,
-                                               body = e ()}})
+                                               body = e ()},
+                                              mode = Mode.Heap})
                               end
                         in
                            if Vector.forall (ps, NestedPat.isVarOrWild)
@@ -381,19 +387,23 @@ fun 'a sortByField (v: (Field.t * 'a) vector): 'a vector =
 fun valDec (tyvars: Tyvar.t vector,
             x: Var.t,
             e: Xexp.t,
+            eMode: Mode.t,
             et: Xtype.t,
             e': Xexp.t): Xexp.t =
    Xexp.lett {body = e',
               decs = [Xdec.PolyVal {exp = Xexp.toExp e,
                                     ty = et,
                                     tyvars = tyvars,
+                                    mode = eMode,
                                     var = x}]}
 
 structure Xexp =
    struct
       open Xexp
 
-      fun list (es: Xexp.t vector, ty: Xtype.t, {forceLeftToRight: bool})
+      (* ms corresponds to the modes of the elements of es *)
+      (* mode is the mode of the whole list *)
+      fun list (es: Xexp.t vector, ms: Mode.t vector, mode: Mode.t, ty: Xtype.t, {forceLeftToRight: bool})
          : Xexp.t =
          let
             val targs = #2 (valOf (Xtype.deConOpt ty))
@@ -416,13 +426,14 @@ structure Xexp =
             if not forceLeftToRight
                then
                   (* Build the list right to left. *)
-                  Vector.foldr (es, nill, fn (e, rest) =>
+                  Vector.foldri (es, nill, fn (i, e, rest) =>
                                 let
                                    val var = Var.newNoname ()
                                 in
-                                   Xexp.let1 {body = cons (e, monoVar (var, ty)),
-                                              exp = rest,
-                                              var = var}
+                                   Xexp.let1' {body = cons (e, monoVar (var, ty, Vector.sub (ms, i))),
+                                               exp = rest,
+                                               var = var,
+                                               mode = Vector.sub (ms, i)}
                                 end)
             else if Vector.length es < 20
                then Vector.foldr (es, nill, cons)
@@ -433,7 +444,7 @@ structure Xexp =
                   val revVar = Var.newString "rev"
                   fun rev (e1, e2) =
                      Xexp.app
-                     {func = Xexp.monoVar (revVar, revTy),
+                     {func = Xexp.monoVar (revVar, revTy, mode),
                       arg = Xexp.tuple {exps = Vector.new2 (e1, e2),
                                         ty = revArgTy},
                       ty = ty}
@@ -454,7 +465,7 @@ structure Xexp =
                       body =
                       Xexp.toExp
                       (detuple2
-                       (Xexp.monoVar (revArg, revArgTy), fn (l, ac) =>
+                       (Xexp.monoVar (revArg, revArgTy, mode), fn (l, ac) =>
                         let
                            val ac = Xexp.varExp (ac, ty)
                            val consArg = Var.newNoname ()
@@ -471,7 +482,7 @@ structure Xexp =
                                        con = Con.cons,
                                        targs = targs},
                                detuple2
-                               (Xexp.monoVar (consArg, consArgTy),
+                               (Xexp.monoVar (consArg, consArgTy, mode),
                                 fn (x, l) =>
                                 rev (Xexp.varExp (l, ty),
                                      cons (Xexp.varExp (x, eltTy),
@@ -488,23 +499,25 @@ structure Xexp =
                       tyvars = Vector.new0 ()}
                   val l = Var.newNoname ()
                   val (l, body) =
-                     Vector.foldr
+                     Vector.foldri
                      (es, (l, Xexp.lett {decs = [revDec],
-                                         body = rev (Xexp.monoVar (l, ty),
+                                         body = rev (Xexp.monoVar (l, ty, mode),
                                                      nill)}),
-                      fn (e, (l, body)) =>
+                      fn (i, e, (l, body)) =>
                       let
                          val l' = Var.newNoname ()
                       in
                          (l',
-                          Xexp.let1 {body = body,
-                                     exp = cons (e, Xexp.monoVar (l', ty)),
-                                     var = l})
+                          Xexp.let1' {body = body,
+                                      exp = cons (e, Xexp.monoVar (l', ty, Vector.sub (ms, i))),
+                                      var = l,
+                                      mode = Vector.sub (ms, i)})
                       end)
                in
-                  Xexp.let1 {body = body,
-                             exp = nill,
-                             var = l}
+                  Xexp.let1' {body = body,
+                              exp = nill,
+                              var = l,
+                              mode = Mode.Heap}
                end
          end
    end
@@ -552,8 +565,8 @@ fun defunctorize (CoreML.Program.T {decs}) =
          Property.getSetOnce (Tycon.plist,
                               Property.initRaise ("tyconCons", Tycon.layout))
       val setConTycon =
-         Trace.trace2 
-         ("Defunctorize.setConTycon", 
+         Trace.trace2
+         ("Defunctorize.setConTycon",
           Con.layout, Tycon.layout, Unit.layout)
          setConTycon
       val datatypes = ref []
@@ -628,7 +641,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                               ; {arg = Option.map (arg, loopTy),
                                  con = con}))
 
-                         val _ = 
+                         val _ =
                             if Tycon.equals (tycon, Tycon.reff)
                                then ()
                             else
@@ -674,10 +687,10 @@ fun defunctorize (CoreML.Program.T {decs}) =
       fun loopPat (p: Cpat.t): NestedPat.t =
          let
             (* TODO: check the mode *)
-            val (p, t, _) = Cpat.dest p
+            val (p, t, mode) = Cpat.dest p
             val t' = loopTy t
             datatype z = datatype Cpat.node
-            val p = 
+            val p =
                case p of
                   Con {arg, con, targs} =>
                      NestedPat.Con {arg = Option.map (arg, loopPat),
@@ -702,7 +715,8 @@ fun defunctorize (CoreML.Program.T {decs}) =
                          NestedPat.Con {arg = SOME (NestedPat.tuple
                                                     (Vector.new2
                                                      (loopPat p,
-                                                      NestedPat.make (np, t')))),
+                                                      NestedPat.make (np, t', mode)),
+                                                      Cpat.mode p)),
                                         con = Con.cons,
                                         targs = targs})
                      end
@@ -713,14 +727,14 @@ fun defunctorize (CoreML.Program.T {decs}) =
                        (Ctype.deRecord t, fn (f, t: Ctype.t) =>
                         (f,
                          case Record.peek (r, f) of
-                            NONE => NestedPat.make (NestedPat.Wild, loopTy t)
+                            NONE => NestedPat.make (NestedPat.Wild, loopTy t, mode)
                           | SOME p => loopPat p))))
                 | Or ps => NestedPat.Or (Vector.map (ps, loopPat))
                 | Var x => NestedPat.Var x
                 | Vector ps => NestedPat.Vector (Vector.map (ps, loopPat))
                 | Wild => NestedPat.Wild
          in
-            NestedPat.make (p, t')
+            NestedPat.make (p, t', mode)
          end
       val _ = Vector.foreach (decs, loopDec)
       (* Now, do the actual defunctorization. *)
@@ -784,9 +798,11 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                    test = (e, NestedPat.ty p),
                                    tyconCons = tyconCons}
                          val isExpansive = Cexp.isExpansive exp
+                         val expMode = Cexp.mode exp
+                         val expMode = if expMode = Mode.Undetermined then Mode.Heap else expMode
                          val (exp, expType) = loopExp exp
                          val pat = loopPat pat
-                         fun vd (x: Var.t) = valDec (tyvars, x, exp, expType, e)
+                         fun vd (x: Var.t) = valDec (tyvars, x, exp, expMode, expType, e)
                       in
                          if Vector.isEmpty tyvars
                             then patDec (pat, exp, e, bodyType, true)
@@ -821,12 +837,14 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                                 (tyvars, fn _ =>
                                                  Xtype.unit)),
                                        ty = subst thunkTy,
+                                       mode = expMode,
                                        var = x},
                                       ty = subst expType}
                                   val decs =
                                      [Xdec.PolyVal {exp = thunk,
                                                     ty = thunkTy,
                                                     tyvars = tyvars,
+                                                    mode = expMode,
                                                     var = x}]
                                in
                                   patDec (NestedPat.replaceTypes (pat, subst),
@@ -866,10 +884,12 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                              patDec (pat,
                                                      Xexp.var {targs = targs,
                                                                ty = xt,
+                                                               mode = expMode,
                                                                var = x},
-                                                     Xexp.monoVar (y', yt),
+                                                     Xexp.monoVar (y', yt, expMode),
                                                      yt,
                                                      false),
+                                             expMode,
                                              yt,
                                              e)
                                          end)
@@ -907,6 +927,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                                    Xexp.var
                                                    {targs = targs,
                                                     ty = NestedPat.ty pat,
+                                                    mode = expMode,
                                                     var = x},
                                                    e,
                                                    bodyType,
@@ -914,7 +935,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                                end
                                         else e
                                   in
-                                     valDec (tyvars, x, exp, expType, e)
+                                     valDec (tyvars, x, exp, expMode, expType, e)
                                   end
                       end)
                in
@@ -934,7 +955,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
       and loopExp (e: Cexp.t): Xexp.t * Xtype.t =
          let
             (* TODO: erasing mode here, need to carry it through *)
-            val (n, ty, _) = Cexp.dest e
+            val (n, ty, mode) = Cexp.dest e
             val ty = loopTy ty
             fun conApp {arg, con, targs, ty} =
                if Con.equals (con, Con.reff)
@@ -959,7 +980,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                       con = con,
                                       targs = conTargs (con, targs),
                                       ty = ty}
-                         | _ => 
+                         | _ =>
                               Xexp.app {arg = e2,
                                         func = #1 (loopExp e1),
                                         ty = ty}
@@ -998,7 +1019,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                  {arg = arg,
                                   argType = argType,
                                   body = (conApp
-                                          {arg = Xexp.monoVar (arg, argType),
+                                          {arg = Xexp.monoVar (arg, argType, mode),
                                            con = con,
                                            targs = targs,
                                            ty = bodyType}),
@@ -1041,8 +1062,13 @@ fun defunctorize (CoreML.Program.T {decs}) =
                         val numExpansive =
                            Vector.fold (es, 0, fn (e, n) =>
                                         if Cexp.isExpansive e then n + 1 else n)
+                        val ms = Vector.map (es, fn e =>
+                           let val m = Cexp.mode e
+                           in if m = Mode.Undetermined then Mode.Heap else m
+                           end)
+                        val mode = Vector.fold (ms, Cexp.mode e, Mode.join)
                      in
-                        Xexp.list (Vector.map (es, #1 o loopExp), ty,
+                        Xexp.list (Vector.map (es, #1 o loopExp), ms, mode, ty,
                                    {forceLeftToRight = 2 <= numExpansive})
                      end
                 | PrimApp {args, prim, targs} =>
@@ -1068,7 +1094,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                 | Exclave e => #1 (loopExp e)
                 | Raise e => Xexp.raisee {exn = #1 (loopExp e), extend = true, ty = ty}
                 | Record r =>
-                     (* The components of the record have to be evaluated left to 
+                     (* The components of the record have to be evaluated left to
                       * right as they appeared in the source program, but then
                       * ordered according to sorted field name within the tuple.
                       *)
@@ -1086,6 +1112,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                 | Var (var, targs) =>
                      Xexp.var {targs = Vector.map (targs (), loopTy),
                                ty = ty,
+                               mode = mode,
                                var = var ()}
                 | Vector es =>
                      Xexp.primApp {args = Vector.map (es, #1 o loopExp),
@@ -1098,7 +1125,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
       and loopLambda (l: Clambda.t) =
          let
             (* TODO: handle arg mode here *)
-            val {arg, argType, body, mayInline, ...} = Clambda.dest l
+            val {arg, argType, argMode, body, mayInline} = Clambda.dest l
             val (body, bodyType) = loopExp body
          in
             {arg = arg,

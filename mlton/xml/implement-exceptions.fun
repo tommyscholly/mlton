@@ -85,12 +85,13 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
          if not (!Control.exnHistory)
             then {extraDatatypes = Vector.new0 (),
                   injectSum = fn e => e,
-                  projectExtra = fn _ => Dexp.monoVar (dfltExtraVar, extraType),
-                  projectSum = fn x => Dexp.monoVar (x, Type.exn),
+                  projectExtra = fn _ => Dexp.monoVar (dfltExtraVar, extraType, Mode.Heap),
+                  projectSum = fn x => Dexp.monoVar (x, Type.exn, Mode.Heap),
                   raisee = (fn {exn, extend, ty, var} =>
                             [MonoVal {var = var, ty = ty,
                                       exp = Raise {exn = exn,
-                                                   extend = extend}}]),
+                                                   extend = extend},
+                                      mode = Mode.Heap}]),
                   sumTycon = Tycon.exn,
                   sumType = Type.exn}
          else
@@ -116,7 +117,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                   end
                fun injectSum (exn: Dexp.t): Dexp.t =
                   makeExn {exn = exn,
-                           extra = Dexp.monoVar (dfltExtraVar, extraType)}
+                           extra = Dexp.monoVar (dfltExtraVar, extraType, Mode.Heap)}
                fun extractExtra x =
                   Dexp.select {tuple = x, offset = 0, ty = extraType}
                fun extractSum x =
@@ -127,7 +128,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                      val tuple = Var.newNoname ()
                   in
                      casee
-                     {test = monoVar (exn, Type.exn),
+                     {test = monoVar (exn, Type.exn, Mode.Heap),
                       default = NONE,
                       ty = ty,
                       cases =
@@ -135,7 +136,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                  (Pat.T {con = exnCon,
                                          targs = Vector.new0 (),
                                          arg = SOME (tuple, exnConArgType)},
-                                  f (monoVar (tuple, exnConArgType))))}
+                                  f (monoVar (tuple, exnConArgType, Mode.Undetermined))))}
                   end
                fun projectExtra (x: Var.t) =
                   extract (x, extraType, extractExtra)
@@ -161,7 +162,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                               app
                               {func = deref (monoVar
                                              (extendExtraVar,
-                                              Type.reff extendExtraType)),
+                                              Type.reff extendExtraType, Mode.Heap)),
                                arg = extractExtra tup,
                                ty = extraType}},
                              extend = false,
@@ -229,7 +230,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                let
                   open Dexp
                   val r = Var.newString "exnRef"
-                  val uniq = monoVar (r, Type.unitRef)
+                  val uniq = monoVar (r, Type.unitRef, Mode.Constant)
                   fun conApp arg =
                      injectSum (Dexp.conApp {con = con,
                                              targs = Vector.new0 (),
@@ -245,7 +246,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                               val exn = Var.newNoname ()
                            in (Type.unitRef,
                                Dexp.vall {var = exn, exp = conApp uniq},
-                               fn NONE => monoVar (exn, Type.exn)
+                               fn NONE => monoVar (exn, Type.exn, Mode.Heap)
                                 | _ => Error.bug "ImplementExceptions: nullary excon applied to arg")
                            end
                       | SOME t =>
@@ -265,9 +266,9 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                   ; vall {var = r, exp = reff (unit ())} @ decs
                end
           | _ => Error.bug "ImplementExceptions: saw unexpected dec") arg
-      and loopMonoVal {var, ty, exp} : Dec.t list =
+      and loopMonoVal {var, ty, mode, exp} : Dec.t list =
          let
-            fun primExp e = [MonoVal {var = var, ty = ty, exp = e}]
+            fun primExp e = [MonoVal {var = var, ty = ty, mode = mode, exp = e}]
             fun keep () = primExp exp
             fun makeExp e = Dexp.vall {var = var, exp = e}
          in
@@ -298,7 +299,8 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                           app {func = (monoVar
                                                        (defaultVar,
                                                         Type.arrow
-                                                        (Type.unit, ty))),
+                                                        (Type.unit, ty),
+                                                        Mode.Undetermined)),
                                                arg = unit (),
                                                ty = ty}
                                        val unit = Var.newString "unit"
@@ -335,10 +337,10 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                                   iff {test =
                                                        equal
                                                        (monoVar
-                                                        (refVar, Type.unitRef),
+                                                        (refVar, Type.unitRef, Mode.Constant),
                                                         monoVar
                                                         (#refVar (valOf (exconInfo con)),
-                                                         Type.unitRef)),
+                                                         Type.unitRef, Mode.Constant)),
                                                        ty = ty,
                                                        thenn = (fromExp
                                                                 (loop e, ty)),
@@ -360,7 +362,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                                   in
                                                      make (tuple,
                                                            detupleBind
-                                                           {tuple = monoVar tuple,
+                                                           {tuple = monoVar (#1 tuple, #2 tuple, Mode.Undetermined),
                                                             components =
                                                             Vector.new2 (refVar, x),
                                                             body = body})
@@ -470,7 +472,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                    argType = extraType,
                    body = (Dexp.sequence o Vector.new2)
                           (Dexp.bug "extendExtra unimplemented",
-                           Dexp.monoVar (dfltExtraVar, extraType)),
+                           Dexp.monoVar (dfltExtraVar, extraType, Mode.Undetermined)),
                    bodyType = extraType,
                    mayInline = true})),
           var = extendExtraVar}
@@ -490,8 +492,8 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
              handler = Dexp.app {func = (Dexp.deref
                                          (Dexp.monoVar
                                           (topLevelHandlerVar,
-                                           Type.reff topLevelHandlerType))),
-                                 arg = Dexp.monoVar x,
+                                           Type.reff topLevelHandlerType, Mode.Heap))),
+                                 arg = Dexp.monoVar (#1 x, #2 x, Mode.Heap),
                                  ty = Type.unit}}
          end
       val body =

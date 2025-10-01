@@ -12,7 +12,7 @@ struct
 
 open S
 
-datatype t = T of {pat: node, ty: Type.t}
+datatype t = T of {pat: node, ty: Type.t, mode: Mode.t}
 and node =
     Con of {arg: t option,
             con: Con.t,
@@ -32,18 +32,19 @@ local
 in
    val node = make #pat
    val ty = make #ty
+   val mode = make #mode
 end
 
-fun tuple ps =
+fun tuple (ps, mode) =
    T {pat = Record (SortedRecord.tuple ps),
-      ty = Type.tuple (Vector.map (ps, ty))}
+      ty = Type.tuple (Vector.map (ps, ty)),
+      mode = mode}
 
 fun layout (p, isDelimited) =
    let
       open Layout
       fun delimit t = if isDelimited then t else paren t
-   in
-      case node p of
+      val expLayout = case node p of
          Con {arg, con, targs} =>
             delimit (Pretty.conApp {arg = Option.map (arg, layoutF),
                                     con = Con.layout con,
@@ -61,19 +62,22 @@ fun layout (p, isDelimited) =
        | Var x => Var.layout x
        | Vector ps => vector (Vector.map (ps, layoutT))
        | Wild => str "_"
+   in
+      seq [expLayout, Mode.layout (mode p)]
    end
 and layoutF p = layout (p, false)
 and layoutT p = layout (p, true)
 
 val layout = layoutT
 
-fun make (p, t) =
-   T {pat = p, ty = t}
+fun make (p, t, m) =
+   T {pat = p, ty = t, mode = m}
 
 fun flatten p =
    let
       val ty = ty p
-      val make = fn p => make (p, ty)
+      val mode = mode p
+      val make = fn p => make (p, ty, mode)
    in
       case node p of
          Con {arg, con, targs} =>
@@ -130,7 +134,7 @@ fun isVarOrWild p =
 
 fun removeOthersReplace (p, {new, old}) =
    let
-      fun loop (T {pat, ty}) =
+      fun loop (T {pat, ty, mode}) =
          let
             val pat =
                case pat of
@@ -156,7 +160,7 @@ fun removeOthersReplace (p, {new, old}) =
                 | Vector ps => Vector (Vector.map (ps, loop))
                 | Wild => Wild
          in
-            T {pat = pat, ty = ty}
+            T {pat = pat, ty = ty, mode = mode}
          end
    in
       loop p
@@ -175,7 +179,7 @@ end
 
 fun replaceTypes (p: t, f: Type.t -> Type.t): t =
    let
-      fun loop (T {pat, ty}) =
+      fun loop (T {pat, ty, mode}) =
          let
             val pat =
                case pat of
@@ -191,7 +195,7 @@ fun replaceTypes (p: t, f: Type.t -> Type.t): t =
                 | Vector ps => Vector (Vector.map (ps, loop))
                 | Wild => pat
          in
-            T {pat = pat, ty = f ty}
+            T {pat = pat, ty = f ty, mode = mode}
          end
    in
       loop p

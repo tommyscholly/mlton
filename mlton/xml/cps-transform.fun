@@ -112,7 +112,9 @@ fun transform (prog: Program.t): Program.t =
                   let
                      val xVar = Var.newNoname ()
                      val xTy = Type.tuple (Vector.new2 (kTy, hTy))
-                     val x = DirectExp.monoVar (xVar, xTy)
+                     (* anything that is not fully uncurried would have to be
+                     * heap allocated *)
+                     val x = DirectExp.monoVar (xVar, xTy, Mode.Heap)
                      val bodyKH =
                         DirectExp.lambda
                         {arg = argVar,
@@ -145,7 +147,8 @@ fun transform (prog: Program.t): Program.t =
                   let
                      val xVar = Var.newNoname ()
                      val xTy = Type.tuple (Vector.new3 (kTy, hTy, argTy))
-                     val x = DirectExp.monoVar (xVar, xTy)
+                     (* if we are not curried, we can be stack allocated *)
+                     val x = DirectExp.monoVar (xVar, xTy, Mode.Stack)
                      val bodyXKH =
                         DirectExp.let1 
                         {var = argVar, 
@@ -175,13 +178,13 @@ fun transform (prog: Program.t): Program.t =
                       mayInline = mayInline}
                   end
          end
-      and transPrimExp (e: PrimExp.t, eTy: Type.t,
+      and transPrimExp (e: PrimExp.t, eTy: Type.t, mode: Mode.t,
                         kVar: Var.t, kTy: Type.t,
                         hVar: Var.t, hTy: Type.t): DirectExp.t =
          let
             val eTy = transType eTy
-            val k = DirectExp.monoVar (kVar, kTy)
-            val h = DirectExp.monoVar (hVar, hTy)
+            val k = DirectExp.monoVar (kVar, kTy, mode)
+            val h = DirectExp.monoVar (hVar, hTy, mode)
             fun return x = DirectExp.app {func = k, arg = x, ty = ansTy}
          in 
             case e of
@@ -364,7 +367,7 @@ fun transform (prog: Program.t): Program.t =
                   in
                      DirectExp.lett {decs = [d], body = kBody}
                   end
-             | MonoVal {var, ty, exp} => 
+             | MonoVal {var, ty, mode, exp} => 
                   let
                      val expTy = ty
                      val argVar = var
@@ -380,7 +383,7 @@ fun transform (prog: Program.t): Program.t =
                          mayInline = true}
                   in
                      DirectExp.let1 {var = k'Var, exp = k'Body, body =
-                     transPrimExp (exp, expTy, k'Var, k'Ty, hVar, hTy)}
+                     transPrimExp (exp, expTy, mode, k'Var, k'Ty, hVar, hTy)}
                   end
              | PolyVal _ => Error.bug "CPSTransform.transDec: PolyVal"
          end
@@ -389,7 +392,7 @@ fun transform (prog: Program.t): Program.t =
                     hVar: Var.t, hTy: Type.t): DirectExp.t =
          let
             val {decs, result} = Exp.dest e
-            val k = DirectExp.monoVar (kVar, kTy)
+            val k = DirectExp.monoVar (kVar, kTy, Mode.Undetermined)
             val k'Body =
                DirectExp.app
                {func = k, arg = transVarExp result, ty = ansTy}

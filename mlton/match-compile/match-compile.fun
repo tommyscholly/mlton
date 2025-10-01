@@ -765,7 +765,8 @@ fun matchCompile {caseType: Type.t,
                 | SOME (Rule.T {pats, ...}) =>
                      let
                         datatype z = datatype Pat.t
-                        val test = Exp.var (Vector.sub (vars, i))
+                        val sub = Vector.sub (vars, i)
+                        val test = Exp.var (#1 sub, #2 sub, Mode.Undetermined)
                      in
                         case Vector.sub (pats, i) of
                            Const _ => const (vars, rules, facts, es, i, test)

@@ -23,7 +23,7 @@ signature NESTED_PAT =
    sig
       include NESTED_PAT_STRUCTS
 
-      datatype t = T of {pat: node, ty: Type.t}
+      datatype t = T of {pat: node, ty: Type.t, mode: Mode.t}
       and node =
          Con of {arg: t option,
                  con: Con.t,
@@ -43,12 +43,13 @@ signature NESTED_PAT =
       val isRefutable: t -> bool
       val isVarOrWild: t -> bool
       val layout: t -> Layout.t
-      val make: node * Type.t -> t
+      val make: node * Type.t * Mode.t -> t
+      val mode: t -> Mode.t
       val node: t -> node
       val removeOthersReplace: t * {new: Var.t, old: Var.t} -> t
       val removeVars: t -> t
       val replaceTypes: t * (Type.t -> Type.t) -> t
-      val tuple: t vector -> t
+      val tuple: t vector * Mode.t -> t
       val ty: t -> Type.t
       (* varsAndTypes returns a list of the variables in the pattern, along with
        * their types.  It is used for match compilation in order to build a

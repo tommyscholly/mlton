@@ -43,9 +43,9 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                         lambda = loopLambda lambda})}
           | Exception {...} => dec
           | _ => Error.bug "ImplementSuffix: saw unexpected dec"
-      and loopMonoVal {var, ty, exp} : Dec.t =
+      and loopMonoVal {var, ty, mode, exp} : Dec.t =
          let
-            fun primExp e = MonoVal {var = var, ty = ty, exp = e}
+            fun primExp e = MonoVal {var = var, ty = ty, mode = mode, exp = e}
             fun keep () = primExp exp
          in
             case exp of
@@ -100,7 +100,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
           Dexp.app {func = (Dexp.deref
                             (Dexp.monoVar
                              (topLevelSuffixVar,
-                              Type.reff topLevelSuffixType))),
+                              Type.reff topLevelSuffixType, Mode.Constant))),
                     arg = Dexp.unit (),
                     ty = Type.unit})
       val body =

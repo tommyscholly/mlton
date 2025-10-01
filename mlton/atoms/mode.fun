@@ -2,12 +2,13 @@ functor Mode (S: MODE_STRUCTS): MODE =
    struct
       open S
 
-      datatype t = Stack | Heap | Undetermined (* expand this to support more modes *)
+      datatype t = Stack | Heap | Undetermined | Constant (* expand this to support more modes *)
 
       fun layout m =
          Layout.str (case m of
                         Stack => " :- stack"
                       | Heap => " :- heap"
+                      | Constant => " :- constant"
                       | Undetermined => " :- undetermined")
 
       fun equals (m1, m2) =
@@ -15,6 +16,7 @@ functor Mode (S: MODE_STRUCTS): MODE =
             (Stack, Stack) => true
           | (Heap, Heap) => true
           | (Undetermined, Undetermined) => true
+          | (Constant, Constant) => true
           | _ => false
 
       fun join (m1, m2) =
@@ -22,6 +24,9 @@ functor Mode (S: MODE_STRUCTS): MODE =
             (Heap, _) => Heap
           | (_, Heap) => Heap
           | (Stack, Stack) => Stack
+          | (Constant, Constant) => Constant
+          | (Constant, m) => m
+          | (m, Constant) => m
           | (Undetermined, m) => m
           | (m, Undetermined) => m
 
@@ -30,6 +35,8 @@ functor Mode (S: MODE_STRUCTS): MODE =
             (m, Undetermined) => SOME m
           (* if the parent is undetermined, it takes the mode of the child *)
           | (Undetermined, m) => SOME m
+          | (Constant, m) => SOME m
+          | (m, Constant) => SOME m
           (* an expression in stack mode can contain heap mode data *)
           | (Stack, Heap) => SOME Stack
           | (Heap, Stack) => NONE

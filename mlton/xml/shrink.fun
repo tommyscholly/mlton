@@ -259,9 +259,9 @@ fun shrinkOnce (Program.T {datatypes, body}) =
           | dec :: decs =>
                case dec of
                   Exception _ => dec :: shrinkDecs decs
-                | PolyVal {var, tyvars, ty, exp} =>
+                | PolyVal {var, tyvars, ty, mode, exp} =>
                      Dec.PolyVal {var = var, tyvars = tyvars, ty = ty,
-                                  exp = shrinkExp exp}
+                                  mode = mode, exp = shrinkExp exp}
                      :: shrinkDecs decs
                 | Fun {tyvars, decs = decs'} =>
                      if Vector.isEmpty tyvars
@@ -327,12 +327,12 @@ fun shrinkOnce (Program.T {datatypes, body}) =
                         :: shrinkDecs decs
                 | MonoVal b =>
                      shrinkMonoVal (b, fn () => shrinkDecs decs)
-      and shrinkMonoVal ({var, ty, exp},
+      and shrinkMonoVal ({var, ty, exp, mode},
                          rest: unit -> Dec.t list) =
          let
             val info as {numOccurrences, value, ...} = monoVarInfo var
             fun finish (exp, decs) =
-               MonoVal {var = var, ty = ty, exp = exp} :: decs
+               MonoVal {var = var, ty = ty, mode = mode, exp = exp} :: decs
             fun nonExpansive (delete: unit -> unit,
                               set: unit -> (unit -> PrimExp.t) option) =
                if 0 = !numOccurrences

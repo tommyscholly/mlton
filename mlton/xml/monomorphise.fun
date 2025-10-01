@@ -260,7 +260,7 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
       (*------------------------------------*)
       (*              monoExp               *)
       (*------------------------------------*)
-      fun monoVarExp (XvarExp.T {var, targs}) =
+      fun monoVarExp (XvarExp.T {var, targs, ...}) =
          monoVar (var, targs)
       val monoVarExp =
          Trace.trace 
@@ -341,16 +341,17 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
          traceMonoDec
          (fn (d: Xdec.t) =>
           case d of
-             Xdec.MonoVal {var, ty, exp} =>
+             Xdec.MonoVal {var, ty, exp, mode} =>
                 let
                    val (var, ty) = renameMono (var, ty)
                 in 
                    fn () => 
                    [Sdec.MonoVal {var = var,
                                   ty = ty,
-                                  exp = monoPrimExp exp}]
+                                  exp = monoPrimExp exp,
+                                  mode = mode}]
                 end
-           | Xdec.PolyVal {var, tyvars, ty, exp} =>
+           | Xdec.PolyVal {var, tyvars, ty, mode, exp} =>
                 let
                    val cache = Cache.new ()
                    val _ =
@@ -372,7 +373,8 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
                           decs'
                           @ (Sdec.MonoVal {var = SvarExp.var ve,
                                            ty = ty,
-                                           exp = SprimExp.Var result} :: decs)
+                                           exp = SprimExp.Var result,
+                                           mode = Mode.Undetermined} :: decs)
                        end))
                 end
            | Xdec.Fun {tyvars, decs} =>
