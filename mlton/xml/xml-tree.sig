@@ -55,6 +55,9 @@ signature XML_TREE =
             val layout: t -> Layout.t
             val make: {arg: Var.t,
                        argType: Type.t,
+                       argMode: Mode.t,
+                       lambdaMode: Mode.t,
+                       resultMode: Mode.t,
                        body: exp,
                        mayInline: bool} -> t
             val mayInline: t -> bool
@@ -65,8 +68,7 @@ signature XML_TREE =
       structure VarExp:
          sig
             datatype t = T of {var: Var.t,
-                               targs: Type.t vector,
-                               mode: Mode.t}
+                               targs: Type.t vector}
 
             val equals: t * t -> bool
             val layout: t -> Layout.t
@@ -170,46 +172,49 @@ signature XML_TREE =
          sig
             type t
 
-            val app: {func: t, arg: t, ty: Type.t} -> t
+            val app: {func: t, arg: t, ty: Type.t} * Mode.t -> t
             val bug: string -> t
             val casee:
                {cases: (Pat.t, t) Cases.t,
                 default: t option,
                 test: t,
-                ty: Type.t} (* type of entire case expression *)
+                ty: Type.t} * Mode.t (* type of entire case expression *)
                -> t
             val conApp: {arg: t option,
                          con: Con.t,
                          targs: Type.t vector,
-                         ty: Type.t} -> t
+                         ty: Type.t,
+                         mode: Mode.t} -> t
             val const: Const.t -> t
             val deref: t -> t
             val detuple: {tuple: t, body: (VarExp.t * Type.t) vector -> t} -> t
             val detupleBind: {tuple: t, components: Var.t vector, body: t} -> t
             val detupleBind': {tuple: t, components: Var.t vector, body: t, mode: Mode.t} -> t
-            val devector: {vector: t, length: int, body: (VarExp.t * Type.t) vector -> t} -> t
+            val devector: {vector: t, length: int, body: (VarExp.t * Type.t * Mode.t) vector -> t} -> t
             val equal: t * t -> t
             val falsee: unit -> t
-            val fromExp: Exp.t * Type.t -> t
-            val fromLambda: Lambda.t * Type.t -> t
+            val fromExp: Exp.t * Type.t * Mode.t -> t
+            val fromLambda: Lambda.t * Type.t * Mode.t -> t
             val handlee: {catch: Var.t * Type.t,
                           handler: t,
                           try: t,
                           ty: Type.t} -> t
-            val iff: {test: t, thenn: t, elsee: t, ty: Type.t} -> t
+            val iff: {test: t, thenn: t, elsee: t, ty: Type.t} * Mode.t -> t
             val lambda: {arg: Var.t,
                          argType: Type.t,
+                         argMode: Mode.t,
+                         lambdaMode: Mode.t,
+                         resultMode: Mode.t,
                          body: t,
                          bodyType: Type.t,
                          mayInline: bool} -> t
-            val let1: {var: Var.t, exp: t, body: t} -> t
-            val let1': {var: Var.t, exp: t, body: t, mode: Mode.t} -> t
+            val let1: {var: Var.t, exp: t, body: t, mode: Mode.t} -> t
             val lett: {decs: Dec.t list, body: t} -> t
             val monoVar: Var.t * Type.t * Mode.t -> t
             val primApp: {args: t vector,
                           prim: Type.t Prim.t,
                           targs: Type.t vector,
-                          ty: Type.t} -> t
+                          ty: Type.t} * Mode.t -> t
             val raisee: {exn: t, extend: bool, ty: Type.t} -> t
             val reff: t -> t
             val select: {tuple: t, offset: int, ty: Type.t} -> t
@@ -220,12 +225,11 @@ signature XML_TREE =
             val truee: unit -> t
             val tuple: {exps: t vector, ty: Type.t} -> t
             val unit: unit -> t
-            val vall: {var: Var.t, exp: t} -> Dec.t list
+            val vall: {var: Var.t, exp: t, mode: Mode.t} -> Dec.t list
             val var: {targs: Type.t vector,
                       ty: Type.t,
-                      var: Var.t,
-                      mode: Mode.t} -> t
-            val varExp: VarExp.t * Type.t -> t
+                      var: Var.t} * Mode.t -> t
+            val varExp: VarExp.t * Type.t * Mode.t -> t
             val vectorLength: t -> t
          end
 

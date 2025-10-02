@@ -135,16 +135,14 @@ structure Pat =
 structure VarExp =
    struct
       datatype t = T of {targs: Type.t vector,
-                         var: Var.t,
-                         mode: Mode.t}
+                         var: Var.t}
 
-      fun equals (T {targs = targs1, var = var1, mode = mode1},
-                  T {targs = targs2, var = var2, mode = mode2}) =
+      fun equals (T {targs = targs1, var = var1},
+                  T {targs = targs2, var = var2}) =
          Var.equals (var1, var2)
          andalso Vector.equals (targs1, targs2, Type.equals)
-         andalso Mode.equals (mode1, mode2)
 
-      fun mono var = T {var = var, targs = Vector.new0 (), mode = Mode.Undetermined}
+      fun mono var = T {var = var, targs = Vector.new0 ()}
 
       local
          fun make f (T r) = f r
@@ -152,11 +150,11 @@ structure VarExp =
          val var = make #var
       end
 
-      fun layout (T {var, targs, mode, ...}) =
+      fun layout (T {var, targs, ...}) =
          let
             open Layout
          in
-            seq [Var.layout var, layoutTargs targs, Mode.layout mode]
+            seq [Var.layout var, layoutTargs targs]
          end
 
       val parse =
@@ -167,7 +165,7 @@ structure VarExp =
             T <$>
             (Var.parseExcept varExcepts >>= (fn var =>
              parseTargs >>= (fn targs =>
-             pure {var = var, targs = targs, mode = Mode.Undetermined})))
+             pure {var = var, targs = targs})))
          end
    end
 
@@ -186,6 +184,7 @@ and primExp =
              default: exp option}
   | ConApp of {con: Con.t,
                targs: Type.t vector,
+               (* TODO: add modes *)
                arg: VarExp.t option}
   | Const of Const.t
   | Handle of {try: exp,
@@ -199,11 +198,12 @@ and primExp =
   | Raise of {exn: VarExp.t, extend: bool}
   | Select of {tuple: VarExp.t,
                offset: int}
-  | Tuple of VarExp.t vector
+  | Tuple of VarExp.t vector (* TODO: add modes *)
   | Var of VarExp.t
 and dec =
    Exception of {arg: Type.t option,
                  con: Con.t}
+  (* these can be turned into closures, think nested functions *)
   | Fun of {decs: {lambda: lambda,
                    ty: Type.t,
                    var: Var.t} vector,
@@ -219,6 +219,9 @@ and dec =
                 var: Var.t}
 and lambda = Lam of {arg: Var.t,
                      argType: Type.t,
+                     argMode: Mode.t,
+                     lambdaMode: Mode.t,
+                     resultMode: Mode.t,
                      body: exp,
                      mayInline: bool,
                      plist: PropertyList.t}
@@ -462,6 +465,9 @@ in
        delay parseExp >>= (fn body =>
        pure {mayInline = Option.isNone noInline,
              arg = arg, argType = argType,
+             argMode = Mode.Undetermined,
+             lambdaMode = Mode.Undetermined,
+             resultMode = Mode.Undetermined,
              body = body,
              plist = PropertyList.new ()})))))
 end
@@ -729,8 +735,10 @@ structure Exp =
                 | PolyVal {exp, ty, tyvars, mode, var} =>
                      SOME (PolyVal {exp = dropProfileExp exp, ty = ty,
                                     tyvars = tyvars, mode = mode, var = var})
-            and dropProfileLambda (Lam {arg, argType, body, mayInline, plist}) =
+            and dropProfileLambda (Lam {arg, argType, argMode, lambdaMode, resultMode, body, mayInline, plist}) =
                Lam {arg = arg, argType = argType,
+                    argMode = argMode, lambdaMode = lambdaMode, 
+                    resultMode = resultMode,
                     body = dropProfileExp body,
                     mayInline = mayInline,
                     plist = plist}
@@ -794,9 +802,12 @@ structure Lambda =
          val mayInline = make #mayInline
       end
 
-      fun make {arg, argType, body, mayInline} =
+      fun make {arg, argType, argMode, lambdaMode, resultMode, body, mayInline} =
          Lam {arg = arg,
               argType = argType,
+              argMode = argMode,
+              lambdaMode = lambdaMode,
+              resultMode = resultMode,
               body = body,
               mayInline = mayInline,
               plist = PropertyList.new ()}
@@ -819,23 +830,23 @@ structure DirectExp =
 
       structure Cont =
          struct
-            type t = PrimExp.t * Type.t -> Exp.t
+            type t = PrimExp.t * Type.t * Mode.t -> Exp.t
 
-            fun nameGen (k: VarExp.t * Type.t -> Exp.t) : t =
-              fn (e, t) =>
+            fun nameGen (k: VarExp.t * Type.t * Mode.t -> Exp.t) : t =
+              fn (e, t, m) =>
                 case e of
-                  Var x => k (x, t)
+                  Var x => k (x, t, m)
                 | _ =>
                     let
                       val x = Var.newNoname ()
                     in
-                      Exp.prefix (k (VarExp.mono x, t), MonoVal
-                        {var = x, ty = t, exp = e, mode = Mode.Undetermined})
+                      Exp.prefix (k (VarExp.mono x, t, m), MonoVal
+                        {var = x, ty = t, exp = e, mode = m})
                     end
 
-            fun name (k: VarExp.t * Type.t -> Exp.t): t = nameGen k
+            fun name (k: VarExp.t * Type.t * Mode.t -> Exp.t): t = nameGen k
 
-            val id: t = name (fn (x, _) => Exp {decs = [], result = x})
+            val id: t = name (fn (x, _, _) => Exp {decs = [], result = x})
 
             fun return (k: t, xt) = k xt
          end
@@ -846,26 +857,26 @@ structure DirectExp =
 
       fun toExp e = send (e, Cont.id)
 
-      fun fromExp (Exp {decs, result}, ty): t =
-         fn k => Exp.prefixs (k (Var result, ty), decs)
+      fun fromExp (Exp {decs, result}, ty, mode): t =
+         fn k => Exp.prefixs (k (Var result, ty, mode), decs)
 
       fun sendName (e, k) = send (e, Cont.name k)
 
-      fun simple (e: PrimExp.t * Type.t) k = Cont.return (k, e)
+      fun simple (e: PrimExp.t * Type.t * Mode.t) k = Cont.return (k, e)
 
-      fun const c = simple (Const c, Type.ofConst c)
+      fun const c = simple (Const c, Type.ofConst c, Mode.Constant)
 
       val string = const o Const.string
 
-      fun varExp (x, t) = simple (Var x, t)
+      fun varExp (x, t, m) = simple (Var x, t, m)
 
-      fun var {var, targs, ty, mode} =
-         varExp (VarExp.T {var = var, targs = targs, mode = mode}, ty)
+      fun var ({var, targs, ty}, mode) =
+         varExp (VarExp.T {var = var, targs = targs}, ty, mode)
 
-      fun monoVar (x, t, m) = var {var = x, targs = Vector.new0 (), ty = t, mode = m}
+      fun monoVar (x, t, m) = var ({var = x, targs = Vector.new0 (), ty = t}, m)
 
       fun convertsGen (es: t vector,
-                       k: (VarExp.t * Type.t) vector -> Exp.t): Exp.t =
+                       k: (VarExp.t * Type.t * Mode.t) vector -> Exp.t): Exp.t =
          let
             val n = Vector.length es
             fun loop (i, xs) =
@@ -877,10 +888,10 @@ structure DirectExp =
          end
 
       fun converts (es: t vector,
-                    make: (VarExp.t * Type.t) vector -> PrimExp.t * Type.t): t =
+                    make: (VarExp.t * Type.t * Mode.t) vector -> PrimExp.t * Type.t * Mode.t): t =
          fn k => convertsGen (es, k o make)
 
-      fun convert (e: t, make: VarExp.t * Type.t -> PrimExp.t * Type.t): t =
+      fun convert (e: t, make: VarExp.t * Type.t * Mode.t -> PrimExp.t * Type.t * Mode.t): t =
          fn k => send (e, Cont.name (k o make))
 
       fun convertOpt (e, make) =
@@ -892,142 +903,139 @@ structure DirectExp =
          if 1 = Vector.length exps
             then Vector.first exps
          else converts (exps, fn xs =>
-                        (PrimExp.Tuple (Vector.map (xs, #1)), ty))
+                        let val ms = Vector.map (xs, #3)
+                            val mode = 
+                              if Vector.exists (ms, fn m => Mode.equals (m, Mode.Stack)) 
+                                 then Mode.Stack else Mode.Heap
+                        in (PrimExp.Tuple (Vector.map (xs, #1)), ty, mode) end)
 
       fun select {tuple, offset, ty} =
-         convert (tuple, fn (tuple, _) =>
-                  (Select {tuple = tuple, offset = offset}, ty))
+         convert (tuple, fn (tuple, _, m) =>
+                  (Select {tuple = tuple, offset = offset}, ty, m))
 
-      fun conApp {con, targs, arg, ty} =
+      fun conApp {con, targs, arg, ty, mode} =
          convertOpt (arg, fn arg =>
-                     (ConApp {con = con, targs = targs, arg = arg}, ty))
+                     (ConApp {con = con, targs = targs, arg = arg}, ty, mode))
 
       local
          fun make c () =
             conApp {con = c,
                     targs = Vector.new0 (),
                     arg = NONE,
+                    mode = Mode.Constant,
                     ty = Type.bool}
       in
          val truee = make Con.truee
          val falsee = make Con.falsee
       end
 
-      fun primApp {prim, targs, args, ty} =
+      fun primApp ({prim, targs, args, ty}, mode) =
          converts (args, fn args =>
                    (PrimApp {prim = prim,
                              targs = targs,
                              args = Vector.map (args, #1)},
-                    ty))
+                    ty, mode))
 
       fun convert2 (e1, e2, make) =
          converts (Vector.new2 (e1, e2),
                    fn xs => make (Vector.first xs, Vector.sub (xs, 1)))
 
-      fun app {func, arg, ty} =
-         convert2 (func, arg, fn ((func, _), (arg, _)) =>
-                   (App {func = func, arg = arg}, ty))
+      fun app ({func, arg, ty}, mode) =
+         convert2 (func, arg, fn ((func, _, _), (arg, _, _)) =>
+                   (App {func = func, arg = arg}, ty, mode))
 
-      fun casee {test, cases, default, ty} =
-         convert (test, fn (test, _) =>
+      fun casee ({test, cases, default, ty}, mode) =
+         convert (test, fn (test, _, _) =>
                   (Case
                    {test = test,
                     cases = Cases.map (cases, toExp),
                     default = Option.map (default, toExp)},
-                   ty))
+                   ty, mode))
 
       fun raisee {exn: t, extend: bool, ty: Type.t}: t =
-         convert (exn, fn (x, _) => (Raise {exn = x, extend = extend}, ty))
+         convert (exn, fn (x, _, _) => (Raise {exn = x, extend = extend}, ty, Mode.Heap))
 
       fun handlee {try, catch, handler, ty} =
          simple (Handle {try = toExp try,
                          catch = catch,
                          handler = toExp handler},
-                 ty)
+                 ty, Mode.Heap)
 
       fun unit () = tuple {exps = Vector.new0 (), ty = Type.unit}
 
       fun reff (e: t): t =
-         convert (e, fn (x, t) =>
+         convert (e, fn (x, t, m) =>
                   (PrimApp {prim = Prim.Ref_ref,
                             targs = Vector.new1 t,
                             args = Vector.new1 x},
-                   Type.reff t))
+                   Type.reff t, m))
 
       fun deref (e: t): t =
-         convert (e, fn (x, t) =>
+         convert (e, fn (x, t, m) =>
                   let
                      val t = Type.deRef t
                   in
                      (PrimApp {prim = Prim.Ref_deref,
                                targs = Vector.new1 t,
                                args = Vector.new1 x},
-                      t)
+                      t, m)
                   end)
 
       fun vectorLength (e: t): t =
-         convert (e, fn (x, t) =>
+         convert (e, fn (x, t, m) =>
                   let
                      val t = Type.deVector t
                   in
                      (PrimApp {prim = Prim.Vector_length,
                                targs = Vector.new1 t,
                                args = Vector.new1 x},
-                      Type.word (WordSize.seqIndex ()))
+                      Type.word (WordSize.seqIndex ()), m)
                   end)
 
       fun vectorSub (e1: t, e2: t): t =
-         convert2 (e1, e2, fn ((x1, t1), (x2, _)) =>
+         convert2 (e1, e2, fn ((x1, t1, m1), (x2, _, _)) =>
                    let
                       val t = Type.deVector t1
                    in
                       (PrimApp {prim = Prim.Vector_sub,
                                 targs = Vector.new1 t,
                                 args = Vector.new2 (x1, x2)},
-                       t)
+                       t, m1)
                    end)
 
       fun equal (e1, e2) =
-         convert2 (e1, e2, fn ((x1, t), (x2, _)) =>
+         convert2 (e1, e2, fn ((x1, t, m1), (x2, _, _)) =>
                    (PrimApp {prim = Prim.MLton_equal,
                              targs = Vector.new1 t,
                              args = Vector.new2 (x1, x2)},
-                    Type.bool))
+                    Type.bool, m1))
 
-      fun iff {test, thenn, elsee, ty} =
-         casee {test = test,
+      fun iff ({test, thenn, elsee, ty}, mode) =
+         casee ({test = test,
                 cases = Cases.Con (Vector.new2 ((Pat.truee, thenn),
                                                 (Pat.falsee, elsee))),
                 default = NONE,
-                ty = ty}
+                ty = ty}, mode)
 
-      fun vall {var, exp}: Dec.t list =
+      fun vall {var, exp, mode}: Dec.t list =
          let val t = ref Type.unit
             val Exp {decs, result} =
-               sendName (exp, fn (x, t') => (t := t';
-                                             Exp {decs = [], result = x}))
-         in decs @ [MonoVal {var = var, ty = !t, exp = Var result, mode = Mode.Heap}]
-         end
-
-      fun vall' {var, exp, mode}: Dec.t list =
-         let val t = ref Type.unit
-            val Exp {decs, result} =
-               sendName (exp, fn (x, t') => (t := t';
+               sendName (exp, fn (x, t', _) => (t := t';
                                              Exp {decs = [], result = x}))
          in decs @ [MonoVal {var = var, ty = !t, exp = Var result, mode = mode}]
          end
 
       fun sequence es =
-         converts (es, fn xs => let val (x, t) = Vector.last xs
-                                in (Var x, t)
+         converts (es, fn xs => let val (x, t, m) = Vector.last xs
+                                in (Var x, t, m)
                                 end)
 
       val bug: string -> t =
          fn s =>
-         primApp {prim = Prim.MLton_bug,
+         primApp ({prim = Prim.MLton_bug,
                   targs = Vector.new0 (),
                   args = Vector.new1 (string s),
-                  ty = Type.unit}
+                  ty = Type.unit}, Mode.Heap)
 
       fun seq (es, make) =
          fn k => convertsGen (es, fn xts =>
@@ -1035,27 +1043,25 @@ structure DirectExp =
 
       fun lett {decs, body} = fn k => Exp.prefixs (send (body, k), decs)
 
-      fun let1 {var, exp, body} =
+      fun let1 {var, exp, body, mode} =
          fn k =>
-         send (exp, fn (exp, ty) =>
-               Exp.prefix (send (body, k),
-                           Dec.MonoVal {var = var, ty = ty, exp = exp, mode = Mode.Heap}))
-
-      fun let1' {var, exp, body, mode} =
-         fn k =>
-         send (exp, fn (exp, ty) =>
+         (* TODO: check check if the fn mode or the let1 param mode *)
+         send (exp, fn (exp, ty, mode) =>
                Exp.prefix (send (body, k),
                            Dec.MonoVal {var = var, ty = ty, exp = exp, mode = mode}))
 
-      fun lambda {arg, argType, body, bodyType, mayInline} =
+      fun lambda {arg, argType, argMode, lambdaMode, resultMode, body, bodyType, mayInline} =
          simple (Lambda (Lambda.make {arg = arg,
                                       argType = argType,
+                                      argMode = argMode,
+                                      lambdaMode = lambdaMode,
+                                      resultMode = resultMode,
                                       body = toExp body,
                                       mayInline = mayInline}),
-                 Type.arrow (argType, bodyType))
+                 Type.arrow (argType, bodyType), lambdaMode)
 
-      fun fromLambda (l, ty) =
-         simple (Lambda l, ty)
+      fun fromLambda (l, ty, m) =
+         simple (Lambda l, ty, m)
 
       fun detupleGen (e: PrimExp.t,
                       t: Type.t,
@@ -1111,15 +1117,15 @@ structure DirectExp =
                 end)
 
       fun detupleBind {tuple, components, body} =
-         fn k => send (tuple, fn (e, t) => detupleGen (e, t, components, body k))
+         fn k => send (tuple, fn (e, t, _) => detupleGen (e, t, components, body k))
 
       fun detupleBind' {tuple, components, body, mode} =
-         fn k => send (tuple, fn (e, t) => detupleGen' (e, t, components, body k, mode))
+         fn k => send (tuple, fn (e, t, _) => detupleGen' (e, t, components, body k, mode))
 
       fun detuple {tuple: t, body}: t =
          fn k =>
          tuple
-         (fn (e, t) =>
+         (fn (e, t, _) =>
           let
              val ts = Type.deTuple t
           in
