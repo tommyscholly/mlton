@@ -325,7 +325,7 @@ structure Facts =
                      Con {arg, ...} =>
                         (case arg of
                             NONE => env
-                          | SOME p => 
+                          | SOME p =>
                                (case fact x of
                                    Fact.Con {arg = SOME x, ...} =>
                                       loop (p, x, env)
@@ -386,8 +386,8 @@ structure Facts =
          end
 
       val example =
-         Trace.trace3 
-         ("MatchCompile.Facts.example", 
+         Trace.trace3
+         ("MatchCompile.Facts.example",
           layout, Examples.layout, Var.layout, Example.layout)
          example
    end
@@ -851,10 +851,10 @@ fun matchCompile {caseType: Type.t,
                   in
                      Vector.fold
                      (cases, default, fn ({const, rules}, rest) =>
-                      Exp.iff {test = Exp.equal (test, Exp.const const),
+                      Exp.iff ({test = Exp.equal (test, Exp.const const),
                                thenn = finish (rules, exampleConst const),
                                elsee = rest,
-                               ty = caseType})
+                               ty = caseType}, Mode.Heap))
                   end
              | SOME {size, ...} =>
                   let
@@ -862,7 +862,7 @@ fun matchCompile {caseType: Type.t,
                         Vector.map
                         (cases, fn {const, rules} =>
                          let
-                            val w = 
+                            val w =
                                case const of
                                   Const.Word w => w
                                 | _ => Error.bug "MatchCompile.const: caseWord type error"
@@ -870,10 +870,10 @@ fun matchCompile {caseType: Type.t,
                             (w, finish (rules, exampleConst const))
                          end)
                   in
-                     Exp.casee {cases = Cases.Word (size, cases),
+                     Exp.casee ({cases = Cases.Word (size, cases),
                                 default = default,
                                 test = test,
-                                ty = caseType}
+                                ty = caseType}, Mode.Heap)
                   end
          end) arg
       and sum arg =
@@ -898,7 +898,7 @@ fun matchCompile {caseType: Type.t,
                                          Vector.keepAllMapi
                                          (vars, fn (i', x) =>
                                           if i = i' then NONE else SOME x))
-                                   | SOME (_, ty) => 
+                                   | SOME (_, ty) =>
                                         let
                                            val arg = Var.newNoname ()
                                         in
@@ -993,10 +993,10 @@ fun matchCompile {caseType: Type.t,
                      (Example.or unhandled, NONE, fn (e, _) => done (e, false))
                   end
             fun normal () =
-               Exp.casee {cases = Cases.Con cases,
+               Exp.casee ({cases = Cases.Con cases,
                           default = default,
                           test = test,
-                          ty = caseType}
+                          ty = caseType}, Mode.Heap)
          in
             if 1 <> Vector.length cases
                then normal ()
@@ -1006,13 +1006,14 @@ fun matchCompile {caseType: Type.t,
                in
                   if not (Con.equals (con, Con.reff))
                      then normal ()
-                  else 
+                  else
                      case arg of
                         NONE => Error.bug "MatchCompile.sum: ref missing arg"
-                      | SOME (var, _) => 
+                      | SOME (var, _) =>
                            Exp.lett {body = rhs,
                                      exp = Exp.deref test,
-                                     var = var}
+                                     var = var,
+                                     mode = Mode.Heap}
                end
          end) arg
       and record arg =

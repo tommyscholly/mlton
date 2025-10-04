@@ -845,16 +845,15 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                                      (a, Xtype.unit)))
                                   val body =
                                      Xexp.app
-                                     {arg = Xexp.unit (),
+                                     ({arg = Xexp.unit (),
                                       func =
                                       Xexp.var
-                                      {targs = (Vector.map
+                                      ({targs = (Vector.map
                                                 (tyvars, fn _ =>
                                                  Xtype.unit)),
                                        ty = subst thunkTy,
-                                       mode = expMode,
-                                       var = x},
-                                      ty = subst expType}
+                                       var = x}, expMode),
+                                      ty = subst expType}, expMode)
                                   val decs =
                                      [Xdec.PolyVal {exp = thunk,
                                                     ty = thunkTy,
@@ -897,10 +896,9 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                             (tyvars,
                                              y,
                                              patDec (pat,
-                                                     Xexp.var {targs = targs,
+                                                     Xexp.var ({targs = targs,
                                                                ty = xt,
-                                                               mode = expMode,
-                                                               var = x},
+                                                               var = x}, expMode),
                                                      Xexp.monoVar (y', yt, expMode),
                                                      yt,
                                                      false),
@@ -940,10 +938,9 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                                   patDec
                                                   (pat,
                                                    Xexp.var
-                                                   {targs = targs,
+                                                   ({targs = targs,
                                                     ty = NestedPat.ty pat,
-                                                    mode = expMode,
-                                                    var = x},
+                                                    var = x}, expMode),
                                                    e,
                                                    bodyType,
                                                    true)
@@ -974,12 +971,13 @@ fun defunctorize (CoreML.Program.T {decs}) =
             val ty = loopTy ty
             fun conApp {arg, con, targs, ty} =
                if Con.equals (con, Con.reff)
-                  then Xexp.primApp {args = Vector.new1 arg,
+                  then Xexp.primApp ({args = Vector.new1 arg,
                                      prim = Prim.Ref_ref,
                                      targs = targs,
-                                     ty = ty}
+                                     ty = ty}, mode)
                else Xexp.conApp {arg = SOME arg,
                                  con = con,
+                                 mode = mode,
                                  targs = targs,
                                  ty = ty}
             datatype z = datatype Cexp.node
@@ -996,9 +994,9 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                       targs = conTargs (con, targs),
                                       ty = ty}
                          | _ =>
-                              Xexp.app {arg = e2,
+                              Xexp.app ({arg = e2,
                                         func = #1 (loopExp e1),
-                                        ty = ty}
+                                        ty = ty}, mode)
                      end
                 | Case {ctxt, kind, nest, matchDiags, noMatch, region, rules, test, ...} =>
                      casee {ctxt = ctxt,
@@ -1024,6 +1022,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                            NONE =>
                               Xexp.conApp {arg = NONE,
                                            con = con,
+                                           mode = mode,
                                            targs = targs,
                                            ty = ty}
                          | SOME (argType, bodyType) =>
@@ -1033,6 +1032,9 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                  Xexp.lambda
                                  {arg = arg,
                                   argType = argType,
+                                  argMode = mode,
+                                  lambdaMode = mode,
+                                  resultMode = mode,
                                   body = (conApp
                                           {arg = Xexp.monoVar (arg, argType, mode),
                                            con = con,
@@ -1058,9 +1060,10 @@ fun defunctorize (CoreML.Program.T {decs}) =
                      end
                 | EnterLeave (e, si) =>
                      let
+                        val expMode = Cexp.mode e
                         val (e, t) = loopExp e
                      in
-                        enterLeave (e, t, si, Cexp.mode e)
+                        enterLeave (e, t, si, expMode)
                      end
                 | Handle {catch = (x, t), handler, try} =>
                      Xexp.handlee {catch = (x, loopTy t),
@@ -1100,10 +1103,10 @@ fun defunctorize (CoreML.Program.T {decs}) =
                              | _ => false)
                            then Vector.first args
                         else
-                           Xexp.primApp {args = args,
+                           Xexp.primApp ({args = args,
                                          prim = Prim.map (prim, loopTy),
                                          targs = Vector.map (targs, loopTy),
-                                         ty = ty}
+                                         ty = ty}, mode)
 
                      end
                 | Exclave e => #1 (loopExp e)
@@ -1125,15 +1128,14 @@ fun defunctorize (CoreML.Program.T {decs}) =
                      end
                 | Seq es => Xexp.sequence (Vector.map (es, #1 o loopExp))
                 | Var (var, targs) =>
-                     Xexp.var {targs = Vector.map (targs (), loopTy),
+                     Xexp.var ({targs = Vector.map (targs (), loopTy),
                                ty = ty,
-                               mode = mode,
-                               var = var ()}
+                               var = var ()}, mode)
                 | Vector es =>
-                     Xexp.primApp {args = Vector.map (es, #1 o loopExp),
-                                   prim = Prim.Vector_vector,
-                                   targs = Vector.new1 (Xtype.deVector ty),
-                                   ty = ty}
+                     Xexp.primApp ({args = Vector.map (es, #1 o loopExp),
+                                    prim = Prim.Vector_vector,
+                                    targs = Vector.new1 (Xtype.deVector ty),
+                                    ty = ty}, mode)
          in
             (exp, ty)
          end
