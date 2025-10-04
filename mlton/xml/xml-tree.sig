@@ -49,6 +49,9 @@ signature XML_TREE =
             val body: t -> exp
             val dest: t -> {arg: Var.t,
                             argType: Type.t,
+                            argMode: Mode.t,
+                            lambdaMode: Mode.t,
+                            resultMode: Mode.t,
                             body: exp,
                             mayInline: bool}
             val equals: t * t -> bool

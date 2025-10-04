@@ -34,7 +34,7 @@ signature MATCH_COMPILE_STRUCTS =
                {cases: (Pat.t, t) Cases.t,
                 default: t option,
                 test: t,
-                ty: Type.t}  (* type of entire case expression *)
+                ty: Type.t} * Mode.t  (* type of entire case expression *)
                -> t
             val const: Const.t -> t
             val deref: t -> t
@@ -43,8 +43,8 @@ signature MATCH_COMPILE_STRUCTS =
             val devector: {vector: t, length: int,
                            body: (Var.t * Type.t) vector -> t} -> t
             val equal: t * t -> t
-            val iff: {test: t, thenn: t, elsee: t, ty: Type.t} -> t
-            val lett: {var: Var.t, exp: t, body: t} -> t
+            val iff: {test: t, thenn: t, elsee: t, ty: Type.t} *  Mode.t -> t
+            val lett: {var: Var.t, exp: t, mode: Mode.t, body: t} -> t
             val var: Var.t * Type.t * Mode.t -> t
             val vectorLength: t -> t
          end

@@ -1063,7 +1063,7 @@ fun matchCompile {caseType: Type.t,
                         * must bind to a fresh variable to maintain
                         * a unique Fact.t per variable in Facts.t.
                         *)
-                       Exp.lett {var = var', exp = test,
+                       Exp.lett {var = var', exp = test, mode = Mode.Heap,
                                  body = body (Vector.new1 (var', varTy))}
                     end
                else Exp.detuple {body = body, tuple = test}
@@ -1166,10 +1166,10 @@ fun matchCompile {caseType: Type.t,
                 end)
          in
             Exp.casee
-            {cases = Cases.Word (WordSize.seqIndex (), cases),
+            ({cases = Cases.Word (WordSize.seqIndex (), cases),
              default = SOME default,
              test = Exp.vectorLength test,
-             ty = caseType}
+             ty = caseType}, Mode.Heap)
          end) arg
       val examples = ref []
       val res =

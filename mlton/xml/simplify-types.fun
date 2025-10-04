@@ -167,7 +167,7 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
       val {get = varKeep: Var.t -> bool vector option,
            set = setVarKeep, ...} =
          Property.getSetOnce (Var.plist, Property.initConst NONE)
-      fun fixVarExp (I.VarExp.T {targs, var, mode}): O.VarExp.t =
+      fun fixVarExp (I.VarExp.T {targs, var}): O.VarExp.t =
          let
             val targs =
                case varKeep var of
@@ -175,7 +175,7 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
                 | SOME bv => keep (targs, bv)
          in
             O.VarExp.T {targs = Vector.map (targs, fixType),
-                        var = var, mode = mode}
+                        var = var}
          end
       val fixVarExp =
          Trace.trace 
@@ -241,10 +241,14 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
          end
       and fixLambda (l: I.Lambda.t): O.Lambda.t =
          let
-            val {arg, argType, body, mayInline} = I.Lambda.dest l
+            val {arg, argType, argMode, lambdaMode, resultMode, body, mayInline} =
+               I.Lambda.dest l
          in
             O.Lambda.make {arg = arg,
                            argType = fixType argType,
+                           argMode = argMode,
+                           lambdaMode = lambdaMode,
+                           resultMode = resultMode,
                            body = fixExp body,
                            mayInline = mayInline}
          end

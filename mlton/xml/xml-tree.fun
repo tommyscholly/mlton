@@ -812,8 +812,15 @@ structure Lambda =
               mayInline = mayInline,
               plist = PropertyList.new ()}
 
-      fun dest (Lam {arg, argType, body, mayInline, ...}) =
-         {arg = arg, argType = argType, body = body, mayInline = mayInline}
+      fun dest (Lam {arg, argType, argMode, lambdaMode, resultMode, body, mayInline, ...}) =
+        { arg = arg
+        , argType = argType
+        , argMode = argMode
+        , lambdaMode = lambdaMode
+        , resultMode = resultMode
+        , body = body
+        , mayInline = mayInline
+        }
 
       fun plist (Lam {plist, ...}) = plist
 

@@ -67,6 +67,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
               in
                  Dexp.conApp {arg = NONE,
                               con = extraCon,
+                              mode = Mode.Heap,
                               targs = Vector.new0 (),
                               ty = extraType}
               end
@@ -112,6 +113,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                      {con = exnCon,
                       targs = Vector.new0 (),
                       ty = Type.exn,
+                      mode = Mode.Heap,
                       arg = SOME (tuple {exps = Vector.new2 (extra, exn),
                                          ty = exnConArgType})}
                   end
@@ -128,7 +130,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                      val tuple = Var.newNoname ()
                   in
                      casee
-                     {test = monoVar (exn, Type.exn, Mode.Heap),
+                     ({test = monoVar (exn, Type.exn, Mode.Heap),
                       default = NONE,
                       ty = ty,
                       cases =
@@ -136,7 +138,8 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                  (Pat.T {con = exnCon,
                                          targs = Vector.new0 (),
                                          arg = SOME (tuple, exnConArgType)},
-                                  f (monoVar (tuple, exnConArgType, Mode.Undetermined))))}
+                                  f (monoVar (tuple, exnConArgType,
+                                  Mode.Heap))))}, Mode.Heap)
                   end
                fun projectExtra (x: Var.t) =
                   extract (x, extraType, extractExtra)
@@ -150,7 +153,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                      open Dexp
                      val exp =
                         if not extend
-                           then raisee {exn = varExp (exn, Type.exn),
+                           then raisee {exn = varExp (exn, Type.exn, Mode.Heap),
                                         extend = false, ty = ty}
                         else
                            extract
@@ -160,15 +163,15 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                              {exn = extractSum tup,
                               extra =
                               app
-                              {func = deref (monoVar
+                              ({func = deref (monoVar
                                              (extendExtraVar,
                                               Type.reff extendExtraType, Mode.Heap)),
                                arg = extractExtra tup,
-                               ty = extraType}},
+                               ty = extraType}, Mode.Heap)},
                              extend = false,
                              ty = ty})
                   in
-                     vall {exp = exp, var = x}
+                     vall {exp = exp, var = x, mode = Mode.Heap}
                   end
                val extraDatatypes =
                   Vector.new1 {tycon = Tycon.exn,
@@ -235,6 +238,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                      injectSum (Dexp.conApp {con = con,
                                              targs = Vector.new0 (),
                                              ty = sumType,
+                                             mode = Mode.Heap,
                                              arg = SOME arg})
                   val (arg, decs, make) =
                      case arg of
@@ -245,7 +249,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                            let
                               val exn = Var.newNoname ()
                            in (Type.unitRef,
-                               Dexp.vall {var = exn, exp = conApp uniq},
+                               Dexp.vall {var = exn, exp = conApp uniq, mode = Mode.Heap},
                                fn NONE => monoVar (exn, Type.exn, Mode.Heap)
                                 | _ => Error.bug "ImplementExceptions: nullary excon applied to arg")
                            end
@@ -257,20 +261,20 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                [],
                                fn SOME x => (conApp o tuple)
                                             {exps = Vector.new2
-                                                    (uniq, varExp (x, t)),
+                                                    (uniq, varExp (x, t, Mode.Heap)),
                                              ty = tupleType}
                                 | _ => Error.bug "ImplmentExceptions: unary excon not applied to arg")
                            end
                in setExconInfo (con, SOME {refVar = r, make = make})
                   ; List.push (exnValCons, {con = con, arg = arg})
-                  ; vall {var = r, exp = reff (unit ())} @ decs
+                  ; vall {var = r, exp = reff (unit ()), mode = Mode.Heap} @ decs
                end
           | _ => Error.bug "ImplementExceptions: saw unexpected dec") arg
       and loopMonoVal {var, ty, mode, exp} : Dec.t list =
          let
             fun primExp e = [MonoVal {var = var, ty = ty, mode = mode, exp = e}]
             fun keep () = primExp exp
-            fun makeExp e = Dexp.vall {var = var, exp = e}
+            fun makeExp e = Dexp.vall {var = var, exp = e, mode = mode}
          in
             case exp of
                Case {test, cases, default} =>
@@ -296,35 +300,39 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                        open Dexp
                                        val defaultVar = Var.newString "default"
                                        fun callDefault () =
-                                          app {func = (monoVar
+                                          app ({func = (monoVar
                                                        (defaultVar,
                                                         Type.arrow
                                                         (Type.unit, ty),
-                                                        Mode.Undetermined)),
+                                                        Mode.Heap)),
                                                arg = unit (),
-                                               ty = ty}
+                                               ty = ty}, Mode.Heap)
                                        val unit = Var.newString "unit"
                                        val body =
                                           case default of
                                              NONE =>
                                                 Error.bug "ImplementExceptions: no default for exception case"
                                            | SOME e =>
-                                                fromExp (loop e, ty)
+                                                fromExp (loop e, ty, Mode.Heap)
                                        val decs =
                                           vall
                                           {var = defaultVar,
                                            exp = lambda {arg = unit,
                                                          argType = Type.unit,
+                                                         argMode = Mode.Heap,
+                                                         lambdaMode = Mode.Heap,
+                                                         resultMode = Mode.Heap,
                                                          body = body,
                                                          bodyType = ty,
-                                                         mayInline = true}}
+                                                         mayInline = true},
+                                           mode = Mode.Heap}
                                     in
                                        makeExp
                                        (lett
                                         {decs = decs,
                                          body =
                                          casee
-                                         {test = projectSum (VarExp.var test),
+                                         ({test = projectSum (VarExp.var test),
                                           ty = ty,
                                           default = SOME (callDefault ()),
                                           cases =
@@ -334,7 +342,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                             let
                                                val refVar = Var.newNoname ()
                                                val body =
-                                                  iff {test =
+                                                  iff ({test =
                                                        equal
                                                        (monoVar
                                                         (refVar, Type.unitRef, Mode.Constant),
@@ -343,8 +351,8 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                                          Type.unitRef, Mode.Constant)),
                                                        ty = ty,
                                                        thenn = (fromExp
-                                                                (loop e, ty)),
-                                                       elsee = callDefault ()}
+                                                                (loop e, ty, Mode.Heap)),
+                                                       elsee = callDefault ()}, Mode.Heap)
                                                fun make (arg, body) =
                                                   (Pat.T
                                                    {con = con,
@@ -367,7 +375,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                                             Vector.new2 (refVar, x),
                                                             body = body})
                                                   end
-                                            end))}})
+                                            end))}, Mode.Heap)})
                                     end
                               end
                       | _ => normal ()
@@ -420,14 +428,18 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
          end
       and loopLambda l =
          let
-            val {arg, argType, body, mayInline} = Lambda.dest l
+            val {arg, argType, argMode, lambdaMode, resultMode, body, mayInline} = 
+               Lambda.dest l
          in
             Lambda.make {arg = arg,
                          argType = argType,
+                         argMode = argMode,
+                         lambdaMode = lambdaMode,
+                         resultMode = resultMode,
                          body = loop body,
                          mayInline = mayInline}
          end
-      val body = Dexp.fromExp (loop body, Type.unit)
+      val body = Dexp.fromExp (loop body, Type.unit, Mode.Heap)
       val exnValCons = Vector.fromList (!exnValCons)
       val datatypes =
          Vector.concat
@@ -441,14 +453,18 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
       val body =
          Dexp.let1
          {body = body,
+          mode = Mode.Heap,
           exp = let
                    val exn = Var.newNoname ()
                 in
                    Dexp.lambda
                    {arg = exn,
                     argType = Type.exn,
+                    argMode = Mode.Heap,
+                    lambdaMode = Mode.Heap,
+                    resultMode = Mode.Heap,
                     body = (Dexp.casee
-                            {test = projectSum exn,
+                            ({test = projectSum exn,
                              cases =
                              Cases.Con
                              (Vector.map
@@ -458,7 +474,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                        arg = SOME (Var.newNoname (), arg)},
                                 Dexp.const (Const.string (Con.originalName con))))),
                              default = NONE,
-                             ty = Type.string}),
+                             ty = Type.string}, Mode.Heap)),
                     bodyType = Type.string,
                     mayInline = true}
                 end,
@@ -466,10 +482,14 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
       val body =
          Dexp.let1
          {body = body,
+          mode = Mode.Heap,
           exp = (Dexp.reff
                  (Dexp.lambda
                   {arg = Var.newNoname (),
                    argType = extraType,
+                   argMode = Mode.Heap,
+                   lambdaMode = Mode.Heap,
+                   resultMode = Mode.Heap,
                    body = (Dexp.sequence o Vector.new2)
                           (Dexp.bug "extendExtra unimplemented",
                            Dexp.monoVar (dfltExtraVar, extraType, Mode.Undetermined)),
@@ -479,6 +499,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
       val body =
          Dexp.let1
          {body = body,
+          mode = Mode.Heap,
           exp = dfltExtraExp,
           var = dfltExtraVar}
       val body =
@@ -489,19 +510,23 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
             {try = body,
              ty = Type.unit,
              catch = x,
-             handler = Dexp.app {func = (Dexp.deref
+             handler = Dexp.app ({func = (Dexp.deref
                                          (Dexp.monoVar
                                           (topLevelHandlerVar,
                                            Type.reff topLevelHandlerType, Mode.Heap))),
                                  arg = Dexp.monoVar (#1 x, #2 x, Mode.Heap),
-                                 ty = Type.unit}}
+                                 ty = Type.unit}, Mode.Heap)}
          end
       val body =
          Dexp.let1
          {var = topLevelHandlerVar,
+          mode = Mode.Heap,
           exp = Dexp.reff (Dexp.lambda
                            {arg = Var.newNoname (),
                             argType = Type.exn,
+                            argMode = Mode.Heap,
+                            lambdaMode = Mode.Heap,
+                            resultMode = Mode.Heap,
                             body = Dexp.bug "toplevel handler not installed",
                             bodyType = Type.unit,
                             mayInline = true}),

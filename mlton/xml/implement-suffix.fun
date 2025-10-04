@@ -86,32 +86,40 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
          end
       and loopLambda l =
          let
-            val {arg, argType, body, mayInline} = Lambda.dest l
+            val {arg, argType, argMode, lambdaMode, resultMode, body, mayInline} = 
+               Lambda.dest l
          in
             Lambda.make {arg = arg,
                          argType = argType,
+                         argMode = argMode,
+                         lambdaMode = lambdaMode,
+                         resultMode = resultMode,
                          body = loop body,
                          mayInline = mayInline}
          end
-      val body = Dexp.fromExp (loop body, Type.unit)
+      val body = Dexp.fromExp (loop body, Type.unit, Mode.Constant)
       val body =
          (Dexp.sequence o Vector.new2)
          (body,
-          Dexp.app {func = (Dexp.deref
+          Dexp.app ({func = (Dexp.deref
                             (Dexp.monoVar
                              (topLevelSuffixVar,
                               Type.reff topLevelSuffixType, Mode.Constant))),
                     arg = Dexp.unit (),
-                    ty = Type.unit})
+                    ty = Type.unit}, Mode.Constant))
       val body =
          Dexp.let1
          {var = topLevelSuffixVar,
           exp = Dexp.reff (Dexp.lambda
                            {arg = Var.newNoname (),
                             argType = Type.unit,
+                            argMode = Mode.Constant,
+                            lambdaMode = Mode.Constant,
+                            resultMode = Mode.Constant,
                             body = Dexp.bug "toplevel suffix not installed",
                             bodyType = Type.unit,
                             mayInline = true}),
+          mode = Mode.Constant,
           body = body}
       val body = Dexp.toExp body
    in

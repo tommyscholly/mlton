@@ -39,10 +39,14 @@ fun sccFuns (Program.T {datatypes, body}) =
       fun loopVarExps xs = Vector.foreach (xs, loopVarExp)
       fun loopLambda (l: Lambda.t): Lambda.t =
          let
-            val {arg, argType, body, mayInline} = Lambda.dest l
+            val {arg, argType, argMode, lambdaMode, resultMode, body, mayInline} = 
+               Lambda.dest l
          in
             Lambda.make {arg = arg,
                          argType = argType,
+                         argMode = argMode,
+                         lambdaMode = lambdaMode,
+                         resultMode = resultMode,
                          body = loopExp body,
                          mayInline = mayInline}
          end

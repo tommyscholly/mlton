@@ -581,12 +581,16 @@ fun shrinkOnce (Program.T {datatypes, body}) =
          traceShrinkLambda
          (fn l => 
           let
-             val {arg, argType, body, mayInline} = Lambda.dest l
+             val {arg, argType, argMode, lambdaMode, resultMode, body, mayInline} = 
+               Lambda.dest l
           in
              Lambda.make {arg = arg,
-                          argType = argType,
-                          body = shrinkExp body,
-                          mayInline = mayInline}
+                         argType = argType,
+                         argMode = argMode,
+                         lambdaMode = lambdaMode,
+                         resultMode = resultMode,
+                         body = shrinkExp body,
+                         mayInline = mayInline}
           end) l
       val _ = countExp body
       val body = shrinkExp body

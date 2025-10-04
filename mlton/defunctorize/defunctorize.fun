@@ -74,7 +74,7 @@ structure MatchCompile =
                           {vector = vector,
                            length = length,
                            body = fn xts => body (Vector.map
-                                                  (xts, fn (x, t) =>
+                                                  (xts, fn (x, t, ms) =>
                                                    (XvarExp.var x, t)))}
                     end)
 
@@ -86,6 +86,7 @@ structure Xexp =
          fun exn (c: Con.t): Xexp.t =
             conApp {arg = NONE,
                     con = c,
+                    mode = Mode.Heap,
                     targs = Vector.new0 (),
                     ty = Xtype.exn}
       in
@@ -94,8 +95,8 @@ structure Xexp =
       end
    end
 
-fun enterLeave (e: Xexp.t, t, si): Xexp.t =
-   Xexp.fromExp (Xml.Exp.enterLeave (Xexp.toExp e, t, si), t)
+fun enterLeave (e: Xexp.t, t, si, mode): Xexp.t =
+   Xexp.fromExp (Xml.Exp.enterLeave (Xexp.toExp e, t, si), t, mode)
 
 local
 val matchDiagnostics: (unit -> unit) list ref = ref []
@@ -158,7 +159,7 @@ fun casee {ctxt: unit -> Layout.t,
                              (exp, caseType,
                               SourceInfo.function
                               {name = (concat ["<raise ", kind, ">"]) :: nest,
-                               region = region})
+                               region = region}, Mode.Heap)
                else exp
          in
             Vector.concat
@@ -200,12 +201,15 @@ fun casee {ctxt: unit -> Layout.t,
                       Xdec.MonoVal
                       {var = func,
                        ty = funcType,
-                       mode = Mode.Undetermined,
+                       mode = Mode.Heap,
                        exp =
                        XprimExp.Lambda
                        (Xlambda.make
                         {arg = arg,
                          argType = argType,
+                         argMode = Mode.Heap,
+                         lambdaMode = Mode.Heap,
+                         resultMode = Mode.Heap,
                          body = (Xexp.toExp
                                  (Xexp.detupleBind'
                                   {tuple = Xexp.monoVar (arg, argType, Mode.Heap),
@@ -219,13 +223,13 @@ fun casee {ctxt: unit -> Layout.t,
                          (if 0 = !numUses then List.push (decs, dec ()) else ()
                           ; Int.inc numUses
                           ; (Xexp.app
-                             {func = Xexp.monoVar (func, funcType, Mode.Heap),
+                             ({func = Xexp.monoVar (func, funcType, Mode.Heap),
                               arg =
                               Xexp.tuple {exps = (Vector.map
                                                   (args, fn (x, t) =>
                                                    Xexp.monoVar (rename x, t, Mode.Heap))),
                                           ty = argType},
-                              ty = caseType})))
+                              ty = caseType}, Mode.Heap))))
                 in
                    (p, finish)
                 end)
@@ -252,15 +256,15 @@ fun casee {ctxt: unit -> Layout.t,
                           nonexhaustiveExamples dropOnlyExns
                        end
          in
-            (Xexp.let1' {var = testVar,
+            (Xexp.let1 {var = testVar,
                          exp = test,
                          body = Xexp.lett {decs = !decs,
-                                           body = Xexp.fromExp (body, caseType)},
+                                          body = Xexp.fromExp (body, caseType, Mode.Heap)},
                          mode = Mode.Heap},
              nonexhaustiveExamples)
          end
       datatype z = datatype NestedPat.node
-      fun lett (x, e) = Xexp.let1' {var = x, exp = test, body = e, mode = Mode.Heap}
+      fun lett (x, e) = Xexp.let1 {var = x, exp = test, body = e, mode = Mode.Heap}
       fun wild e = lett (Var.newNoname (), e)
       val (exp, nonexhaustiveExamples) =
          if Vector.isEmpty cases
@@ -304,7 +308,7 @@ fun casee {ctxt: unit -> Layout.t,
                                       | Wild => (i + 1, decs)
                                       | _ => Error.bug "Defunctorize.casee: flat record")
                               in
-                                 exhaustive (Xexp.let1'
+                                 exhaustive (Xexp.let1
                                              {var = t, exp = test,
                                               body = Xexp.lett
                                               {decs = decs,
@@ -410,6 +414,7 @@ structure Xexp =
             val eltTy = Vector.first targs
             val nill: Xexp.t =
                Xexp.conApp {arg = NONE,
+                            mode = mode,
                             con = Con.nill,
                             targs = targs,
                             ty = ty}
@@ -420,6 +425,7 @@ structure Xexp =
                {arg = SOME (Xexp.tuple {exps = Vector.new2 (e1, e2),
                                         ty = consArgTy}),
                 con = Con.cons,
+                mode = mode,
                 targs = targs,
                 ty = ty}
          in
@@ -430,7 +436,7 @@ structure Xexp =
                                 let
                                    val var = Var.newNoname ()
                                 in
-                                   Xexp.let1' {body = cons (e, monoVar (var, ty, Vector.sub (ms, i))),
+                                   Xexp.let1 {body = cons (e, monoVar (var, ty, Vector.sub (ms, i))),
                                                exp = rest,
                                                var = var,
                                                mode = Vector.sub (ms, i)}
@@ -444,10 +450,10 @@ structure Xexp =
                   val revVar = Var.newString "rev"
                   fun rev (e1, e2) =
                      Xexp.app
-                     {func = Xexp.monoVar (revVar, revTy, mode),
+                     ({func = Xexp.monoVar (revVar, revTy, mode),
                       arg = Xexp.tuple {exps = Vector.new2 (e1, e2),
                                         ty = revArgTy},
-                      ty = ty}
+                      ty = ty}, mode)
                   fun detuple2 (tuple: Xexp.t,
                                 f: XvarExp.t * XvarExp.t -> Xexp.t): Xexp.t =
                      Xexp.detuple {body = fn xs => let
@@ -461,17 +467,20 @@ structure Xexp =
                      Xlambda.make
                      {arg = revArg,
                       argType = revArgTy,
+                      argMode = mode,
+                      lambdaMode = mode,
+                      resultMode = mode,
                       mayInline = true,
                       body =
                       Xexp.toExp
                       (detuple2
                        (Xexp.monoVar (revArg, revArgTy, mode), fn (l, ac) =>
                         let
-                           val ac = Xexp.varExp (ac, ty)
+                           val ac = Xexp.varExp (ac, ty, mode)
                            val consArg = Var.newNoname ()
                         in
                            Xexp.casee
-                           {cases =
+                           ({cases =
                             Xcases.Con
                             (Vector.new2
                              ((Xpat.T {arg = NONE,
@@ -484,12 +493,12 @@ structure Xexp =
                                detuple2
                                (Xexp.monoVar (consArg, consArgTy, mode),
                                 fn (x, l) =>
-                                rev (Xexp.varExp (l, ty),
-                                     cons (Xexp.varExp (x, eltTy),
+                                rev (Xexp.varExp (l, ty, mode),
+                                     cons (Xexp.varExp (x, eltTy, mode),
                                            ac)))))),
                             default = NONE,
-                            test = Xexp.varExp (l, ty),
-                            ty = ty}
+                            test = Xexp.varExp (l, ty, mode),
+                            ty = ty}, mode)
                         end))}
                   val revDec =
                      Xdec.Fun
@@ -508,13 +517,13 @@ structure Xexp =
                          val l' = Var.newNoname ()
                       in
                          (l',
-                          Xexp.let1' {body = body,
+                          Xexp.let1 {body = body,
                                       exp = cons (e, Xexp.monoVar (l', ty, Vector.sub (ms, i))),
                                       var = l,
                                       mode = Vector.sub (ms, i)})
                       end)
                in
-                  Xexp.let1' {body = body,
+                  Xexp.let1 {body = body,
                               exp = nill,
                               var = l,
                               mode = Mode.Heap}
@@ -746,11 +755,14 @@ fun defunctorize (CoreML.Program.T {decs}) =
                Vector.map
                (Vector.rev v, fn {lambda, var} =>
                 let
-                   val {arg, argType, body, bodyType, mayInline} =
+                   val {arg, argType, argMode, lambdaMode, resultMode, body, bodyType, mayInline} =
                       loopLambda lambda
                 in
                    {lambda = Xlambda.make {arg = arg,
                                            argType = argType,
+                                           argMode = argMode,
+                                           lambdaMode = lambdaMode,
+                                           resultMode = resultMode,
                                            body = Xexp.toExp body,
                                            mayInline = mayInline},
                     ty = Xtype.arrow (argType, bodyType),
@@ -818,6 +830,9 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                         (lambda
                                          {arg = Var.newNoname (),
                                           argType = Xtype.unit,
+                                          argMode = Mode.Constant,
+                                          lambdaMode = Mode.Heap,
+                                          resultMode = expMode,
                                           body = exp,
                                           bodyType = expType,
                                           mayInline = true})
@@ -1045,7 +1060,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                      let
                         val (e, t) = loopExp e
                      in
-                        enterLeave (e, t, si)
+                        enterLeave (e, t, si, Cexp.mode e)
                      end
                 | Handle {catch = (x, t), handler, try} =>
                      Xexp.handlee {catch = (x, loopTy t),
@@ -1126,10 +1141,15 @@ fun defunctorize (CoreML.Program.T {decs}) =
          let
             (* TODO: handle arg mode here *)
             val {arg, argType, argMode, body, mayInline} = Clambda.dest l
+            val resultMode = Cexp.mode body
             val (body, bodyType) = loopExp body
          in
             {arg = arg,
              argType = loopTy argType,
+             argMode = argMode,
+             (* TODO: check captures and see if it captures stack data *)
+             lambdaMode = Mode.Heap,
+             resultMode = resultMode,
              body = body,
              bodyType = bodyType,
              mayInline = mayInline}

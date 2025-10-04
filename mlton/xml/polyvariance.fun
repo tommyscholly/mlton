@@ -285,10 +285,14 @@ fun transform (program as Program.T {datatypes, body},
          end
       and loopLambda (l: Lambda.t): Lambda.t =
          let
-            val {arg, argType, body, mayInline} = Lambda.dest l
+            val {arg, argType, argMode, lambdaMode, resultMode, body, mayInline} = 
+               Lambda.dest l
          in
             Lambda.make {arg = bind arg,
                          argType = argType,
+                         argMode = argMode,
+                         lambdaMode = lambdaMode,
+                         resultMode = resultMode,
                          body = loopExp body,
                          mayInline = mayInline}
          end
