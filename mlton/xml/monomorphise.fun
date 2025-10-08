@@ -355,7 +355,7 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
                                   exp = monoPrimExp exp,
                                   mode = mode}]
                 end
-           | Xdec.PolyVal {var, tyvars, ty, mode, exp} =>
+           | Xdec.PolyVal {var, tyvars, ty, exp, ...} =>
                 let
                    val cache = Cache.new ()
                    val _ =

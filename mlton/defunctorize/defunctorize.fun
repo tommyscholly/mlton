@@ -74,7 +74,7 @@ structure MatchCompile =
                           {vector = vector,
                            length = length,
                            body = fn xts => body (Vector.map
-                                                  (xts, fn (x, t, ms) =>
+                                                  (xts, fn (x, t, _) =>
                                                    (XvarExp.var x, t)))}
                     end)
 
@@ -228,7 +228,8 @@ fun casee {ctxt: unit -> Layout.t,
                               Xexp.tuple {exps = (Vector.map
                                                   (args, fn (x, t) =>
                                                    Xexp.monoVar (rename x, t, Mode.Heap))),
-                                          ty = argType},
+                                          ty = argType,
+                                          mode = Mode.Heap},
                               ty = caseType}, Mode.Heap))))
                 in
                    (p, finish)
@@ -423,7 +424,7 @@ structure Xexp =
                fn (e1, e2) =>
                Xexp.conApp
                {arg = SOME (Xexp.tuple {exps = Vector.new2 (e1, e2),
-                                        ty = consArgTy}),
+                                        ty = consArgTy, mode = mode}),
                 con = Con.cons,
                 mode = mode,
                 targs = targs,
@@ -452,7 +453,7 @@ structure Xexp =
                      Xexp.app
                      ({func = Xexp.monoVar (revVar, revTy, mode),
                       arg = Xexp.tuple {exps = Vector.new2 (e1, e2),
-                                        ty = revArgTy},
+                                        ty = revArgTy, mode = mode},
                       ty = ty}, mode)
                   fun detuple2 (tuple: Xexp.t,
                                 f: XvarExp.t * XvarExp.t -> Xexp.t): Xexp.t =
@@ -1082,7 +1083,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                         if Cexp.isExpansive e then n + 1 else n)
                         val ms = Vector.map (es, fn e =>
                            let val m = Cexp.mode e
-                           in if m = Mode.Undetermined then Mode.Heap else m
+                           in if m = Mode.Undetermined then Cexp.mode e else m
                            end)
                         val mode = Vector.fold (ms, Cexp.mode e, Mode.join)
                      in
@@ -1124,7 +1125,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                          Xexp.tuple {exps = (sortByField
                                              (Vector.map2
                                               (fes, es, fn ((f, _), e) => (f, e)))),
-                                     ty = ty})
+                                     ty = ty, mode = mode})
                      end
                 | Seq es => Xexp.sequence (Vector.map (es, #1 o loopExp))
                 | Var (var, targs) =>
@@ -1141,16 +1142,76 @@ fun defunctorize (CoreML.Program.T {decs}) =
          end
       and loopLambda (l: Clambda.t) =
          let
-            (* TODO: handle arg mode here *)
-            val {arg, argType, argMode, body, mayInline} = Clambda.dest l
-            val resultMode = Cexp.mode body
-            val (body, bodyType) = loopExp body
+            val {arg, argType, argMode, body = originalBody, mayInline} = Clambda.dest l
+            val resultMode = Cexp.mode originalBody
+            val (body, bodyType) = loopExp originalBody
+
+            fun analyzeCaptures (body: Cexp.t, argVar: Var.t): Mode.t =
+               let
+                  val foundStackVar = ref false
+
+                  fun analyzeExp (exp: Cexp.t, boundVars: Var.t list): unit =
+                     let
+                        val (node, _, mode) = Cexp.dest exp
+                        val () = if Mode.equals (mode, Mode.Stack) then foundStackVar := true else ()
+                        datatype z = datatype Cexp.node
+                     in
+                        case node of
+                           App (e1, e2) => (analyzeExp (e1, boundVars); analyzeExp (e2, boundVars))
+                         | Case {test, rules, ...} =>
+                              (analyzeExp (test, boundVars);
+                               Vector.foreach (rules, fn {exp, ...} => analyzeExp (exp, boundVars)))
+                         | Con _ => ()
+                         | Const _ => ()
+                         | EnterLeave (e, _) => analyzeExp (e, boundVars)
+                         | Handle {try, handler, catch = (catchVar, _), ...} =>
+                              (analyzeExp (try, boundVars);
+                               analyzeExp (handler, catchVar :: boundVars))
+                         | Lambda l =>
+                              let
+                                 val {arg, body, ...} = Clambda.dest l
+                              in
+                                 analyzeExp (body, arg :: boundVars)
+                              end
+                         | Let (decs, e) => (Vector.foreach (decs, analyzeDec); analyzeExp (e, boundVars))
+                         | List es => Vector.foreach (es, fn e => analyzeExp (e, boundVars))
+                         | PrimApp {args, ...} => Vector.foreach (args, fn e => analyzeExp (e, boundVars))
+                         | Exclave e => analyzeExp (e, boundVars)
+                         | Raise e => analyzeExp (e, boundVars)
+                         | Record r => Record.foreach (r, fn e => analyzeExp (e, boundVars))
+                         | Seq es => Vector.foreach (es, fn e => analyzeExp (e, boundVars))
+                         | Var (getVar, _) =>
+                              let
+                                 val var = getVar ()
+                              in
+                                 if List.exists (boundVars, fn v => Var.equals (v, var))
+                                    then ()
+                                 else if Mode.equals (mode, Mode.Stack) orelse Mode.equals (mode, Mode.Constant)
+                                    then foundStackVar := true
+                                 else ()
+                              end
+                         | Vector es => Vector.foreach (es, fn e => analyzeExp (e, boundVars))
+                     end
+                  and analyzeDec (d: Cdec.t): unit =
+                     case d of
+                          Cdec.Datatype _ => ()
+                        | Cdec.Exception _ => ()
+                        | Cdec.Fun {decs, ...} => Vector.foreach (decs, fn {lambda, ...} => analyzeLambda lambda)
+                        | Cdec.Val {vbs, rvbs, ...} => Vector.foreach (vbs, analyzeValBind)
+                  and analyzeValBind {exp, ...}: unit = analyzeExp (exp, [])
+                  and analyzeLambda (l: Clambda.t): unit = let val {arg, body, ...} = Clambda.dest l in analyzeExp (body, [arg]) end
+                               
+                  val _ = analyzeExp (originalBody, [argVar])
+               in
+                  if !foundStackVar then Mode.Stack else Mode.Heap
+               end
+
+            val lambdaMode = analyzeCaptures (originalBody, arg)
          in
             {arg = arg,
              argType = loopTy argType,
              argMode = argMode,
-             (* TODO: check captures and see if it captures stack data *)
-             lambdaMode = Mode.Heap,
+             lambdaMode = lambdaMode,
              resultMode = resultMode,
              body = body,
              bodyType = bodyType,

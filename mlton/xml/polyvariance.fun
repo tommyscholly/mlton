@@ -120,7 +120,7 @@ fun shouldDuplicate (program as Program.T {body, ...}, hofo, small, product)
                fn [] => loopVar result
                 | dec :: decs =>
                      case dec of
-                        MonoVal {var, ty, mode, exp} =>
+                        MonoVal {var, ty, exp, ...} =>
                            (case exp of
                                Lambda l =>
                                   (new {var = var, ty = ty, lambda = l}

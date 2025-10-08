@@ -115,7 +115,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                       ty = Type.exn,
                       mode = Mode.Heap,
                       arg = SOME (tuple {exps = Vector.new2 (extra, exn),
-                                         ty = exnConArgType})}
+                                         ty = exnConArgType, mode = Mode.Heap})}
                   end
                fun injectSum (exn: Dexp.t): Dexp.t =
                   makeExn {exn = exn,
@@ -262,7 +262,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                fn SOME x => (conApp o tuple)
                                             {exps = Vector.new2
                                                     (uniq, varExp (x, t, Mode.Heap)),
-                                             ty = tupleType}
+                                             ty = tupleType, mode = Mode.Heap}
                                 | _ => Error.bug "ImplmentExceptions: unary excon not applied to arg")
                            end
                in setExconInfo (con, SOME {refVar = r, make = make})

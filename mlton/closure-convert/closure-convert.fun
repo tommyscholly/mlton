@@ -297,7 +297,7 @@ fun closureConvert
                end
             and loopBind arg =
                traceLoopBind
-               (fn {var, ty, mode, exp} =>
+               (fn {var, ty, exp, ...} =>
                let
                   fun set v = newVar (var, v)
                   fun new () =

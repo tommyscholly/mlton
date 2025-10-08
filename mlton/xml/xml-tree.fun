@@ -331,10 +331,10 @@ in
                  VarExp.layout x])
             xs
        | Var x => VarExp.layout x
-   and layoutLambda (Lam {arg, argType, body, mayInline, ...}) =
-      mayAlign [maybeConstrain (seq [str "fn ",
+   and layoutLambda (Lam {arg, argType, argMode, lambdaMode, body, mayInline, ...}) =
+      mayAlign [maybeConstrain (seq [str "fn", Mode.layout lambdaMode, str " ",
                                      str (if not mayInline then "noinline " else "")],
-                                arg, argType, Mode.Undetermined, str " =>"),
+                                arg, argType, argMode, str " =>"),
                 indent (layoutExp body, 2)]
 
 end
@@ -634,9 +634,9 @@ structure Exp =
                           ; Option.app (default, loopExp))))
             and loopDec d =
                case d of
-                  MonoVal {var, ty, mode, exp} =>
+                  MonoVal {var, ty, exp, ...} =>
                      (monoVar (var, ty); loopPrimExp (var, ty, exp))
-                | PolyVal {var, tyvars, ty, mode, exp} =>
+                | PolyVal {var, tyvars, ty, exp, ...} =>
                      (handleBoundVar (var, tyvars, ty)
                       ; loopExp exp)
                 | Exception _ => ()
@@ -906,15 +906,10 @@ structure DirectExp =
             NONE => simple (make NONE)
           | SOME e => convert (e, make o SOME o #1)
 
-      fun tuple {exps: t vector, ty: Type.t}: t =
+      fun tuple {exps: t vector, ty: Type.t, mode: Mode.t}: t =
          if 1 = Vector.length exps
             then Vector.first exps
-         else converts (exps, fn xs =>
-                        let val ms = Vector.map (xs, #3)
-                            val mode = 
-                              if Vector.exists (ms, fn m => Mode.equals (m, Mode.Stack)) 
-                                 then Mode.Stack else Mode.Heap
-                        in (PrimExp.Tuple (Vector.map (xs, #1)), ty, mode) end)
+         else converts (exps, fn xs => (PrimExp.Tuple (Vector.map (xs, #1)), ty, mode))
 
       fun select {tuple, offset, ty} =
          convert (tuple, fn (tuple, _, m) =>
@@ -968,7 +963,7 @@ structure DirectExp =
                          handler = toExp handler},
                  ty, Mode.Heap)
 
-      fun unit () = tuple {exps = Vector.new0 (), ty = Type.unit}
+      fun unit () = tuple {exps = Vector.new0 (), ty = Type.unit, mode = Mode.Constant}
 
       fun reff (e: t): t =
          convert (e, fn (x, t, m) =>

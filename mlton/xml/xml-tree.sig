@@ -226,7 +226,7 @@ signature XML_TREE =
             val string: string -> t
             val toExp: t -> Exp.t
             val truee: unit -> t
-            val tuple: {exps: t vector, ty: Type.t} -> t
+            val tuple: {exps: t vector, ty: Type.t, mode: Mode.t} -> t
             val unit: unit -> t
             val vall: {var: Var.t, exp: t, mode: Mode.t} -> Dec.t list
             val var: {targs: Type.t vector,

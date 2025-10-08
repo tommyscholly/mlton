@@ -242,7 +242,8 @@ fun transform (prog: Program.t): Program.t =
                               val arg2 =
                                  DirectExp.tuple
                                  {exps = Vector.new2 (k, h),
-                                  ty = (Type.tuple o Vector.new2) (kTy, hTy)}
+                                  ty = (Type.tuple o Vector.new2) (kTy, hTy),
+                                  mode = mode}
                               val app2 =
                                  DirectExp.app
                                  ({func = func,
@@ -261,7 +262,8 @@ fun transform (prog: Program.t): Program.t =
                               val arg3 =
                                  DirectExp.tuple
                                  {exps = Vector.new3 (k, h, arg),
-                                  ty = (Type.tuple o Vector.new3) (kTy, hTy, argTy)}
+                                  ty = (Type.tuple o Vector.new3) (kTy, hTy, argTy),
+                                  mode = mode}
                               val app3 =
                                  DirectExp.app
                                  ({func = func,
@@ -372,7 +374,7 @@ fun transform (prog: Program.t): Program.t =
              | Tuple xs =>
                   (return o DirectExp.tuple)
                   {exps = Vector.map (xs, transVarExp),
-                   ty = eTy}
+                   ty = eTy, mode = mode}
              | Var x => return (transVarExp x)
          end
       and transDec (d: Dec.t,
