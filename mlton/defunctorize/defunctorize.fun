@@ -1150,10 +1150,9 @@ fun defunctorize (CoreML.Program.T {decs}) =
                let
                   val foundStackVar = ref false
 
-                  fun analyzeExp (exp: Cexp.t, boundVars: Var.t list): unit =
+                  fun analyzeExp (exp: Cexp.t, boundVars: Var.t list ref): unit =
                      let
                         val (node, _, mode) = Cexp.dest exp
-                        val () = if Mode.equals (mode, Mode.Stack) then foundStackVar := true else ()
                         datatype z = datatype Cexp.node
                      in
                         case node of
@@ -1166,14 +1165,16 @@ fun defunctorize (CoreML.Program.T {decs}) =
                          | EnterLeave (e, _) => analyzeExp (e, boundVars)
                          | Handle {try, handler, catch = (catchVar, _), ...} =>
                               (analyzeExp (try, boundVars);
-                               analyzeExp (handler, catchVar :: boundVars))
+                               boundVars := catchVar :: !boundVars;
+                               analyzeExp (handler, boundVars))
                          | Lambda l =>
                               let
                                  val {arg, body, ...} = Clambda.dest l
+                                 val () = boundVars := arg :: !boundVars
                               in
-                                 analyzeExp (body, arg :: boundVars)
+                                 analyzeExp (body, boundVars)
                               end
-                         | Let (decs, e) => (Vector.foreach (decs, analyzeDec); analyzeExp (e, boundVars))
+                         | Let (decs, e) => (Vector.foreach (decs, fn d => analyzeDec (d, boundVars)); analyzeExp (e, boundVars))
                          | List es => Vector.foreach (es, fn e => analyzeExp (e, boundVars))
                          | PrimApp {args, ...} => Vector.foreach (args, fn e => analyzeExp (e, boundVars))
                          | Exclave e => analyzeExp (e, boundVars)
@@ -1184,24 +1185,33 @@ fun defunctorize (CoreML.Program.T {decs}) =
                               let
                                  val var = getVar ()
                               in
-                                 if List.exists (boundVars, fn v => Var.equals (v, var))
+                                 if List.exists (!boundVars, fn v => Var.equals (v, var))
                                     then ()
-                                 else if Mode.equals (mode, Mode.Stack) orelse Mode.equals (mode, Mode.Constant)
+                                 else if Mode.equals (mode, Mode.Stack)
                                     then foundStackVar := true
                                  else ()
                               end
                          | Vector es => Vector.foreach (es, fn e => analyzeExp (e, boundVars))
                      end
-                  and analyzeDec (d: Cdec.t): unit =
+                  and analyzeDec (d: Cdec.t, boundVars: Var.t list ref): unit =
                      case d of
                           Cdec.Datatype _ => ()
                         | Cdec.Exception _ => ()
-                        | Cdec.Fun {decs, ...} => Vector.foreach (decs, fn {lambda, ...} => analyzeLambda lambda)
-                        | Cdec.Val {vbs, rvbs, ...} => Vector.foreach (vbs, analyzeValBind)
-                  and analyzeValBind {exp, ...}: unit = analyzeExp (exp, [])
-                  and analyzeLambda (l: Clambda.t): unit = let val {arg, body, ...} = Clambda.dest l in analyzeExp (body, [arg]) end
+                        | Cdec.Fun {decs, ...} => Vector.foreach (decs, fn {lambda, ...} => analyzeLambda (lambda, boundVars))
+                        | Cdec.Val {vbs, rvbs, ...} => Vector.foreach (vbs, fn vbs => analyzeValBind (vbs, boundVars))
+                  and analyzeValBind ({exp, pat, ...}, boundVars: Var.t list ref): unit = 
+                      let 
+                          val () = Cpat.foreachVar (pat, fn x => List.push (boundVars, x)) 
+                      in
+                          analyzeExp (exp, boundVars)
+                      end
+                  and analyzeLambda (l: Clambda.t, boundVars: Var.t list ref): unit = 
+                     let 
+                        val {arg, body, ...} = Clambda.dest l
+                        val () = boundVars := arg :: !boundVars
+                      in analyzeExp (body, boundVars) end
                                
-                  val _ = analyzeExp (originalBody, [argVar])
+                  val _ = analyzeExp (originalBody, ref [argVar])
                in
                   if !foundStackVar then Mode.Stack else Mode.Heap
                end
