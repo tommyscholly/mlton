@@ -7,7 +7,7 @@
  * See the file MLton-LICENSE for details.
  *)
 
-functor SsaTree (S: SSA_TREE_STRUCTS): SSA_TREE = 
+functor SsaTree (S: SSA_TREE_STRUCTS): SSA_TREE =
 struct
 
 open S
@@ -510,7 +510,7 @@ structure Statement =
          let
             val {get = global: Var.t -> Layout.t, set = setGlobal, ...} =
                Property.getSet (Var.plist, Property.initFun Var.layout)
-            val _ = 
+            val _ =
                Vector.foreach
                (v, fn T {var, exp, ...} =>
                 Option.app
@@ -524,7 +524,7 @@ structure Statement =
                           val dotsSize = String.size dots
                           val frontSize = 2 * (maxSize - dotsSize) div 3
                           val backSize = maxSize - dotsSize - frontSize
-                          val s = 
+                          val s =
                              if String.size s > maxSize
                                 then concat [String.prefix (s, frontSize),
                                              dots,
@@ -561,6 +561,7 @@ structure Transfer =
        | Case of {test: Var.t,
                   cases: (Con.t, Label.t) Cases.t,
                   default: Label.t option} (* Must be nullary. *)
+       | Exclave
        | Goto of {dst: Label.t,
                   args: Var.t vector}
        | Raise of Var.t vector
@@ -574,6 +575,7 @@ structure Transfer =
          fn Bug => 1
           | Call {args, ...} => 1 + Vector.length args
           | Case {cases, ...} => 1 + Cases.length cases
+          | Exclave => 1
           | Goto {args, ...} => 1 + Vector.length args
           | Raise xs => 1 + Vector.length xs
           | Return xs => 1 + Vector.length xs
@@ -593,6 +595,7 @@ structure Transfer =
                   (var test
                    ; Cases.foreach (cases, label)
                    ; Option.app (default, label))
+             | Exclave => ()
              | Goto {dst, args, ...} => (vars args; label dst)
              | Raise xs => vars xs
              | Return xs => vars xs
@@ -617,15 +620,16 @@ structure Transfer =
             case t of
                Bug => Bug
              | Call {func, args, return} =>
-                  Call {func = func, 
+                  Call {func = func,
                         args = fxs args,
                         return = Return.map (return, fl)}
              | Case {test, cases, default} =>
-                  Case {test = fx test, 
+                  Case {test = fx test,
                         cases = Cases.map(cases, fl),
                         default = Option.map(default, fl)}
-             | Goto {dst, args} => 
-                  Goto {dst = fl dst, 
+             | Exclave => Exclave
+             | Goto {dst, args} =>
+                  Goto {dst = fl dst,
                         args = fxs args}
              | Raise xs => Raise (fxs xs)
              | Return xs => Return (fxs xs)
@@ -685,6 +689,7 @@ structure Transfer =
                       | Return.Tail => seq [str "call tail ", call]
                   end
              | Case arg => layoutCase arg
+             | Exclave => str "exclave"
              | Goto {dst, args} =>
                   seq [str "goto ", Label.layout dst, str " ", layoutArgs args]
              | Raise xs => seq [str "raise ", layoutArgs xs]
@@ -756,7 +761,7 @@ structure Transfer =
       fun equals (e: t, e': t): bool =
          case (e, e') of
             (Bug, Bug) => true
-          | (Call {func, args, return}, 
+          | (Call {func, args, return},
              Call {func = func', args = args', return = return'}) =>
                Func.equals (func, func') andalso
                varsEquals (args, args') andalso
@@ -781,6 +786,7 @@ structure Transfer =
       local
          val newHash = Random.word
          val bug = newHash ()
+         val exclave = newHash ()
          val raisee = newHash ()
          val return = newHash ()
          fun hashVars (xs: Var.t vector, w: Word.t): Word.t =
@@ -792,15 +798,16 @@ structure Transfer =
              | Call {func, args, return} =>
                   hashVars (args, hash2 (Func.hash func, Return.hash return))
              | Case {test, cases, default} =>
-                  hash2 (Var.hash test, 
+                  hash2 (Var.hash test,
                          Cases.fold
-                         (cases, 
+                         (cases,
                           Option.fold
-                          (default, 0wx55555555, 
-                           fn (l, w) => 
+                          (default, 0wx55555555,
+                           fn (l, w) =>
                            hash2 (Label.hash l, w)),
-                          fn (l, w) => 
+                          fn (l, w) =>
                           hash2 (Label.hash l, w)))
+             | Exclave => exclave
              | Goto {dst, args} =>
                   hashVars (args, Label.hash dst)
              | Raise xs => hashVars (xs, raisee)
@@ -1020,7 +1027,7 @@ structure Function =
                Vector.foreach
                (blocks, fn Block.T {args, statements, ...} =>
                 (Vector.foreach (args, fx)
-                 ; Vector.foreach (statements, fn Statement.T {var, ty, ...} => 
+                 ; Vector.foreach (statements, fn Statement.T {var, ty, ...} =>
                                    Option.app (var, fn x => fx (x, ty)))))
          in
             ()
@@ -1100,7 +1107,7 @@ structure Function =
                       val _ =
                          Transfer.foreachLabel
                          (transfer, fn to =>
-                          (ignore o Graph.addEdge) 
+                          (ignore o Graph.addEdge)
                           (g, {from = from, to = labelNode to}))
                    in
                       ()
@@ -1197,7 +1204,7 @@ structure Function =
                                            doit (v, Con.toString)
                                       | Cases.Word (_, v) =>
                                            doit (v, fn w => WordX.toString (w, {suffix = true}))
-                                  val _ = 
+                                  val _ =
                                      case default of
                                         NONE => ()
                                       | SOME j =>
@@ -1205,6 +1212,7 @@ structure Function =
                                in
                                   ()
                                end
+                          | Exclave => ()
                           | Goto {dst, ...} => edge (dst, "", Solid)
                           | Raise _ => ()
                           | Return _ => ()
@@ -1251,7 +1259,7 @@ structure Function =
                   end
                val controlFlowGraphLayout =
                   Graph.layoutDot
-                  (graph, fn {nodeName} => 
+                  (graph, fn {nodeName} =>
                    {title = concat [Func.toString name, " control-flow graph"],
                     options = [GraphOption.Rank (Min, [{nodeName = nodeName funNode}])],
                     edgeOptions = edgeOptions,
@@ -1444,7 +1452,7 @@ structure Function =
             local
                fun make (new, plist) =
                   let
-                     val {get, set, destroy, ...} = 
+                     val {get, set, destroy, ...} =
                         Property.destGetSetOnce (plist, Property.initConst NONE)
                      fun bind x =
                         let
@@ -1470,24 +1478,24 @@ structure Function =
             val args = Vector.map (args, fn (x, ty) => (bindVar x, ty))
             val bindLabel = ignore o bindLabel
             val bindVar = ignore o bindVar
-            val _ = 
+            val _ =
                Vector.foreach
-               (blocks, fn Block.T {label, args, statements, ...} => 
+               (blocks, fn Block.T {label, args, statements, ...} =>
                 (bindLabel label
                  ; Vector.foreach (args, fn (x, _) => bindVar x)
-                 ; Vector.foreach (statements, 
-                                   fn Statement.T {var, ...} => 
+                 ; Vector.foreach (statements,
+                                   fn Statement.T {var, ...} =>
                                    Option.app (var, bindVar))))
-            val blocks = 
+            val blocks =
                Vector.map
                (blocks, fn Block.T {label, args, statements, transfer} =>
                 Block.T {label = lookupLabel label,
                          args = Vector.map (args, fn (x, ty) =>
                                             (lookupVar x, ty)),
                          statements = Vector.map
-                                      (statements, 
+                                      (statements,
                                        fn Statement.T {var, ty, exp} =>
-                                       Statement.T 
+                                       Statement.T
                                        {var = Option.map (var, lookupVar),
                                         ty = ty,
                                         exp = Exp.replaceVar
@@ -1511,7 +1519,7 @@ structure Function =
          if !Control.profile = Control.ProfileNone
             orelse !Control.profileIL <> Control.ProfileSource
             then f
-         else 
+         else
          let
             val _ = Control.diagnostic (fn () => layout f)
             val {args, blocks, mayInline, name, raises, returns, start} = dest f
@@ -1564,7 +1572,7 @@ structure Function =
                       : Statement.t vector * Label.t * Handler.t =
                       case raises of
                          NONE => (statements, cont, Handler.Caller)
-                       | SOME ts => 
+                       | SOME ts =>
                             let
                                val xs = Vector.map (ts, fn _ => Var.newNoname ())
                                val l = Label.newNoname ()
@@ -1625,7 +1633,7 @@ structure Function =
                 end)
             val _ = Vector.foreach (blocks, rem o Block.label)
             val blocks = Vector.concat [Vector.fromList (!extraBlocks), blocks]
-            val f = 
+            val f =
                new {args = args,
                     blocks = blocks,
                     mayInline = mayInline,
@@ -1699,7 +1707,7 @@ structure Program =
                          (Node.plist,
                           Property.initFun (fn _ => {nontail = ref false,
                                                      tail = ref false}))
-                      val _ = 
+                      val _ =
                          Vector.foreach
                          (blocks, fn Block.T {transfer, ...} =>
                           case transfer of
@@ -1752,7 +1760,7 @@ structure Program =
             (* Layout includes an output function, so we need to rebind output
              * to the one above.
              *)
-            val output = output' 
+            val output = output'
          in
             output (str "\n\n(* Datatypes: *)")
             ; Vector.foreach (datatypes, output o Datatype.layout)
@@ -1964,7 +1972,7 @@ structure Program =
                         val _ = Array.update (visited, i, true)
                         val f = Vector.sub (functions, i)
                         val v' = v f
-                        val _ = Function.dfs 
+                        val _ = Function.dfs
                                 (f, fn Block.T {transfer, ...} =>
                                  (Transfer.foreachFunc (transfer, visit)
                                   ; fn () => ()))

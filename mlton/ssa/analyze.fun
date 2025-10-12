@@ -7,7 +7,7 @@
  * See the file MLton-LICENSE for details.
  *)
 
-functor Analyze (S: ANALYZE_STRUCTS): ANALYZE = 
+functor Analyze (S: ANALYZE_STRUCTS): ANALYZE =
 struct
 
 open S
@@ -70,7 +70,7 @@ fun 'a analyze
                      case (raises, shouldRaises) of
                         (NONE, NONE) => ()
                       | (NONE, SOME _) => ()
-                      | (SOME _, NONE) => 
+                      | (SOME _, NONE) =>
                            Error.bug "Analyze.loopTransfer (raise mismatch)"
                       | (SOME vs, SOME vs') => coerces ("call caller/raises", vs, vs')
                   datatype z = datatype Return.t
@@ -80,7 +80,7 @@ fun 'a analyze
                         if isSome returns orelse isSome raises
                            then Error.bug "Analyze.loopTransfer (return mismatch at Dead)"
                         else ()
-                   | NonTail {cont, handler} => 
+                   | NonTail {cont, handler} =>
                         (Option.app (returns, fn vs =>
                                      coerces ("call non-tail/returns", vs, labelValues cont))
                          ; (case handler of
@@ -148,6 +148,7 @@ fun 'a analyze
                   val _ = Option.app (default, ensureNullary)
                in ()
                end
+          | Exclave => ()
           | Goto {dst, args} => coerces ("goto", values args, labelValues dst)
           | Raise xs =>
                (case shouldRaises of
@@ -175,14 +176,14 @@ fun 'a analyze
                               args = values args,
                               resultType = resultType,
                               resultVar = resultVar}
-               in 
+               in
                   ()
                end)
         handle exn => Error.reraiseSuffix (exn, concat [" in ", Layout.toString (Transfer.layout t)])
       val loopTransfer =
          Trace.trace3
          ("Analyze.loopTransfer",
-          Transfer.layout, 
+          Transfer.layout,
           Option.layout (Vector.layout layout),
           Option.layout (Vector.layout layout),
           Layout.ignore)

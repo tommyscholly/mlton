@@ -17,8 +17,13 @@ datatype List = Cons of int32 * List | Nil
 val list :- heap_mode = Cons (1, (Cons (2, Nil)))
 val new_list :- stack_mode = Cons (3, list)
 
+fun test_exclave () = exclave_ Cons (1, Cons (2, Nil))
+
 (* this should not work in a successfully type checked program *)
 val _ = print_int ("%d\n\000", local_thing x)
 val _ = print_string ("%s\n\000", str)
+val xs = new_list
+val xs = test_exclave ()
 
-
+fun fake (xs: List) = Cons (1, xs)
+val _ = fake xs

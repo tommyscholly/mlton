@@ -60,6 +60,7 @@ fun sccFuns (Program.T {datatypes, body}) =
                         test = test})
           | ConApp {arg, ...} => (Option.app (arg, loopVarExp); e)
           | Const _ => e
+          | Exclave exclave_exp => Exclave (loopExp exclave_exp)
           | Handle {try, catch, handler} =>
                Handle {try = loopExp try,
                        catch = catch,

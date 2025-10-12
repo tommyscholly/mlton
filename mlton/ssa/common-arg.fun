@@ -6,7 +6,7 @@
  * See the file MLton-LICENSE for details.
  *)
 
-functor CommonArg (S: SSA_TRANSFORM_STRUCTS): SSA_TRANSFORM = 
+functor CommonArg (S: SSA_TRANSFORM_STRUCTS): SSA_TRANSFORM =
 struct
 
 open S
@@ -48,7 +48,7 @@ structure NodeInfo =
 
 fun transform (Program.T {datatypes, globals, functions, main}) =
    let
-      val {get = nodeInfo: unit Node.t -> NodeInfo.t, 
+      val {get = nodeInfo: unit Node.t -> NodeInfo.t,
            set = setNodeInfo, ...} =
          Property.getSetOnce
          (Node.plist,
@@ -56,10 +56,10 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
       val nodeInfo =
          Trace.trace ("CommonArg.nodeInfo", Layout.ignore, Layout.ignore)
          nodeInfo
-      val {get = labelArgs: Label.t -> (Var.t * Type.t) vector, 
+      val {get = labelArgs: Label.t -> (Var.t * Type.t) vector,
            set = setLabelArgs, ...} =
          Property.getSetOnce
-         (Label.plist, 
+         (Label.plist,
           Property.initRaise ("CommonArg.labelArgs", Label.layout))
       val labelArgs =
          Trace.trace ("CommonArg.labelArgs", Layout.ignore, Layout.ignore)
@@ -81,7 +81,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
          in
             node
          end
-      val {get = varInfo: Var.t -> VarInfo.t, 
+      val {get = varInfo: Var.t -> VarInfo.t,
            set = setVarInfo, ...} =
          Property.getSetOnce (Var.plist,
                               Property.initFun (VarInfo.new o newRootedNode))
@@ -95,14 +95,14 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
          (functions, fn f =>
           let
              val {blocks, ...} = Function.dest f
-             val () = 
+             val () =
                 Vector.foreach
                 (blocks, fn Block.T {label, args, ...} =>
                  (setLabelArgs (label, args)
                   ; Vector.foreach (args, fn (v, _) =>
                                     setVarInfo (v, VarInfo.new (newNode v)))))
             (* Flow Transfer.Goto arguments. *)
-            fun flowVarVar (v, v'): unit = 
+            fun flowVarVar (v, v'): unit =
                ignore (Graph.addEdge (G, {from = varNode v, to = varNode v'}))
             fun flowVarVarTy (v, (v', _)) = flowVarVar (v, v')
             fun flowVarsVarTys (vs, vts') =
@@ -130,6 +130,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                | Case {cases, default, ...} =>
                     (Cases.foreach (cases, visitLabelArgs)
                      ; Option.app (default, visitLabelArgs))
+               | Exclave => ()
                | Goto {dst, args} => flowVarsLabelArgs (args, dst)
                | Raise _ => ()
                | Return _ => ()
@@ -146,7 +147,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
           | Graph.Root => v
       fun keepVar v = Var.equals (v, getVar v)
       (* Diagnostics *)
-      val () = 
+      val () =
          Control.diagnostics
          (fn display =>
           List.foreach
@@ -154,9 +155,9 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
            let
               val {blocks, name, ...} = Function.dest f
               open Layout
-              fun lNode n = 
+              fun lNode n =
                  record [("idom", case idom n of
-                          Graph.Idom parent => 
+                          Graph.Idom parent =>
                              if Node.equals (parent, root)
                                 then str "root"
                              else Var.layout (NodeInfo.var (nodeInfo parent))
@@ -186,11 +187,11 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
           let
              val {args, blocks, mayInline, name, start, raises, returns} =
                 Function.dest f
-             val blocks = 
+             val blocks =
                 Vector.map
                 (blocks, fn Block.T {args, label, statements, transfer} =>
                  let
-                    val {yes = args, no = rems} = 
+                    val {yes = args, no = rems} =
                        Vector.partition (args, keepVar o #1)
                     val statements =
                        if Vector.isEmpty rems
@@ -203,7 +204,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                            statements]
                     val transfer =
                        case transfer of
-                          Goto {args, dst} => 
+                          Goto {args, dst} =>
                              let
                                 val args =
                                    Vector.keepAllMap2
@@ -214,10 +215,10 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                              in
                                 Goto {args = args, dst = dst}
                              end
-                        | _ => transfer 
+                        | _ => transfer
                  in
                     Block.T {args = args,
-                             label = label, 
+                             label = label,
                              statements = statements,
                              transfer = transfer}
                  end)

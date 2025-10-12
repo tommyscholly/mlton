@@ -7,12 +7,12 @@
  * See the file MLton-LICENSE for details.
  *)
 
-functor Useless (S: SSA_TRANSFORM_STRUCTS): SSA_TRANSFORM = 
+functor Useless (S: SSA_TRANSFORM_STRUCTS): SSA_TRANSFORM =
 struct
 
 open S
 (* useless thing elimination
- *  build some kind of dependence graph where 
+ *  build some kind of dependence graph where
  *    - a value of ground type is useful if it is an arg to a primitive
  *    - a tuple is useful if it contains a useful component
  *    - a conapp is useful if it contains a useful component
@@ -219,7 +219,7 @@ structure Value =
                                        in record [("from", layout from),
                                                   ("to", layout to)]
                                        end,
-                      Unit.layout) 
+                      Unit.layout)
          coerce
 
       val coerceSlot =
@@ -302,7 +302,7 @@ structure Value =
                       | Type.Ref t => Ref {arg = slot t,
                                            useful = useful ()}
                       | Type.Tuple ts => Tuple (Vector.map (ts, slot))
-                      | Type.Vector t => 
+                      | Type.Vector t =>
                            Vector {length = slot (Type.word (WordSize.seqIndex ())),
                                    elt = slot t}
                       | Type.Weak t => Weak {arg = slot t,
@@ -503,13 +503,13 @@ fun transform (program: Program.t): Program.t =
       val {get = conInfo: Con.t -> {args: Value.t vector,
                                     value: unit -> Value.t},
            set = setConInfo, ...} =
-         Property.getSetOnce 
+         Property.getSetOnce
          (Con.plist, Property.initRaise ("Useless.conInfo", Con.layout))
       val {get = tyconInfo: Tycon.t -> {cons: Con.t vector,
                                         visitedDeepMakeUseful: bool ref,
                                         visitedShallowMakeUseful: bool ref},
            set = setTyconInfo, ...} =
-         Property.getSetOnce 
+         Property.getSetOnce
          (Tycon.plist, Property.initRaise ("Useless.tyconInfo", Tycon.layout))
       local open Value
       in
@@ -841,7 +841,7 @@ fun transform (program: Program.t): Program.t =
                                 ("returns",
                                  Option.layout (Vector.layout Value.layout)
                                  returns),
-                                ("raises", 
+                                ("raises",
                                  Option.layout (Vector.layout Value.layout)
                                  raises)])
                     val _ =
@@ -1289,7 +1289,7 @@ fun transform (program: Program.t): Program.t =
                 | _ => no ()
          end
       val doitStatement =
-         Trace.trace ("Useless.doitStatement", 
+         Trace.trace ("Useless.doitStatement",
                       Statement.layout, Vector.layout Statement.layout)
          doitStatement
       fun agree (v: Value.t, v': Value.t): bool =
@@ -1301,7 +1301,7 @@ fun transform (program: Program.t): Program.t =
                        Vector.layout Value.layout,
                        Bool.layout)
          agrees
-      fun doitTransfer (t: Transfer.t, 
+      fun doitTransfer (t: Transfer.t,
                         returns: Value.t vector option,
                         raises: Value.t vector option)
          : Block.t list * Transfer.t =
@@ -1395,11 +1395,11 @@ fun transform (program: Program.t): Program.t =
                                     end
                            end
                in (blocks,
-                   Call {func = f, 
-                         args = keepUseful (args, fargs), 
+                   Call {func = f,
+                         args = keepUseful (args, fargs),
                          return = return})
                end
-          | Case {test, cases, default} => 
+          | Case {test, cases, default} =>
                let
                   datatype z = datatype Cases.t
                in
@@ -1407,7 +1407,7 @@ fun transform (program: Program.t): Program.t =
                      Con cases =>
                         (case (Vector.length cases, default) of
                             (0, NONE) => ([], Bug)
-                          | _ => 
+                          | _ =>
                                let
                                   val (cases, blocks) =
                                      Vector.mapAndFold
@@ -1425,8 +1425,8 @@ fun transform (program: Program.t): Program.t =
                                             in ((c, l'), b :: blocks)
                                             end
                                       end)
-                               in (blocks, 
-                                   Case {test = test, 
+                               in (blocks,
+                                   Case {test = test,
                                          cases = Cases.Con cases,
                                          default = default})
                                end)
@@ -1438,6 +1438,7 @@ fun transform (program: Program.t): Program.t =
                            (0, NONE) => ([], Bug)
                          | _ => ([], t)
                end
+          | Exclave => ([], Exclave)
           | Goto {dst, args} =>
                ([], Goto {dst = dst, args = keepUseful (args, label dst)})
           | Raise xs => ([], Raise (keepUseful (xs, valOf raises)))
@@ -1449,7 +1450,7 @@ fun transform (program: Program.t): Program.t =
                        Transfer.layout,
                        Option.layout (Vector.layout Value.layout),
                        Option.layout (Vector.layout Value.layout),
-                       Layout.tuple2 (List.layout (Label.layout o Block.label), 
+                       Layout.tuple2 (List.layout (Label.layout o Block.label),
                                       Transfer.layout))
          doitTransfer
       fun doitBlock (Block.T {label, args, statements, transfer},
@@ -1471,7 +1472,7 @@ fun transform (program: Program.t): Program.t =
                        Label.layout o Block.label,
                        Option.layout (Vector.layout Value.layout),
                        Option.layout (Vector.layout Value.layout),
-                       Layout.tuple2 (List.layout (Label.layout o Block.label), 
+                       Layout.tuple2 (List.layout (Label.layout o Block.label),
                                       (Label.layout o Block.label)))
          doitBlock
       fun doitFunction f =

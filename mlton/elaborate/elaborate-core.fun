@@ -2360,10 +2360,14 @@ struct
                              [str "expression has stack mode: ", layoutPrettyTypeBracket (Cexp.ty e')])
                         | _ => ()
                      val _ = if inFunction then () else Control.error (region, str "exclave_ can only be used in a function tail position", empty)
+                     (* now set the expression to be stack allocated now that we
+                     * know its not capturing anything that would be stack
+                     * allocated*)
+                     val e'' = Cexp.make (Cexp.node e', Cexp.ty e', Mode.Stack)
                    in
                      (* exclave allows an expression to execute in the callers
                      * stack frame *)
-                     Cexp.make (Cexp.Exclave e', Cexp.ty e', Mode.Stack)
+                     Cexp.make (Cexp.Exclave e'', Cexp.ty e'', Mode.Stack)
                    end
                | Aexp.FlatApp items => elab (Parse.parseExp (items, E, ctxt))
                | Aexp.Fn match =>

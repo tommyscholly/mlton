@@ -7,7 +7,7 @@
  * See the file MLton-LICENSE for details.
  *)
 
-functor Redundant (S: SSA_TRANSFORM_STRUCTS): SSA_TRANSFORM = 
+functor Redundant (S: SSA_TRANSFORM_STRUCTS): SSA_TRANSFORM =
 struct
 
 open S
@@ -111,7 +111,7 @@ structure Element:
                      Vector.foreach
                      (v, fn cf => List.push (get (class (sel cf)), cf))
                   val () = destroy ()
-               in 
+               in
                   List.fold (!classes, [], fn (r, ac) =>
                              Vector.fromList (!r) :: ac)
                end
@@ -307,7 +307,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
             val () =
                List.foreach
                (functions, fn f =>
-                let 
+                let
                    val {name, blocks, ...} = Function.dest f
                    val {return, ...} = funcInfo name
                 in
@@ -349,7 +349,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
             val _ = Element.fixedPoint ()
          in ()
          end
-      val _ = 
+      val _ =
          Control.diagnostics
          (fn display =>
           List.foreach
@@ -495,19 +495,20 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                        case transfer of
                           Bug => Bug
                         | Call {func, args, return} =>
-                             Call {func = func, 
-                                   args = loopVars (keepUseful 
+                             Call {func = func,
+                                   args = loopVars (keepUseful
                                                     (#argsRed (funcReds func),
                                                      args)),
                                    return = return}
                         | Case {test, cases, default} =>
-                             Case {test = loopVar test, 
+                             Case {test = loopVar test,
                                    cases = cases,
                                    default = default}
+                        | Exclave => Exclave
                         | Goto {dst, args} =>
                              Goto {dst = dst,
-                                   args = loopVars (keepUseful 
-                                                    (#argsRed (labelReds dst), 
+                                   args = loopVars (keepUseful
+                                                    (#argsRed (labelReds dst),
                                                      args))}
                         | Raise xs => Raise (loopVars xs)
                         | Return xs =>

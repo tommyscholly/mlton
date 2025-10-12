@@ -30,11 +30,11 @@ signature DIRECT_EXP =
             * be used for functions that cannot raise.
             *)
            val call: {func: Func.t, args: t vector, ty: Type.t} -> t
-           val casee: {test: t, 
+           val casee: {test: t,
                        cases: cases,
                        default: t option,
                        ty: Type.t} -> t
-           val conApp: {con: Con.t, 
+           val conApp: {con: Con.t,
                         args: t vector,
                         ty: Type.t} -> t
            val const: Const.t -> t
@@ -46,6 +46,7 @@ signature DIRECT_EXP =
                              tuple: Var.t,
                              tupleTy: Type.t} -> t
            val eq: t * t * Type.t -> t
+           val exclave: {body: t, ty: Type.t} -> t
            val falsee: t
            val handlee: {try: t,
                          ty: Type.t,
@@ -61,12 +62,12 @@ signature DIRECT_EXP =
            val name: t * (Var.t -> t) -> t
            val primApp: {args: t vector,
                          prim: Type.t Prim.t,
-                         targs: Type.t vector, 
+                         targs: Type.t vector,
                          ty: Type.t} -> t
            val profile: ProfileExp.t -> t
            val raisee: t -> t
-           val select: {tuple: t, 
-                        offset: int, 
+           val select: {tuple: t,
+                        offset: int,
                         ty: Type.t} -> t
            val truee: t
            val tuple: {exps: t vector, ty: Type.t} -> t

@@ -48,6 +48,7 @@ in
    structure Tyvar = Tyvar
    structure Var = Var
    structure XvarExp = VarExp
+   structure XexpReal = Exp
 end
 
 structure NestedPat = NestedPat (open Xml)
@@ -1110,7 +1111,10 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                          ty = ty}, mode)
 
                      end
-                | Exclave e => #1 (loopExp e)
+                | Exclave e => 
+                      let val (e, t) = loopExp e
+                      in Xexp.exclave (e, t)
+                      end
                 | Raise e => Xexp.raisee {exn = #1 (loopExp e), extend = true, ty = ty}
                 | Record r =>
                      (* The components of the record have to be evaluated left to

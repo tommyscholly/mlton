@@ -276,6 +276,7 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
                                  con = con,
                                  targs = fixConTargs (con, targs)}
           | I.PrimExp.Const c => O.PrimExp.Const c
+          | I.PrimExp.Exclave e => O.PrimExp.Exclave (fixExp e)
           | I.PrimExp.Handle {catch = (x, t), handler, try} =>
                O.PrimExp.Handle {catch = (x, fixType t),
                                  handler = fixExp handler,

@@ -187,6 +187,7 @@ and primExp =
                (* TODO: add modes *)
                arg: VarExp.t option}
   | Const of Const.t
+  | Exclave of exp
   | Handle of {try: exp,
                catch: Var.t * Type.t,
                handler: exp}
@@ -300,6 +301,7 @@ in
                     NONE => empty
                   | SOME x => seq [str " ", VarExp.layout x]]
        | Const c => Const.layout c
+       | Exclave e => seq [str "exclave ", layoutExp e]
        | Handle {catch, handler, try} =>
             mayAlign [layoutExp try,
                       mayAlign [maybeConstrain
@@ -620,6 +622,7 @@ structure Exp =
                     | App {func, arg} => (handleVarExp func
                                           ; handleVarExp arg)
                     | Raise {exn, ...} => handleVarExp exn
+                    | Exclave e => loopExp e
                     | Handle {try, catch, handler, ...} =>
                          (loopExp try
                           ; monoVar catch
@@ -953,6 +956,8 @@ structure DirectExp =
                     cases = Cases.map (cases, toExp),
                     default = Option.map (default, toExp)},
                    ty, mode))
+
+      fun exclave (e, ty) = simple (Exclave (toExp e), ty, Mode.Stack)
 
       fun raisee {exn: t, extend: bool, ty: Type.t}: t =
          convert (exn, fn (x, _, _) => (Raise {exn = x, extend = extend}, ty, Mode.Heap))

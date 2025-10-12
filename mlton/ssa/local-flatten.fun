@@ -6,13 +6,13 @@
  * See the file MLton-LICENSE for details.
  *)
 
-functor LocalFlatten (S: SSA_TRANSFORM_STRUCTS): SSA_TRANSFORM = 
+functor LocalFlatten (S: SSA_TRANSFORM_STRUCTS): SSA_TRANSFORM =
 struct
 
 open S
 open Exp Transfer
 
-(* Flatten a jump arg as long as it is only flows to selects and there is 
+(* Flatten a jump arg as long as it is only flows to selects and there is
  * some tuple constructed in this function that flows to it.
  *)
 
@@ -117,7 +117,7 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
 
              fun visit (Block.T {statements, transfer, ...}): unit -> unit =
                 let
-                   val _ = 
+                   val _ =
                       Vector.foreach
                       (statements, fn Statement.T {var, exp, ...} =>
                        case exp of
@@ -136,6 +136,7 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
                        | Case {cases, default, ...} =>
                             (Cases.foreach (cases, forceArgs)
                              ; Option.app (default, forceArgs))
+                       | Exclave => ()
                        | Goto {dst, args} =>
                             Vector.foreach2
                             (args, labelArgs dst,
@@ -154,11 +155,11 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
                    fn () => ()
                 end
              val _ = Function.dfs (f, visit)
-             val _ = 
+             val _ =
                 Control.diagnostics
                 (fn display =>
                  let
-                    fun doit x = 
+                    fun doit x =
                        case varInfo x of
                           VarInfo.Arg i => display (let open Layout
                                                     in seq [Var.layout x,
@@ -193,7 +194,7 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
                                               (Var.newNoname (), ty))
                                in
                                   (vars,
-                                   Statement.T 
+                                   Statement.T
                                    {var = SOME x,
                                     ty = ty,
                                     exp = Tuple (Vector.map (vars, #1))}
@@ -213,7 +214,7 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
                        | SOME (i, t) =>
                             if ArgInfo.isTupled i
                                then (Vector.new1 x, stmts)
-                            else 
+                            else
                                let
                                   val (vars, stmts) =
                                      Vector.foldi
@@ -255,7 +256,7 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
                                 val formals = labelArgs dst
                              in
                                 if anyFlat formals
-                                   then 
+                                   then
                                       let
                                          val (args, stmts) =
                                             makeSelects (args, formals)
@@ -287,7 +288,7 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
           end)
       val program = Program.T {datatypes = datatypes,
                                globals = globals,
-                               functions = functions, 
+                               functions = functions,
                                main = main}
       val _ = Program.clearTop program
    in

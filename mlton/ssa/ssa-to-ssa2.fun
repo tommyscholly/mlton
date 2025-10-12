@@ -6,7 +6,7 @@
  * See the file MLton-LICENSE for details.
  *)
 
-functor SsaToSsa2 (S: SSA_TO_SSA2_STRUCTS): SSA_TO_SSA2 = 
+functor SsaToSsa2 (S: SSA_TO_SSA2_STRUCTS): SSA_TO_SSA2 =
 struct
 
 open S
@@ -239,6 +239,7 @@ fun convert (S.Program.T {datatypes, functions, globals, main}) =
                S2.Transfer.Case {cases = convertCases cases,
                                  default = default,
                                  test = test}
+          | S.Transfer.Exclave => Error.bug "unimplemented"
           | S.Transfer.Goto r => S2.Transfer.Goto r
           | S.Transfer.Raise v => S2.Transfer.Raise v
           | S.Transfer.Return v => S2.Transfer.Return v
@@ -274,7 +275,7 @@ fun convert (S.Program.T {datatypes, functions, globals, main}) =
                               start = start}
           end)
       val globals = convertStatements globals
-      val program = 
+      val program =
          S2.Program.T {datatypes = datatypes,
                        functions = functions,
                        globals = globals,

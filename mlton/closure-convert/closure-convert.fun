@@ -85,9 +85,9 @@ structure Accum =
              (* Must shrink because coercions may be inserted at constructor
               * applications.  I'm pretty sure the shrinking will eliminate
               * any case expressions/local functions.
-              * We must rebind eliminated variables because the shrinker is 
-              * just processing globals and hence cannot safely delete a 
-              * variable that has no occurrences, since there may still be 
+              * We must rebind eliminated variables because the shrinker is
+              * just processing globals and hence cannot safely delete a
+              * variable that has no occurrences, since there may still be
               * occurrences in functions.
               *)
              val globals = AL.toList globals
@@ -121,7 +121,7 @@ structure Accum =
              else
                 let
                    val ss = Block.statements (Vector.first blocks)
-                   val vs = 
+                   val vs =
                       case Ssa.Statement.exp (Vector.last ss) of
                          Ssa.Exp.Tuple vs =>
                             if Vector.length vars = Vector.length vs
@@ -136,7 +136,7 @@ structure Accum =
                       (vs, fn (i, v) =>
                        if Var.equals (v, Vector.sub (vars, i))
                           then NONE
-                          else SOME (Ssa.Statement.T 
+                          else SOME (Ssa.Statement.T
                                      {exp = Ssa.Exp.Var v,
                                       ty = Vector.sub (tys, i),
                                       var = SOME (Vector.sub (vars, i))}))
@@ -148,8 +148,8 @@ structure Accum =
 
 (*
 val traceConvertExp =
-   Trace.trace2 
-   ("ClosureConvert.convertExp", 
+   Trace.trace2
+   ("ClosureConvert.convertExp",
     Sexp.layout, Instance.layout, Dexp.layout)
 *)
 
@@ -345,6 +345,12 @@ fun closureConvert
                           | _ => Error.bug "ClosureConvert.loopBind: ConApp"
                          ; new' ())
                    | Const _ => new' ()
+                   | Exclave exp =>
+                         let 
+                            val result = new ()
+                         in 
+                            Value.coerce {from = loopExp exp, to = result}
+                         end
                    | Handle {try, catch = (x, t), handler} =>
                         let
                            val result = new ()
@@ -584,8 +590,8 @@ fun closureConvert
       (*               coerce               *)
       (*------------------------------------*)
       val traceCoerce =
-         Trace.trace3 
-         ("ClosureConvert.coerce", 
+         Trace.trace3
+         ("ClosureConvert.coerce",
           Dexp.layout, Value.layout, Value.layout, Dexp.layout)
       (*       val traceCoerceTuple =
        *         let val layoutValues = List.layout (", ", Value.layout)
@@ -598,7 +604,7 @@ fun closureConvert
          (fn (e: Dexp.t, from: Value.t, to: Value.t) =>
           if Value.equals (from, to)
              then e
-          else 
+          else
              case (Value.dest from, Value.dest to) of
                 (Value.Tuple vs, Value.Tuple vs') =>
                    coerceTuple (e, valueType from, vs, valueType to, vs')
@@ -649,12 +655,12 @@ fun closureConvert
               ty': Type.t, vs': Value.t vector) =>
           if Type.equals (ty, ty')
              then e
-          else 
+          else
              Dexp.detuple
              {tuple = e,
               length = Vector.length vs,
               body =
-              fn components => 
+              fn components =>
               Dexp.tuple
               {exps = Vector.map3 (components, vs, vs',
                                    fn (x, v, v') =>
@@ -670,7 +676,7 @@ fun closureConvert
                           Prim.MLton_installSignalHandler => true
                         | _ => false)
          orelse !Control.forceHandlesSignals
-      (*------------------------------------*)                 
+      (*------------------------------------*)
       (*               apply                *)
       (*------------------------------------*)
       fun apply {func, arg, resultVal}: Dexp.t =
@@ -806,7 +812,7 @@ fun closureConvert
                       if Vector.isEmpty decs
                          then (binds, ac)
                       else
-                         let 
+                         let
                             val {lambda, var, ...} = Vector.first decs
                             val info = lambdaInfo lambda
                             val tupleVar = Var.newString "tuple"
@@ -919,6 +925,11 @@ fun closureConvert
                                   end
                              | _ => Error.bug "ClosureConvert.convertPrimExp: ConApp,constructor mismatch")})
              | SprimExp.Const c => simple (Dexp.const c)
+             | SprimExp.Exclave exp =>
+                  let
+                     val (body, ac) = convertJoin (exp, ac)
+                  in (Dexp.exclave {body = body, ty = ty}, ac)
+                  end
              | SprimExp.Handle {try, catch = (catch, _), handler} =>
                   let
                      val catchInfo = varInfo catch

@@ -10,9 +10,9 @@
 (*
  * Duplicate a let bound function at each variable reference
  * if cost is smaller than threshold.
- * 
+ *
  *)
-functor Polyvariance (S: XML_TRANSFORM_STRUCTS): XML_TRANSFORM = 
+functor Polyvariance (S: XML_TRANSFORM_STRUCTS): XML_TRANSFORM =
 struct
 
 open S
@@ -32,8 +32,8 @@ structure Type =
 
 (*
       val isHigherOrder =
-         Trace.trace 
-         ("Polyvariance.isHigherOrder", layout, Bool.layout) 
+         Trace.trace
+         ("Polyvariance.isHigherOrder", layout, Bool.layout)
          isHigherOrder
 *)
 
@@ -84,7 +84,7 @@ fun lambdaSize (Program.T {body, ...}): Lambda.t -> int =
           | Profile _ => n
           | _ => n + 1
       val _ = loopExp (body, 0)
-   in 
+   in
       size
    end
 
@@ -154,6 +154,7 @@ fun shouldDuplicate (program as Program.T {body, ...}, hofo, small, product)
                                          | ConApp {arg, ...} =>
                                               Option.app (arg, loopVar)
                                          | Const _ => ()
+                                         | Exclave exp => loopExp exp
                                          | Handle {try, handler, ...} =>
                                               (loopExp try; loopExp handler)
                                          | Lambda _ =>
@@ -185,7 +186,7 @@ fun shouldDuplicate (program as Program.T {body, ...}, hofo, small, product)
                                   end)
                            in case dups of
                               [] => ()
-                            | _ => 
+                            | _ =>
                                  let
                                     val size =
                                        List.fold
@@ -221,7 +222,7 @@ fun shouldDuplicate (program as Program.T {body, ...}, hofo, small, product)
          List.insertionSort (l, fn ((_, _, _, c), (_, _, _, c')) => c < c')
       val _ =
          Control.diagnostics
-         (fn layout => 
+         (fn layout =>
           List.foreach
           (sort (!costs), fn (x, size, numOcc, c) =>
            layout (let open Layout
@@ -285,7 +286,7 @@ fun transform (program as Program.T {datatypes, body},
          end
       and loopLambda (l: Lambda.t): Lambda.t =
          let
-            val {arg, argType, argMode, lambdaMode, resultMode, body, mayInline} = 
+            val {arg, argType, argMode, lambdaMode, resultMode, body, mayInline} =
                Lambda.dest l
          in
             Lambda.make {arg = bind arg,
@@ -322,7 +323,7 @@ fun transform (program as Program.T {datatypes, body},
                                          :: decs)
                             in {decs = decs, result = result}
                             end
-                       | _ => 
+                       | _ =>
                             let
                                val exp =
                                   case exp of
@@ -355,6 +356,7 @@ fun transform (program as Program.T {datatypes, body},
                                                 targs = targs,
                                                 arg = Option.map (arg, loopVar)}
                                    | Const _ => exp
+                                   | Exclave exp => Exclave (loopExp exp)
                                    | Handle {try, catch, handler} =>
                                         Handle {try = loopExp try,
                                                 catch = bindVarType catch,

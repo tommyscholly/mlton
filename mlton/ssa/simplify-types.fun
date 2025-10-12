@@ -724,6 +724,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                 | _ => normal ()
                end
           | Case _ => (Vector.new0 (), t)
+          | Exclave => (Vector.new0 (), t)
           | Goto {dst, args} =>
                (Vector.new0 (), Goto {dst = dst, args = simplifyUsefulVars args})
           | Raise xs => (Vector.new0 (), Raise (simplifyUsefulVars xs))

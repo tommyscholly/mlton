@@ -35,6 +35,8 @@ datatype t =
                    components: Var.t vector,
                    tuple: Var.t,
                    tupleTy: Type.t}
+ | Exclave of {body: t,
+               ty: Type.t}
  | Handle of {try: t,
               catch: Var.t * Type.t,
               handler: t,
@@ -70,6 +72,7 @@ val conApp = ConApp
 val const = Const
 val detuple = Detuple
 val detupleBind = DetupleBind
+val exclave = Exclave
 val handlee = Handle
 val lett = Let
 val name = Name
@@ -166,6 +169,8 @@ in
             lett (seq [Vector.layout Var.layout components,
                        str " = ", Var.layout tuple],
                   layout body)
+       | Exclave {body, ty} =>
+            seq [str "exclave ", layout body, str ": ", Type.layout ty]
        | Handle {try, catch, handler, ...} =>
             align [layout try,
                    seq [str "handle ", Var.layout (#1 catch),
@@ -296,7 +301,7 @@ structure Cont:
           | Prefix (k, s) => Res.prefix (sendVar (k, ty, x), s)
           | Return => {statements = [],
                        transfer = Transfer.Return (Vector.new1 x)}
-      and sendBindExp ({arg, statements, transfer}, ty, e: Exp.t) = 
+      and sendBindExp ({arg, statements, transfer}, ty, e: Exp.t) =
          {statements = Statement.T {var = SOME arg,
                                     ty = ty,
                                     exp = e} :: statements,
@@ -479,6 +484,15 @@ fun linearize' (e: t, h: Handler.t, k: Cont.t): Label.t * Block.t list =
                in
                   {statements = List.appendRev (ss, statements),
                    transfer = transfer}
+               end
+          | Exclave {body, ty} =>
+               let
+                  val k = Cont.goto (reify (k, ty))
+                  (* create body block *)
+                  val _ = newLabel0 (body, h, k)
+               in
+                  {statements = [],
+                   transfer = Transfer.Exclave}
                end
           | Handle {try, catch, handler, ty} =>
                let

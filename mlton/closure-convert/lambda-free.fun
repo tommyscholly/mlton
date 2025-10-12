@@ -7,7 +7,7 @@
  * See the file MLton-LICENSE for details.
  *)
 
-functor LambdaFree (S: LAMBDA_FREE_STRUCTS): LAMBDA_FREE = 
+functor LambdaFree (S: LAMBDA_FREE_STRUCTS): LAMBDA_FREE =
 struct
 
 open S
@@ -127,7 +127,7 @@ fun lambdaFree {program = Program.T {body, ...},
                                     if isBound x
                                        then true
                                     else (var (x, s); false)))))
-                       
+
                       (* Get rid of the list of mutually recursive functions *)
                       val _ = destroy ()
 
@@ -142,7 +142,7 @@ fun lambdaFree {program = Program.T {body, ...},
                    end)
             ; varExp (result, s)
          end
-      and primExp (e, s) = 
+      and primExp (e, s) =
          case e of
             App {func, arg} => (varExp (func, s); varExp (arg, s))
           | Case {test, cases, default} =>
@@ -153,6 +153,7 @@ fun lambdaFree {program = Program.T {body, ...},
                                   Option.app (arg, fn (x, _) => bind (x, s))))
           | ConApp {arg, ...} => varExpOpt (arg, s)
           | Const _ => ()
+          | Exclave e => exp (e, s)
           | Handle {try, catch, handler} =>
                (exp (try, s); bind (#1 catch, s); exp (handler, s))
           | Lambda l =>
