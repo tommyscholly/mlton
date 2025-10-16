@@ -561,7 +561,7 @@ structure Transfer =
        | Case of {test: Var.t,
                   cases: (Con.t, Label.t) Cases.t,
                   default: Label.t option} (* Must be nullary. *)
-       | Exclave
+       | Exclave of Label.t
        | Goto of {dst: Label.t,
                   args: Var.t vector}
        | Raise of Var.t vector
@@ -575,7 +575,7 @@ structure Transfer =
          fn Bug => 1
           | Call {args, ...} => 1 + Vector.length args
           | Case {cases, ...} => 1 + Cases.length cases
-          | Exclave => 1
+          | Exclave _ => 1
           | Goto {args, ...} => 1 + Vector.length args
           | Raise xs => 1 + Vector.length xs
           | Return xs => 1 + Vector.length xs
@@ -595,7 +595,7 @@ structure Transfer =
                   (var test
                    ; Cases.foreach (cases, label)
                    ; Option.app (default, label))
-             | Exclave => ()
+             | Exclave l => label l
              | Goto {dst, args, ...} => (vars args; label dst)
              | Raise xs => vars xs
              | Return xs => vars xs
@@ -627,7 +627,7 @@ structure Transfer =
                   Case {test = fx test,
                         cases = Cases.map(cases, fl),
                         default = Option.map(default, fl)}
-             | Exclave => Exclave
+             | Exclave l => Exclave (fl l)
              | Goto {dst, args} =>
                   Goto {dst = fl dst,
                         args = fxs args}
@@ -689,7 +689,7 @@ structure Transfer =
                       | Return.Tail => seq [str "call tail ", call]
                   end
              | Case arg => layoutCase arg
-             | Exclave => str "exclave"
+             | Exclave l => seq [str "exclave ", Label.layout l]
              | Goto {dst, args} =>
                   seq [str "goto ", Label.layout dst, str " ", layoutArgs args]
              | Raise xs => seq [str "raise ", layoutArgs xs]
@@ -786,7 +786,7 @@ structure Transfer =
       local
          val newHash = Random.word
          val bug = newHash ()
-         val exclave = newHash ()
+         (* val exclave = newHash () *)
          val raisee = newHash ()
          val return = newHash ()
          fun hashVars (xs: Var.t vector, w: Word.t): Word.t =
@@ -807,7 +807,7 @@ structure Transfer =
                            hash2 (Label.hash l, w)),
                           fn (l, w) =>
                           hash2 (Label.hash l, w)))
-             | Exclave => exclave
+             | Exclave l => Label.hash l
              | Goto {dst, args} =>
                   hashVars (args, Label.hash dst)
              | Raise xs => hashVars (xs, raisee)
@@ -1212,7 +1212,7 @@ structure Function =
                                in
                                   ()
                                end
-                          | Exclave => ()
+                          | Exclave l => edge (l, "", Solid)
                           | Goto {dst, ...} => edge (dst, "", Solid)
                           | Raise _ => ()
                           | Return _ => ()

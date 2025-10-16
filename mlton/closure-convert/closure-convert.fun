@@ -928,6 +928,11 @@ fun closureConvert
              | SprimExp.Exclave exp =>
                   let
                      val (body, ac) = convertJoin (exp, ac)
+                     val () = 
+                        Error.warning (
+                           "EXCLAVE DEBUG: " 
+                           ^ Layout.toString (SprimExp.layout e)
+                        )
                   in (Dexp.exclave {body = body, ty = ty}, ac)
                   end
              | SprimExp.Handle {try, catch = (catch, _), handler} =>

@@ -359,6 +359,13 @@ fun linearize' (e: t, h: Handler.t, k: Cont.t): Label.t * Block.t list =
          Trace.trace3 ("DirectExp.linearize'.loop", layout, Handler.layout, Cont.layout,
                        Res.layout)
       val blocks: Block.t list ref = ref []
+      fun debugPrintBlocks () = 
+         let
+            val blockStrings = List.map (!blocks, Block.layout)
+            val str = Layout.list blockStrings
+         in
+            Error.warning ("DIRECT-EXP DEBUG: " ^ Layout.toString str)
+         end
       fun newBlock (args: (Var.t * Type.t) vector,
                     {statements: Statement.t list,
                      transfer: Transfer.t}): Label.t =
@@ -488,11 +495,9 @@ fun linearize' (e: t, h: Handler.t, k: Cont.t): Label.t * Block.t list =
           | Exclave {body, ty} =>
                let
                   val k = Cont.goto (reify (k, ty))
-                  (* create body block *)
-                  val _ = newLabel0 (body, h, k)
                in
                   {statements = [],
-                   transfer = Transfer.Exclave}
+                   transfer = Transfer.Exclave (newLabel0 (body, h, k))}
                end
           | Handle {try, catch, handler, ty} =>
                let

@@ -365,7 +365,7 @@ fun shrinkFunction {globals: Statement.t vector} =
                         else
                            normal ()
                      end
-                | Exclave => normal ()
+                | Exclave l => (incLabel l; normal ())
                 | Goto {dst, args = actuals} =>
                      let
                         val _ = incVars actuals
@@ -849,7 +849,7 @@ fun shrinkFunction {globals: Statement.t vector} =
                        profileStmts = [],
                        test = test}
                    end
-              | Exclave => ([], Exclave)
+              | Exclave l => ([], Exclave (simplifyLabel l))
               | Goto {dst, args} => goto (dst, varInfos args)
               | Raise xs => ([], Raise (simplifyVars xs))
               | Return xs => ([], Return (simplifyVars xs))

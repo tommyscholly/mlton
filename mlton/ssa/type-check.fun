@@ -153,7 +153,7 @@ fun checkScopes (program as
                in
                   ()
                end
-          | Exclave => ()
+          | Exclave _ => ()
           | Goto {args, ...} => getVars args
           | Raise xs => getVars xs
           | Return xs => getVars xs

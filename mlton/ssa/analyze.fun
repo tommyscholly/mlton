@@ -148,7 +148,8 @@ fun 'a analyze
                   val _ = Option.app (default, ensureNullary)
                in ()
                end
-          | Exclave => ()
+          (* TODO: should we be labeling these values? *)
+          | Exclave _ => ()
           | Goto {dst, args} => coerces ("goto", values args, labelValues dst)
           | Raise xs =>
                (case shouldRaises of

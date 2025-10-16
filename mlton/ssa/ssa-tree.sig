@@ -120,7 +120,7 @@ signature SSA_TREE =
                         default: Label.t option, (* Must be nullary. *)
                         test: Var.t}
              (* invariant: the exclave'd expression in the next block *)
-             | Exclave
+             | Exclave of Label.t
              | Goto of {args: Var.t vector,
                         dst: Label.t}
              (* Raise implicitly raises to the caller.

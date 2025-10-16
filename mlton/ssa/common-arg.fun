@@ -130,7 +130,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                | Case {cases, default, ...} =>
                     (Cases.foreach (cases, visitLabelArgs)
                      ; Option.app (default, visitLabelArgs))
-               | Exclave => ()
+               | Exclave l => visitLabelArgs l
                | Goto {dst, args} => flowVarsLabelArgs (args, dst)
                | Raise _ => ()
                | Return _ => ()

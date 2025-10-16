@@ -1438,7 +1438,7 @@ fun transform (program: Program.t): Program.t =
                            (0, NONE) => ([], Bug)
                          | _ => ([], t)
                end
-          | Exclave => ([], Exclave)
+          | Exclave l => ([], Exclave l)
           | Goto {dst, args} =>
                ([], Goto {dst = dst, args = keepUseful (args, label dst)})
           | Raise xs => ([], Raise (keepUseful (xs, valOf raises)))

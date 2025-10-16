@@ -75,7 +75,7 @@ struct
                     Transfer.Call {args=freshenVec args, func=func, return=return}
                | Transfer.Case {cases, default, test} =>
                     Transfer.Case {cases=cases, default=default, test=freshenIfGlobal test}
-               | Transfer.Exclave => Transfer.Exclave
+               | Transfer.Exclave l => Transfer.Exclave l
                | Transfer.Goto {args, dst} =>
                     Transfer.Goto {args=freshenVec args, dst=dst}
                | Transfer.Raise vs =>
