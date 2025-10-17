@@ -115,6 +115,7 @@ fun 'a analyze
                         end
 
                end
+          | Exclave l => ()
           | Case {test, cases, default, ...} =>
                let
                   val test = value test

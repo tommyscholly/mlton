@@ -106,6 +106,7 @@ signature RSSA_TREE =
              | Call of {args: Operand.t vector,
                         func: Func.t,
                         return: Return.t}
+             | Exclave of Label.t
              | Goto of {args: Operand.t vector,
                         dst: Label.t}
              (* Raise implicitly raises to the caller.  

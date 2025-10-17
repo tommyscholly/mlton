@@ -347,6 +347,7 @@ structure Transfer =
        | Call of {args: Operand.t vector,
                   func: Func.t,
                   return: Return.t}
+       | Exclave of Label.t
        | Goto of {args: Operand.t vector,
                   dst: Label.t}
        | Raise of Operand.t vector
@@ -367,6 +368,7 @@ structure Transfer =
                   seq [Func.layout func, str " ",
                        Vector.layout Operand.layout args,
                        str " ", Return.layout return]
+             | Exclave l => seq [str "exclave ", Label.layout l]
              | Goto {dst, args} =>
                   seq [Label.layout dst, str " ",
                        Vector.layout Operand.layout args]
@@ -403,6 +405,7 @@ structure Transfer =
                                 | SOME l => label (l, a))
              | Call {args, return, ...} =>
                   useOperands (args, Return.foldLabel (return, a, label))
+             | Exclave l => label (l, a)
              | Goto {args, dst, ...} => label (dst, useOperands (args, a))
              | Raise zs => useOperands (zs, a)
              | Return zs => useOperands (zs, a)
@@ -476,6 +479,7 @@ structure Transfer =
                   Call {args = opers args,
                         func = func,
                         return = Return.map (return, label)}
+             | Exclave l => Exclave (label l)
              | Goto {args, dst} =>
                   Goto {args = opers args,
                         dst = label dst}
@@ -794,6 +798,7 @@ structure Function =
                                in
                                   ()
                                end
+                          | Transfer.Exclave dst => edge (dst, "", Solid)
                           | Transfer.Goto {dst, ...} => edge (dst, "", Solid)
                           | Transfer.Raise _ => ()
                           | Transfer.Return _ => ()

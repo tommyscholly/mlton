@@ -714,6 +714,7 @@ fun transform2 (Program.T {datatypes, globals, functions, main}) =
                                           (conInfo con, visitLabelTh l))
                              end
                end
+          | Exclave l => visitLabel l
           | Goto {dst, args} =>
                let
                   val li = labelInfo dst
@@ -1365,6 +1366,7 @@ fun transform2 (Program.T {datatypes, globals, functions, main}) =
                Case {test = test,
                      cases = cases,
                      default = default}
+          | Exclave l => Exclave l
           | Goto {dst, args} =>
                Goto {dst = dst,
                      args = (Vector.keepAllMap2

@@ -271,6 +271,7 @@ fun checkHandlers (Program.T {functions, ...}) =
                                             end)
                                 | Tail => true
                             end)
+                      | Exclave l => goto l
                       | Goto {dst, ...} => goto dst
                       | Raise _ => tail "raise"
                       | Return _ => tail "return"
@@ -693,6 +694,8 @@ fun typeCheck (p as Program.T {functions, main, objectTypes, profileInfo, static
                                   Vector.equals
                                   (zs, ts, fn (z, t) =>
                                    Type.isSubtype (Operand.ty z, t))))
+                   | Exclave l =>
+                         gotoOk {args = Vector.new0 (), dst = l}
                    | Switch s =>
                         Switch.isOk (s, {checkUse = checkOperand,
                                          labelIsOk = labelIsNullaryJump})

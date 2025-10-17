@@ -900,6 +900,7 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                       return = return})
                end
           | S.Transfer.Case r => translateCase r
+          | S.Transfer.Exclave l => ([], Transfer.Exclave l)
           | S.Transfer.Goto {dst, args} =>
                ([], Transfer.Goto {dst = dst, args = vos args})
           | S.Transfer.Raise xs => ([], Transfer.Raise (vos xs))

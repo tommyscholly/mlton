@@ -1064,6 +1064,7 @@ fun toMachine (rssa: Rssa.Program.t) =
                            (parallelMove {dsts = dsts', srcs = srcs'},
                             M.Transfer.Goto dst)
                         end
+                   | R.Transfer.Exclave dst => (Vector.new0 (), M.Transfer.Goto dst)
                    | R.Transfer.Raise srcs =>
                         let
                            val handlerStackTop =
