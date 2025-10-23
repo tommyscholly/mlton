@@ -1113,7 +1113,12 @@ fun defunctorize (CoreML.Program.T {decs}) =
                      end
                 | Exclave e => 
                       let val (e, t) = loopExp e
-                      in Xexp.exclave (e, t)
+                          val regionPop = Xexp.primApp ({args = Vector.new0 (),
+                                                         prim = Prim.Region_pop,
+                                                         targs = Vector.new0 (),
+                                                         ty = Xtype.unit}, Mode.Heap)
+                      (* eliminate exclaves by popping the region *)
+                      in Xexp.sequence (Vector.new2 (regionPop, e))
                       end
                 | Raise e => Xexp.raisee {exn = #1 (loopExp e), extend = true, ty = ty}
                 | Record r =>
@@ -1149,6 +1154,14 @@ fun defunctorize (CoreML.Program.T {decs}) =
             val {arg, argType, argMode, body = originalBody, mayInline} = Clambda.dest l
             val resultMode = Cexp.mode originalBody
             val (body, bodyType) = loopExp originalBody
+            (* this mode doesn't really matter *)
+            val regionPush = Xexp.primApp ({args = Vector.new0 (),
+                                           prim = Prim.Region_push,
+                                           targs = Vector.new0 (),
+                                           ty = Xtype.unit}, Mode.Heap)
+
+            val wrappedBody = Xexp.sequence (Vector.new2 (regionPush, body))
+            (* val wrappedBody = Xexp.toExp wrappedBody *)
 
             fun analyzeCaptures (body: Cexp.t, argVar: Var.t): Mode.t =
                let
@@ -1227,7 +1240,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
              argMode = argMode,
              lambdaMode = lambdaMode,
              resultMode = resultMode,
-             body = body,
+             body = wrappedBody,
              bodyType = bodyType,
              mayInline = mayInline}
          end

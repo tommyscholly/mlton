@@ -64,6 +64,7 @@ typedef GC_state GCState_t;
 #include "gc/garbage-collection.h"
 #include "gc/new-object.h"
 #include "gc/sequence-allocate.h"
+#include "gc/regions.h"
 #include "gc/call-stack.h"
 #include "gc/profiling.h"
 #include "gc/rusage.h"
