@@ -154,7 +154,6 @@ fun shouldDuplicate (program as Program.T {body, ...}, hofo, small, product)
                                          | ConApp {arg, ...} =>
                                               Option.app (arg, loopVar)
                                          | Const _ => ()
-                                         | Exclave exp => loopExp exp
                                          | Handle {try, handler, ...} =>
                                               (loopExp try; loopExp handler)
                                          | Lambda _ =>
@@ -356,7 +355,6 @@ fun transform (program as Program.T {datatypes, body},
                                                 targs = targs,
                                                 arg = Option.map (arg, loopVar)}
                                    | Const _ => exp
-                                   | Exclave exp => Exclave (loopExp exp)
                                    | Handle {try, catch, handler} =>
                                         Handle {try = loopExp try,
                                                 catch = bindVarType catch,

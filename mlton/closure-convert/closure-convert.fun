@@ -345,12 +345,6 @@ fun closureConvert
                           | _ => Error.bug "ClosureConvert.loopBind: ConApp"
                          ; new' ())
                    | Const _ => new' ()
-                   | Exclave exp =>
-                         let 
-                            val result = new ()
-                         in 
-                            Value.coerce {from = loopExp exp, to = result}
-                         end
                    | Handle {try, catch = (x, t), handler} =>
                         let
                            val result = new ()
@@ -925,16 +919,6 @@ fun closureConvert
                                   end
                              | _ => Error.bug "ClosureConvert.convertPrimExp: ConApp,constructor mismatch")})
              | SprimExp.Const c => simple (Dexp.const c)
-             | SprimExp.Exclave exp =>
-                  let
-                     val (body, ac) = convertJoin (exp, ac)
-                     val () = 
-                        Error.warning (
-                           "EXCLAVE DEBUG: " 
-                           ^ Layout.toString (SprimExp.layout e)
-                        )
-                  in (Dexp.exclave {body = body, ty = ty}, ac)
-                  end
              | SprimExp.Handle {try, catch = (catch, _), handler} =>
                   let
                      val catchInfo = varInfo catch

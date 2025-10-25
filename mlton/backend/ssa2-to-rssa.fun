@@ -49,38 +49,6 @@ structure CFunction =
       datatype z = datatype SymbolScope.t
       datatype z = datatype Target.t
 
-      val regionPush = fn () => T {args = Vector.new1 (Type.gcState ()),
-                                   convention = Cdecl,
-                                   inline = false,
-                                   kind = Kind.Runtime {bytesNeeded = NONE,
-                                                        ensuresBytesFree = NONE,
-                                                        mayGC = false,
-                                                        maySwitchThreadsFrom = false,
-                                                        maySwitchThreadsTo = false,
-                                                        modifiesFrontier = false,
-                                                        readsStackTop = false,
-                                                        writesStackTop = false},
-                                   prototype = (Vector.new1 CType.gcState, NONE),
-                                   return = Type.unit,
-                                   symbolScope = Private,
-                                   target = Direct "GC_regionPush"}
-
-      val regionPop = fn () => T {args = Vector.new1 (Type.gcState ()),
-                                  convention = Cdecl,
-                                  inline = false,
-                                  kind = Kind.Runtime {bytesNeeded = NONE,
-                                                       ensuresBytesFree = NONE,
-                                                       mayGC = false,
-                                                       maySwitchThreadsFrom = false,
-                                                       maySwitchThreadsTo = false,
-                                                       modifiesFrontier = false,
-                                                       readsStackTop = false,
-                                                       writesStackTop = false},
-                                  prototype = (Vector.new1 CType.gcState, NONE),
-                                  return = Type.unit,
-                                  symbolScope = Private,
-                                  target = Direct "GC_regionPop"}
-
       val copyCurrentThread = fn () =>
          T {args = Vector.new1 (Type.gcState ()),
             convention = Cdecl,
@@ -205,6 +173,40 @@ structure CFunction =
             return = Type.unit,
             symbolScope = Private,
             target = Direct "Thread_returnToC"}
+
+      val regionPush = fn () =>
+         T {args = Vector.new1 (Type.gcState ()),
+            convention = Cdecl,
+            inline = false,
+            kind = Kind.Runtime {bytesNeeded = NONE,
+                                 ensuresBytesFree = NONE,
+                                 mayGC = false,
+                                 maySwitchThreadsFrom = false,
+                                 maySwitchThreadsTo = false,
+                                 modifiesFrontier = false,
+                                 readsStackTop = true,
+                                 writesStackTop = false},
+            prototype = (Vector.new1 CType.gcState, NONE),
+            return = Type.unit,
+            symbolScope = Public,
+            target = Direct "GC_regionPush"}
+
+      val regionPop = fn () =>
+         T {args = Vector.new1 (Type.gcState ()),
+            convention = Cdecl,
+            inline = false,
+            kind = Kind.Runtime {bytesNeeded = NONE,
+                                 ensuresBytesFree = NONE,
+                                 mayGC = false,
+                                 maySwitchThreadsFrom = false,
+                                 maySwitchThreadsTo = false,
+                                 modifiesFrontier = false,
+                                 readsStackTop = true,
+                                 writesStackTop = false},
+            prototype = (Vector.new1 CType.gcState, NONE),
+            return = Type.unit,
+            symbolScope = Public,
+            target = Direct "GC_regionPop"}
 
       (* CHECK; thread as objptr *)
       val threadSwitchTo = fn () =>
@@ -570,10 +572,10 @@ structure Prim =
                            return = t}
                end
 
-            fun regions () = 
-               vanilla {args = Vector.new0 (),
+            fun regions kind = 
+               vanilla {args = Vector.new1 (Type.gcState ()),
                         name = name,
-                        prototype = (Vector.new0 (), NONE),
+                        prototype = (Vector.new1 CType.CPointer, NONE),
                         return = Type.unit}
          in
             case p of

@@ -323,7 +323,6 @@ fun transform (prog: Program.t): Program.t =
                   targs = Vector.map (targs, transType),
                   ty = eTy}
              | Const c => return (DirectExp.const c)
-             | Exclave exp => return (DirectExp.exclave (transExp (exp, kVar, kTy, hVar, hTy), kTy))
              | Handle {catch = (cVar, _), handler, try} =>
                   let
                      val h'Var = Var.newString "h"

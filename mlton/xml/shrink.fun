@@ -457,10 +457,6 @@ fun shrinkOnce (Program.T {datatypes, body}) =
                       Value.ConApp {con = con, targs = targs, arg = arg})
                   end
              | Const c => nonExpansiveValue (fn () => (), Value.Const c)
-             (* todo: this is probably dropping the inner exclave expression
-              * while keeping the exclave
-              * temporarily I am not shrinking e *)
-             | Exclave e => expansive (Exclave (e))
              | Handle {try, catch as (catchVar, _), handler} =>
                   let
                      val handler = shrinkExp handler

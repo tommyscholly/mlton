@@ -119,8 +119,6 @@ signature SSA_TREE =
              | Case of {cases: (Con.t, Label.t) Cases.t,
                         default: Label.t option, (* Must be nullary. *)
                         test: Var.t}
-             (* invariant: the exclave'd expression in the next block *)
-             | Exclave of Label.t
              | Goto of {args: Var.t vector,
                         dst: Label.t}
              (* Raise implicitly raises to the caller.

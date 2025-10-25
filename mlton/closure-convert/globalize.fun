@@ -93,8 +93,6 @@ fun globalize {program = Program.T {datatypes, body, ...},
                                | SOME x => isGlobal x,
                                     once)
                         | Const _ => (true, once)
-                        (* TODO: what are the booleans doing here? *)
-                        | Exclave exp => (false, loopExp (exp, once))
                         | Handle {try, handler, ...} =>
                              (false,
                               loopExp (handler, loopExp (try, once)))

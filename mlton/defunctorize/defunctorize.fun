@@ -1116,9 +1116,10 @@ fun defunctorize (CoreML.Program.T {decs}) =
                           val regionPop = Xexp.primApp ({args = Vector.new0 (),
                                                          prim = Prim.Region_pop,
                                                          targs = Vector.new0 (),
-                                                         ty = Xtype.unit}, Mode.Heap)
+                                                         ty = Xtype.unit}, Mode.Constant)
                       (* eliminate exclaves by popping the region *)
-                      in Xexp.sequence (Vector.new2 (regionPop, e))
+                      (* in Xexp.sequence (Vector.new2 (regionPop, e)) *)
+                      in e
                       end
                 | Raise e => Xexp.raisee {exn = #1 (loopExp e), extend = true, ty = ty}
                 | Record r =>
@@ -1155,13 +1156,14 @@ fun defunctorize (CoreML.Program.T {decs}) =
             val resultMode = Cexp.mode originalBody
             val (body, bodyType) = loopExp originalBody
             (* this mode doesn't really matter *)
-            val regionPush = Xexp.primApp ({args = Vector.new0 (),
-                                           prim = Prim.Region_push,
-                                           targs = Vector.new0 (),
-                                           ty = Xtype.unit}, Mode.Heap)
-
-            val wrappedBody = Xexp.sequence (Vector.new2 (regionPush, body))
-            (* val wrappedBody = Xexp.toExp wrappedBody *)
+            val wrappedBody = body
+            (* val regionPush = Xexp.primApp ({args = Vector.new0 (), *)
+            (*                                prim = Prim.Region_push, *)
+            (*                                targs = Vector.new0 (), *)
+            (*                                ty = Xtype.unit}, Mode.Heap) *)
+            (* val regionPushVar = Var.newNoname () *)
+            (* val wrappedBody = Xexp.let1 *)
+            (*   {var = regionPushVar, exp = regionPush, body = body, mode = Mode.Constant} *)
 
             fun analyzeCaptures (body: Cexp.t, argVar: Var.t): Mode.t =
                let

@@ -153,7 +153,6 @@ fun lambdaFree {program = Program.T {body, ...},
                                   Option.app (arg, fn (x, _) => bind (x, s))))
           | ConApp {arg, ...} => varExpOpt (arg, s)
           | Const _ => ()
-          | Exclave e => exp (e, s)
           | Handle {try, catch, handler} =>
                (exp (try, s); bind (#1 catch, s); exp (handler, s))
           | Lambda l =>

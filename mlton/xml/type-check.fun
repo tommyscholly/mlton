@@ -230,7 +230,6 @@ fun typeCheck (program as Program.T {datatypes, body}): unit =
                       | SOME e => checkApp (t, e)
                   end
              | Const c => Type.ofConst c
-             | Exclave e => checkExp e
              | Handle {try, catch = (catch, catchType), handler, ...} =>
                   let
                      val _ = if isExnType catchType

@@ -308,7 +308,6 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
                                    arg = Option.map (arg, monoVarExp)}
                end
           | XprimExp.Const c => SprimExp.Const c
-          | XprimExp.Exclave e => SprimExp.Exclave (monoExp e)
           | XprimExp.Handle {try, catch, handler} =>
                SprimExp.Handle {try = monoExp try,
                                 catch = renameMono catch,
