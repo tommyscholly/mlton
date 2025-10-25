@@ -147,10 +147,9 @@ fun 'a analyze
                       | Word (s, cs) => doitWord (s, cs)
                   val _ = Option.app (default, ensureNullary)
                in ()
-               end
-          (* TODO: should we be labeling these values? *)
-          | Exclave _ => ()
-          | Goto {dst, args} => coerces ("goto", values args, labelValues dst)
+                end
+           (* TODO: should we be labeling these values? *)
+           | Goto {dst, args} => coerces ("goto", values args, labelValues dst)
           | Raise xs =>
                (case shouldRaises of
                    NONE => Error.bug "Analyze.loopTransfer (raise mismatch at Raise)"

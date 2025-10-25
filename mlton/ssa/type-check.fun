@@ -152,9 +152,8 @@ fun checkScopes (program as
                       | Cases.Word (ws, cs) => doitWord (ws, cs)
                in
                   ()
-               end
-          | Exclave _ => ()
-          | Goto {args, ...} => getVars args
+                end
+           | Goto {args, ...} => getVars args
           | Raise xs => getVars xs
           | Return xs => getVars xs
           | Runtime {args, ...} => getVars args

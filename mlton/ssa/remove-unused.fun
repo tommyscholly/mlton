@@ -596,9 +596,8 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                           ConInfo.whenConed
                                           (conInfo con, visitLabelTh l))
                              end
-               end
-          | Exclave l => visitLabelInfo (labelInfo l)
-          | Goto {dst, args} =>
+                end
+           | Goto {dst, args} =>
                let
                   val li = labelInfo dst
                   val () = flowVarInfoTysVars (LabelInfo.args li, args)
@@ -1136,12 +1135,11 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                        else keep (SOME l)
                                     end
                end
-          | Case {test, cases, default} =>
-               Case {test = test,
-                     cases = cases,
-                     default = default}
-          | Exclave l => Exclave l
-          | Goto {dst, args} =>
+           | Case {test, cases, default} =>
+                Case {test = test,
+                      cases = cases,
+                      default = default}
+           | Goto {dst, args} =>
                Goto {dst = dst,
                      args = (Vector.keepAllMap2
                              (args, LabelInfo.args (labelInfo dst),

@@ -133,11 +133,10 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
                        | Call {args, return, ...} =>
                             (forces args
                              ; Return.foreachLabel (return, forceArgs))
-                       | Case {cases, default, ...} =>
-                            (Cases.foreach (cases, forceArgs)
-                             ; Option.app (default, forceArgs))
-                       | Exclave _ => ()
-                       | Goto {dst, args} =>
+                        | Case {cases, default, ...} =>
+                             (Cases.foreach (cases, forceArgs)
+                              ; Option.app (default, forceArgs))
+                        | Goto {dst, args} =>
                             Vector.foreach2
                             (args, labelArgs dst,
                              fn (_, NONE) => ()

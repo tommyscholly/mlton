@@ -270,9 +270,8 @@ fun checkHandlers (Program.T {functions, ...}) =
                                                res
                                             end)
                                 | Tail => true
-                            end)
-                      | Exclave l => goto l
-                      | Goto {dst, ...} => goto dst
+                             end)
+                       | Goto {dst, ...} => goto dst
                       | Raise _ => tail "raise"
                       | Return _ => tail "return"
                       | Switch s => Switch.foreachLabel (s, goto)
@@ -648,21 +647,27 @@ fun typeCheck (p as Program.T {functions, main, objectTypes, profileInfo, static
                      CCall {args, func, return} =>
                         let
                            val _ = checkOperands args
-                        in
-                           CFunction.isOk (func, {isUnit = Type.isUnit})
-                           andalso
-                           Vector.equals (args, CFunction.args func,
+                           val isOkay = CFunction.isOk (func, {isUnit = Type.isUnit})
+                           val argsOkay = Vector.equals (args, CFunction.args func,
                                           fn (z, t) =>
                                           Type.isSubtype
                                           (Operand.ty z, t))
-                           andalso
-                           case return of
-                              NONE => true
-                            | SOME l =>
-                                 case labelKind l of
-                                    Kind.CReturn {func = f} =>
-                                       CFunction.equals (func, f)
-                                  | _ => false
+                           val returnOkay =
+                              case return of
+                                 NONE => true
+                               | SOME l =>
+                                    case labelKind l of
+                                       Kind.CReturn {func = f} =>
+                                          CFunction.equals (func, f)
+                                     | _ => false
+                           val _ = Error.warning ("Transfer.Ok: isOkay: " ^
+                                    Bool.toString isOkay ^ " argsOkay: " ^
+                                    Bool.toString argsOkay ^ " returnOkay: " ^
+                                    Bool.toString returnOkay)
+                        in
+                           isOkay
+                           andalso argsOkay
+                           andalso returnOkay
                         end
                    | Call {args, func, return} =>
                         let
@@ -692,11 +697,9 @@ fun typeCheck (p as Program.T {functions, main, objectTypes, profileInfo, static
                                NONE => false
                              | SOME ts =>
                                   Vector.equals
-                                  (zs, ts, fn (z, t) =>
-                                   Type.isSubtype (Operand.ty z, t))))
-                   | Exclave l =>
-                         gotoOk {args = Vector.new0 (), dst = l}
-                   | Switch s =>
+                                   (zs, ts, fn (z, t) =>
+                                    Type.isSubtype (Operand.ty z, t))))
+                    | Switch s =>
                         Switch.isOk (s, {checkUse = checkOperand,
                                          labelIsOk = labelIsNullaryJump})
                end

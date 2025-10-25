@@ -391,14 +391,8 @@ fun shrinkFunction {globals: Statement.t vector} =
                                                        profileStmts = profileStmts ()})
                         else
                            normal ()
-                     end
-                | Exclave l =>
-                     let
-                        val () = incLabel l
-                     in
-                        normal ()
-                     end
-                | Goto {dst, args = actuals} =>
+                      end
+                 | Goto {dst, args = actuals} =>
                      let
                         val () = incVars actuals
                         val m = labelMeaning dst
@@ -880,9 +874,8 @@ fun shrinkFunction {globals: Statement.t vector} =
                                         ; Option.app (default, deleteLabel)),
                        profileStmts = [],
                        test = test}
-                   end
-              | Exclave l => goto (l, Vector.new0 ())
-              | Goto {dst, args} => goto (dst, varInfos args)
+                    end
+               | Goto {dst, args} => goto (dst, varInfos args)
               | Raise xs => ([], Raise (simplifyVars xs))
               | Return xs => ([], Return (simplifyVars xs))
               | Runtime {prim, args, return} =>

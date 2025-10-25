@@ -826,12 +826,11 @@ structure Transfer =
        | Call of {args: Var.t vector,
                   func: Func.t,
                   return: Return.t}
-       | Case of {test: Var.t,
-                  cases: (Con.t, Label.t) Cases.t,
-                  default: Label.t option} (* Must be nullary. *)
-       | Exclave of Label.t
-       | Goto of {dst: Label.t,
-                  args: Var.t vector}
+        | Case of {test: Var.t,
+                   cases: (Con.t, Label.t) Cases.t,
+                   default: Label.t option} (* Must be nullary. *)
+        | Goto of {dst: Label.t,
+                   args: Var.t vector}
        | Raise of Var.t vector
        | Return of Var.t vector
        | Runtime of {prim: Type.t Prim.t,
@@ -848,12 +847,11 @@ structure Transfer =
                   (func f
                    ; Return.foreachLabel (return, label)
                    ; vars args)
-             | Case {test, cases, default, ...} =>
-                  (var test
-                   ; Cases.foreach (cases, label)
-                   ; Option.app (default, label))
-             | Exclave l => label l
-             | Goto {dst, args, ...} => (vars args; label dst)
+              | Case {test, cases, default, ...} =>
+                   (var test
+                    ; Cases.foreach (cases, label)
+                    ; Option.app (default, label))
+              | Goto {dst, args, ...} => (vars args; label dst)
              | Raise xs => vars xs
              | Return xs => vars xs
              | Runtime {args, return, ...} =>
@@ -882,14 +880,13 @@ structure Transfer =
                   Call {func = func, 
                         args = fxs args,
                         return = Return.map (return, fl)}
-             | Case {test, cases, default} =>
-                  Case {test = fx test, 
-                        cases = Cases.map(cases, fl),
-                        default = Option.map(default, fl)}
-             | Exclave l => Exclave (fl l)
-             | Goto {dst, args} => 
-                  Goto {dst = fl dst, 
-                        args = fxs args}
+              | Case {test, cases, default} =>
+                   Case {test = fx test,
+                         cases = Cases.map(cases, fl),
+                         default = Option.map(default, fl)}
+              | Goto {dst, args} =>
+                   Goto {dst = fl dst,
+                         args = fxs args}
              | Raise xs => Raise (fxs xs)
              | Return xs => Return (fxs xs)
              | Runtime {prim, args, return} =>
@@ -949,10 +946,9 @@ structure Transfer =
                                  | Handler.Handle l => Label.layout l]
                       | Return.Tail => seq [str "call tail ", call]
                   end
-             | Case arg => layoutCase arg
-             | Exclave l => seq [str "exclave ", Label.layout l]
-             | Goto {dst, args} =>
-                  seq [str "goto ", Label.layout dst, str " ", layoutArgs args]
+              | Case arg => layoutCase arg
+              | Goto {dst, args} =>
+                   seq [str "goto ", Label.layout dst, str " ", layoutArgs args]
              | Raise xs => seq [str "raise ", layoutArgs xs]
              | Return xs => seq [str "return ", layoutArgs xs]
              | Runtime {prim, args, return} =>
@@ -998,12 +994,11 @@ structure Transfer =
                         kw "dead" *> mkCall (Return.NonTail {cont = cont, handler = Handler.Dead}),
                         Label.parse >>= (fn h => mkCall (Return.NonTail {cont = cont, handler = Handler.Handle h}))]))]),
              Case <$>
-             any ((kw "case" *> parseCase (Con.parse, Cases.Con)) ::
-                  (List.map (WordSize.all, fn ws =>
-                             kw ("case" ^ WordSize.toString ws) *>
-                             parseCase (WordX.parse, fn cases => Cases.Word (ws, cases))))),
-             Exclave <$> (kw "exclave" *> Label.parse),
-             Goto <$>
+              any ((kw "case" *> parseCase (Con.parse, Cases.Con)) ::
+                   (List.map (WordSize.all, fn ws =>
+                              kw ("case" ^ WordSize.toString ws) *>
+                              parseCase (WordX.parse, fn cases => Cases.Word (ws, cases))))),
+              Goto <$>
              (kw "goto" *>
               Label.parse >>= (fn dst =>
               parseArgs >>= (fn args =>
@@ -1034,11 +1029,10 @@ structure Transfer =
                Var.equals (test, test')
                andalso Cases.equals (cases, cases', Con.equals, Label.equals)
                andalso Option.equals (default, default', Label.equals)
-          | (Goto {dst, args}, Goto {dst = dst', args = args'}) =>
-               Label.equals (dst, dst') andalso
-               varsEquals (args, args')
-          | (Exclave l, Exclave l') => Label.equals (l, l')
-          | (Raise xs, Raise xs') => varsEquals (xs, xs')
+           | (Goto {dst, args}, Goto {dst = dst', args = args'}) =>
+                Label.equals (dst, dst') andalso
+                varsEquals (args, args')
+           | (Raise xs, Raise xs') => varsEquals (xs, xs')
           | (Return xs, Return xs') => varsEquals (xs, xs')
           | (Runtime {prim, args, return},
              Runtime {prim = prim', args = args', return = return'}) =>
@@ -1072,10 +1066,9 @@ structure Transfer =
                            hash2 (Label.hash l, w)),
                           fn (l, w) => 
                           hash2 (Label.hash l, w)))
-             | Goto {dst, args} =>
-                  hashVars (args, Label.hash dst)
-             | Exclave l => Label.hash l
-             | Raise xs => hashVars (xs, raisee)
+              | Goto {dst, args} =>
+                   hashVars (args, Label.hash dst)
+              | Raise xs => hashVars (xs, raisee)
              | Return xs => hashVars (xs, return)
              | Runtime {args, return, ...} => hashVars (args, Label.hash return)
       end
@@ -1425,11 +1418,10 @@ structure Function =
                                         NONE => ()
                                       | SOME j =>
                                            edge (j, "Default", Solid)
-                               in
-                                  ()
-                               end
-                          | Exclave l => edge (l, "", Solid)
-                          | Goto {dst, ...} => edge (dst, "", Solid)
+                                in
+                                   ()
+                                end
+                           | Goto {dst, ...} => edge (dst, "", Solid)
                           | Raise _ => ()
                           | Return _ => ()
                           | Runtime {return, ...} => edge (return, "", Dotted)

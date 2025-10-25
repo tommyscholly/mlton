@@ -113,10 +113,9 @@ fun 'a analyze
                         in
                            ()
                         end
+                end
 
-               end
-          | Exclave l => ()
-          | Case {test, cases, default, ...} =>
+           | Case {test, cases, default, ...} =>
                let
                   val test = value test
                   fun ensureSize (w, s) =

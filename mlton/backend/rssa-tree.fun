@@ -344,12 +344,11 @@ structure Transfer =
          CCall of {args: Operand.t vector,
                    func: Type.t CFunction.t,
                    return: Label.t option}
-       | Call of {args: Operand.t vector,
-                  func: Func.t,
-                  return: Return.t}
-       | Exclave of Label.t
-       | Goto of {args: Operand.t vector,
-                  dst: Label.t}
+        | Call of {args: Operand.t vector,
+                   func: Func.t,
+                   return: Return.t}
+        | Goto of {args: Operand.t vector,
+                   dst: Label.t}
        | Raise of Operand.t vector
        | Return of Operand.t vector
        | Switch of Switch.t
@@ -364,14 +363,13 @@ structure Transfer =
                        record [("args", Vector.layout Operand.layout args),
                                ("func", CFunction.layout (func, Type.layout)),
                                ("return", Option.layout Label.layout return)]]
-             | Call {args, func, return} =>
-                  seq [Func.layout func, str " ",
-                       Vector.layout Operand.layout args,
-                       str " ", Return.layout return]
-             | Exclave l => seq [str "exclave ", Label.layout l]
-             | Goto {dst, args} =>
-                  seq [Label.layout dst, str " ",
-                       Vector.layout Operand.layout args]
+              | Call {args, func, return} =>
+                   seq [Func.layout func, str " ",
+                        Vector.layout Operand.layout args,
+                        str " ", Return.layout return]
+              | Goto {dst, args} =>
+                   seq [Label.layout dst, str " ",
+                        Vector.layout Operand.layout args]
              | Raise xs => seq [str "raise ", Vector.layout Operand.layout xs]
              | Return xs => seq [str "return ", Vector.layout Operand.layout xs]
              | Switch s => Switch.layout s
@@ -403,10 +401,9 @@ structure Transfer =
                                case return of
                                   NONE => a
                                 | SOME l => label (l, a))
-             | Call {args, return, ...} =>
-                  useOperands (args, Return.foldLabel (return, a, label))
-             | Exclave l => label (l, a)
-             | Goto {args, dst, ...} => label (dst, useOperands (args, a))
+              | Call {args, return, ...} =>
+                   useOperands (args, Return.foldLabel (return, a, label))
+              | Goto {args, dst, ...} => label (dst, useOperands (args, a))
              | Raise zs => useOperands (zs, a)
              | Return zs => useOperands (zs, a)
              | Switch s => Switch.foldLabelUse (s, a, {label = label,
@@ -476,13 +473,12 @@ structure Transfer =
                          func = func,
                          return = Option.map (return, label)}
              | Call {args, func, return} =>
-                  Call {args = opers args,
-                        func = func,
-                        return = Return.map (return, label)}
-             | Exclave l => Exclave (label l)
-             | Goto {args, dst} =>
-                  Goto {args = opers args,
-                        dst = label dst}
+                   Call {args = opers args,
+                         func = func,
+                         return = Return.map (return, label)}
+              | Goto {args, dst} =>
+                   Goto {args = opers args,
+                         dst = label dst}
              | Raise zs => Raise (opers zs)
              | Return zs => Return (opers zs)
              | Switch s => Switch (Switch.replace' (s, fs))
@@ -797,9 +793,8 @@ structure Function =
                                       | Return.Tail => ()
                                in
                                   ()
-                               end
-                          | Transfer.Exclave dst => edge (dst, "", Solid)
-                          | Transfer.Goto {dst, ...} => edge (dst, "", Solid)
+                                end
+                           | Transfer.Goto {dst, ...} => edge (dst, "", Solid)
                           | Transfer.Raise _ => ()
                           | Transfer.Return _ => ()
                           | Transfer.Switch (Switch.T {cases, default, ...}) =>

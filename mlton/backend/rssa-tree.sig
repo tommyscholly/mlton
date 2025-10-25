@@ -103,12 +103,11 @@ signature RSSA_TREE =
                           * a var of the appropriate type to accept the result.
                           *)
                          return: Label.t option}
-             | Call of {args: Operand.t vector,
-                        func: Func.t,
-                        return: Return.t}
-             | Exclave of Label.t
-             | Goto of {args: Operand.t vector,
-                        dst: Label.t}
+              | Call of {args: Operand.t vector,
+                         func: Func.t,
+                         return: Return.t}
+              | Goto of {args: Operand.t vector,
+                         dst: Label.t}
              (* Raise implicitly raises to the caller.  
               * I.E. the local handler stack must be empty.
               *)

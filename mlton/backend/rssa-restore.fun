@@ -628,9 +628,8 @@ fun restoreFunction {main: Function.t, statics: {dst: Var.t * Type.t, obj: Objec
                              func=func,
                              return=Return.NonTail
                               {cont=cont, handler=Handler.Handle h'}}
-                     end
-                  | Exclave l => Transfer.Exclave (route false l)
-                  | _ => Transfer.replace (t, {const = Operand.Const,
+                      end
+                   | _ => Transfer.replace (t, {const = Operand.Const,
                                                label = route false,
                                                var = rewriteVar o #var})
            in

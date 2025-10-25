@@ -941,9 +941,8 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                       args = vos args,
                                       return = return})
                end
-          | S.Transfer.Case r => translateCase r
-          | S.Transfer.Exclave l => ([], Transfer.Exclave l)
-          | S.Transfer.Goto {dst, args} =>
+           | S.Transfer.Case r => translateCase r
+           | S.Transfer.Goto {dst, args} =>
                ([], Transfer.Goto {dst = dst, args = vos args})
           | S.Transfer.Raise xs => ([], Transfer.Raise (vos xs))
           | S.Transfer.Return xs => ([], Transfer.Return (vos xs))
@@ -1633,6 +1632,8 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                | Prim.World_save =>
                                     simpleCCallWithGCState
                                     (CFunction.worldSave ())
+                               | Prim.Region_push => simpleCCallWithGCState (CFunction.regionPush ())
+                               | Prim.Region_pop => simpleCCallWithGCState (CFunction.regionPop ())
                                | _ => simpleCodegenOrC prim
                            end
                       | S.Exp.Select {base, offset} =>

@@ -127,11 +127,10 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                   Handler.Handle hand => visitLabelArgs hand
                                 | _ => ()))
                       | _ => ())
-               | Case {cases, default, ...} =>
-                    (Cases.foreach (cases, visitLabelArgs)
-                     ; Option.app (default, visitLabelArgs))
-               | Exclave l => visitLabelArgs l
-               | Goto {dst, args} => flowVarsLabelArgs (args, dst)
+                | Case {cases, default, ...} =>
+                     (Cases.foreach (cases, visitLabelArgs)
+                      ; Option.app (default, visitLabelArgs))
+                | Goto {dst, args} => flowVarsLabelArgs (args, dst)
                | Raise _ => ()
                | Return _ => ()
                | Runtime {return, ...} => visitLabelArgs return)

@@ -500,12 +500,11 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                                     (#argsRed (funcReds func),
                                                      args)),
                                    return = return}
-                        | Case {test, cases, default} =>
-                             Case {test = loopVar test,
-                                   cases = cases,
-                                   default = default}
-                        | Exclave l => Exclave l
-                        | Goto {dst, args} =>
+                         | Case {test, cases, default} =>
+                              Case {test = loopVar test,
+                                    cases = cases,
+                                    default = default}
+                         | Goto {dst, args} =>
                              Goto {dst = dst,
                                    args = loopVars (keepUseful
                                                     (#argsRed (labelReds dst),

@@ -229,9 +229,8 @@ fun shrinkFunction {main: Function.t, statics: {dst: Var.t * Type.t, obj: Object
                                             loop (statements, transfer)
                                          end
                                     else done ()
-                              end
-                         | Transfer.Exclave _ => done ()
-                         | _ => done ()
+                               end
+                          | _ => done ()
                      end
                in
                   loop (statements, transfer)

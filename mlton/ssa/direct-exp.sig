@@ -45,9 +45,8 @@ signature DIRECT_EXP =
                              components: Var.t vector,
                              tuple: Var.t,
                              tupleTy: Type.t} -> t
-           val eq: t * t * Type.t -> t
-           val exclave: {body: t, ty: Type.t} -> t
-           val falsee: t
+            val eq: t * t * Type.t -> t
+            val falsee: t
            val handlee: {try: t,
                          ty: Type.t,
                          catch: Var.t * Type.t,
