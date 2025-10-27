@@ -9,33 +9,47 @@ struct
    * regionPop already, in cases like exclave *)
 
   fun insertRegionPops (Program.T {body, datatypes}) =
-    let
-      val regionPush = DirectExp.primApp ({args = Vector.new0 (), prim = Prim.Region_push, targs = Vector.new0 (), ty = Type.unit}, Mode.Heap)
-      val regionVar = Var.newNoname ()
-      val vall = DirectExp.vall {var = regionVar, exp = regionPush, mode = Mode.Heap}
-      val {decs, result} = Exp.dest body
-    (* val body = Exp.make {decs = vall @ decs, result = result} *)
-    in
-      Program.T {body = body, datatypes = datatypes}
+    let val body = loopExp (body, false)
+    in Program.T {body = body, datatypes = datatypes}
     end
 
-  fun loopExp (e: Exp.t) : Exp.t =
+  and loopDec (d: Dec.t) : Dec.t * bool =
+    case d of
+      Dec.MonoVal {exp, ty, mode, var} =>
+        let val (p, hasPop) = checkPrimExpForPop exp
+        in (Dec.MonoVal {exp = p, ty = ty, mode = mode, var = var}, hasPop)
+        end
+    | Dec.PolyVal {exp, ty, tyvars, mode, var} =>
+        let val exp = loopExp (exp, false)
+        in (Dec.PolyVal {exp = exp, ty = ty, tyvars = tyvars, mode = mode, var = var}, false)
+        end
+    | Dec.Fun {decs, tyvars} =>
+        let val decs = Vector.map (decs, fn {lambda, ty, var} => {lambda = loopLambda lambda, ty = ty, var = var})
+        in (Dec.Fun {decs = decs, tyvars = tyvars}, false)
+        end
+    | _ => (d, false)
+
+  and loopExp (e: Exp.t, insertOverride: bool) : Exp.t =
     let
       val {decs, result} = Exp.dest e
 
-      val shouldInsert = ref true
-      val _ = List.foreach (decs, fn d =>
-        case d of
-          Dec.MonoVal {exp, ...} => if checkPrimExpForPop exp then (shouldInsert := false; ()) else ()
-        | _ => ())
+      val shouldInsert = ref (if insertOverride then false else true)
+      val decs = List.map (decs, fn d =>
+        let
+          val (d, hasPop) = loopDec d
+          (* hasPop is true if there is a regionPop. that means we should not insert another one *)
+          val _ = if hasPop then (shouldInsert := false; ()) else ()
+        in
+          d
+        end)
+
       val decs =
         if !shouldInsert then
           let
-            val regionPop = DirectExp.primApp ({args = Vector.new0 (), prim = Prim.Region_pop, targs = Vector.new0 (), ty = Type.unit}, Mode.Heap)
-            val regionVar = Var.newNoname ()
-            val vall = DirectExp.vall {var = regionVar, exp = regionPop, mode = Mode.Heap}
+            val prim = PrimExp.PrimApp {prim = Prim.Region_pop, args = Vector.new0 (), targs = Vector.new0 ()}
+            val pop = Dec.MonoVal {exp = prim, ty = Type.unit, mode = Mode.Heap, var = Var.newString "pop"}
           in
-            decs @ vall
+            decs @ [pop]
           end
         else
           decs
@@ -43,11 +57,34 @@ struct
       Exp.make {decs = decs, result = result}
     end
 
-  and checkPrimExpForPop (prim: PrimExp.t) : bool =
+  and checkPrimExpForPop (prim: PrimExp.t) : (PrimExp.t * bool) =
     case prim of
-      PrimExp.PrimApp {prim, ...} =>
-        (case prim of
-           Prim.Region_pop => true
-         | _ => false)
-    | _ => false
+      PrimExp.PrimApp {prim = prim', ...} =>
+        (case prim' of
+           Prim.Region_pop => (prim, true)
+         | _ => (prim, false))
+    | PrimExp.Case {cases, default, test} =>
+        let
+          val cases = Cases.map (cases, fn caseExp => loopExp (caseExp, true))
+          val default = Option.map (default, fn defaultExp => loopExp (defaultExp, true))
+        in
+          (PrimExp.Case {cases = cases, default = default, test = test}, false)
+        end
+    | _ => (prim, false)
+
+  and loopLambda (l: Lambda.t) : Lambda.t =
+    let
+      val {arg, argType, argMode, lambdaMode, resultMode, body, mayInline} = Lambda.dest l
+    in
+      Lambda.make
+        { arg = arg
+        , argType = argType
+        , argMode = argMode
+        , lambdaMode = lambdaMode
+        , resultMode = resultMode
+        , body = loopExp (body, false)
+        , mayInline = mayInline
+        }
+    end
+
 end

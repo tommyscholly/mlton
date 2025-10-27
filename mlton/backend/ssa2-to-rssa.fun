@@ -1632,8 +1632,8 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                | Prim.World_save =>
                                     simpleCCallWithGCState
                                     (CFunction.worldSave ())
-                               | Prim.Region_push => simpleCCallWithGCState (CFunction.regionPush ())
-                               | Prim.Region_pop => simpleCCallWithGCState (CFunction.regionPop ())
+                               | Prim.Region_push => none () (*simpleCCallWithGCState (CFunction.regionPush ())*)
+                               | Prim.Region_pop => none () (* simpleCCallWithGCState (CFunction.regionPop ()) *)
                                | _ => simpleCodegenOrC prim
                            end
                       | S.Exp.Select {base, offset} =>

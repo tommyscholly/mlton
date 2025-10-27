@@ -1160,7 +1160,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
             val regionPush = Xexp.primApp ({args = Vector.new0 (),
                                            prim = Prim.Region_push,
                                            targs = Vector.new0 (),
-                                           ty = Xtype.unit}, Mode.Heap)
+                                           ty = Xtype.unit}, Mode.Constant)
             val regionPushVar = Var.newNoname ()
             val wrappedBody = Xexp.let1
               {var = regionPushVar, exp = regionPush, body = body, mode = Mode.Constant}

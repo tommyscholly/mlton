@@ -660,10 +660,10 @@ fun typeCheck (p as Program.T {functions, main, objectTypes, profileInfo, static
                                        Kind.CReturn {func = f} =>
                                           CFunction.equals (func, f)
                                      | _ => false
-                           val _ = Error.warning ("Transfer.Ok: isOkay: " ^
-                                    Bool.toString isOkay ^ " argsOkay: " ^
-                                    Bool.toString argsOkay ^ " returnOkay: " ^
-                                    Bool.toString returnOkay)
+                           (* val _ = Error.warning ("Transfer.Ok: isOkay: " ^ *)
+                           (*          Bool.toString isOkay ^ " argsOkay: " ^ *)
+                           (*          Bool.toString argsOkay ^ " returnOkay: " ^ *)
+                           (*          Bool.toString returnOkay) *)
                         in
                            isOkay
                            andalso argsOkay

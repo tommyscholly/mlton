@@ -135,11 +135,11 @@ signature SSA_TREE2 =
              | Call of {args: Var.t vector,
                         func: Func.t,
                         return: Return.t}
-              | Case of {cases: (Con.t, Label.t) Cases.t,
-                         default: Label.t option, (* Must be nullary. *)
-                         test: Var.t}
-              | Goto of {args: Var.t vector,
-                         dst: Label.t}
+             | Case of {cases: (Con.t, Label.t) Cases.t,
+                        default: Label.t option, (* Must be nullary. *)
+                        test: Var.t}
+             | Goto of {args: Var.t vector,
+                        dst: Label.t}
              (* Raise implicitly raises to the caller.  
               * I.E. the local handler stack must be empty.
               *)
