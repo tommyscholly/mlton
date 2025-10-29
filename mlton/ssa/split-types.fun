@@ -273,11 +273,11 @@ fun transform (program as Program.T {datatypes, globals, functions, main}) =
        * and each constructor to the new constructor *)
       fun loopExp (exp, newTy) =
          case exp of
-              Exp.ConApp {con, args} =>
+              Exp.ConApp {con, args, mode} =>
                   let
                      val newCon = remapCon (con, Type.deDatatype newTy)
                   in
-                     Exp.ConApp {con=newCon, args=args}
+                      Exp.ConApp {con=newCon, args=args, mode = mode}
                   end
             | Exp.PrimApp {prim, args, ...} =>
                   let
@@ -309,7 +309,7 @@ fun transform (program as Program.T {datatypes, globals, functions, main}) =
                               end
                          | _ => prim
                   in
-                     Exp.PrimApp {prim=newPrim, targs=newTargs, args=args}
+                      Exp.PrimApp {prim=newPrim, targs=newTargs, mode = NONE, args=args}
                   end
             | _ => exp
       fun loopStatement (Statement.T {exp, ty, var=varopt}) =

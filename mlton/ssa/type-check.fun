@@ -89,7 +89,7 @@ fun checkScopes (program as
                 | PrimApp {args, targs, ...} => (loopTypes targs; getVars args)
                 | Profile _ => ()
                 | Select {tuple, ...} => getVar tuple
-                | Tuple xs => getVars xs
+                 | Tuple {exps = xs, ...} => getVars xs
                 | Var x => getVar x
          in
             ()

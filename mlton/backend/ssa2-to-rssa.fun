@@ -571,12 +571,6 @@ structure Prim =
                            prototype = (Vector.new2 (ct, CType.shiftArg), SOME ct),
                            return = t}
                end
-
-            fun regions kind = 
-               vanilla {args = Vector.new1 (Type.gcState ()),
-                        name = name,
-                        prototype = (Vector.new1 CType.CPointer, NONE),
-                        return = Type.unit}
          in
             case p of
                Real_Math_acos s => realUnary s

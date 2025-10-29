@@ -902,7 +902,8 @@ fun matchCompile {caseType: Type.t,
                                         let
                                            val arg = Var.newNoname ()
                                         in
-                                           (SOME (arg, ty),
+                                           (* TODO: mode *)
+                                           (SOME (arg, ty, Mode.Heap),
                                             Vector.mapi
                                             (vars, fn (i', x) =>
                                              if i = i' then (arg, ty) else x))
@@ -934,7 +935,7 @@ fun matchCompile {caseType: Type.t,
                  | _ => Error.bug "MatchCompile.sum: expected Con pat")
             val cases =
                Vector.fromListMap
-               (cases, fn {rest = {arg, con, targs, vars}, rules} =>
+               (cases, fn {rest = {arg: (Var.t * Type.t * Mode.t) option, con, targs, vars}, rules} =>
                 let
                    val rules =
                       Vector.fromListMap
@@ -1009,11 +1010,11 @@ fun matchCompile {caseType: Type.t,
                   else
                      case arg of
                         NONE => Error.bug "MatchCompile.sum: ref missing arg"
-                      | SOME (var, _) =>
+                      | SOME (var, _, mode) =>
                            Exp.lett {body = rhs,
                                      exp = Exp.deref test,
                                      var = var,
-                                     mode = Mode.Heap}
+                                     mode = mode}
                end
          end) arg
       and record arg =

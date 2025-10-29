@@ -268,7 +268,7 @@ fun transform (program as Program.T {datatypes, body},
          in setVarInfo (x, Replace x')
             ; x'
          end
-      fun bindVarType (x, t) = (bind x, t)
+      fun bindVarType (x, t, m) = (bind x, t, m)
       fun bindPat (Pat.T {con, targs, arg}) =
          Pat.T {con = con,
                 targs = targs,
@@ -357,7 +357,11 @@ fun transform (program as Program.T {datatypes, body},
                                    | Const _ => exp
                                    | Handle {try, catch, handler} =>
                                         Handle {try = loopExp try,
-                                                catch = bindVarType catch,
+                                                catch = 
+                                                    let 
+                                                       val (one, two, _) = 
+                                                          bindVarType (#1 catch, #2 catch, Mode.Heap) 
+                                                    in (one, two) end,
                                                 handler = loopExp handler}
                                    | Lambda _ =>
                                         Error.bug "Polyvariance.loopDecs: unexpected Lambda"

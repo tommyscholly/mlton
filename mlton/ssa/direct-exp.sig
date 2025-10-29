@@ -36,6 +36,7 @@ signature DIRECT_EXP =
                        ty: Type.t} -> t
            val conApp: {con: Con.t,
                         args: t vector,
+                        mode: Mode.t,
                         ty: Type.t} -> t
            val const: Const.t -> t
            val detuple: {body: Var.t vector -> t,
@@ -61,6 +62,7 @@ signature DIRECT_EXP =
            val name: t * (Var.t -> t) -> t
            val primApp: {args: t vector,
                          prim: Type.t Prim.t,
+                         mode: Mode.t option,
                          targs: Type.t vector,
                          ty: Type.t} -> t
            val profile: ProfileExp.t -> t
@@ -69,7 +71,7 @@ signature DIRECT_EXP =
                         offset: int,
                         ty: Type.t} -> t
            val truee: t
-           val tuple: {exps: t vector, ty: Type.t} -> t
+           val tuple: {exps: t vector, mode: Mode.t, ty: Type.t} -> t
            val var: Var.t * Type.t -> t
            val word: WordX.t -> t
         end

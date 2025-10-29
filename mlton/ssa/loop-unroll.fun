@@ -171,9 +171,10 @@ structure Loop =
                     : Var.t * Statement.t list =
       let
         val (cVar, cStmt) = makeConstStmt (v, wsize)
-        val newExp = Exp.PrimApp {args = Vector.new2 (var, cVar),
-                                  prim = Prim.Word_add wsize,
-                                  targs = Vector.new0 ()}
+         val newExp = Exp.PrimApp {args = Vector.new2 (var, cVar),
+                                   prim = Prim.Word_add wsize,
+                                   mode = NONE,
+                                   targs = Vector.new0 ()}
         val newType = Type.word wsize
         val newVar = Var.newNoname()
         val newStatement = Statement.T {exp = newExp,
@@ -1022,10 +1023,11 @@ fun expandLoop (oldHeader, loopBlocks, loop, tBlock, argi, argSize, oldArg,
           let
             val newVar = Var.newNoname ()
             val newTy = Type.datatypee Tycon.bool
-            val newExp =
-              PrimApp {args = Vector.new2 (iterVar, newLimitVar),
-                       prim = Prim.Word_lt (argSize, {signed = true}),
-                       targs = Vector.new0 ()}
+             val newExp =
+               PrimApp {args = Vector.new2 (iterVar, newLimitVar),
+                        prim = Prim.Word_lt (argSize, {signed = true}),
+                        mode = NONE,
+                        targs = Vector.new0 ()}
           in
             (Statement.T {exp = newExp,
                           ty = newTy,

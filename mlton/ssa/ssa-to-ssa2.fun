@@ -93,7 +93,7 @@ fun convert (S.Program.T {datatypes, functions, globals, main}) =
                       stmt)
          in
             case exp of
-               S.Exp.ConApp {args, con} =>
+                S.Exp.ConApp {args, con, ...} =>
                   let
                      val sum =
                         case S2.Type.dest ty of
@@ -158,7 +158,7 @@ fun convert (S.Program.T {datatypes, functions, globals, main}) =
              | S.Exp.Select {offset, tuple} =>
                   simple (S2.Exp.Select {base = Base.Object tuple,
                                          offset = offset})
-             | S.Exp.Tuple v => simple (S2.Exp.Object {args = v, con = NONE})
+             | S.Exp.Tuple {exps = v, mode = _} => simple (S2.Exp.Object {args = v, con = NONE})
              | S.Exp.Var x => simple (S2.Exp.Var x)
          end
       val convertStatement =

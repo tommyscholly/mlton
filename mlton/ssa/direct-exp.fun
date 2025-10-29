@@ -26,6 +26,7 @@ datatype t =
             ty: Type.t}
  | ConApp of {con: Con.t,
               args: t vector,
+              mode: Mode.t,
               ty: Type.t}
  | Const of Const.t
  | Detuple of {body: Var.t vector -> t,
@@ -44,6 +45,7 @@ datatype t =
  | Name of t * (Var.t -> t)
  | PrimApp of {prim: Type.t Prim.t,
                targs: Type.t vector,
+               mode: Mode.t option,
                args: t vector,
                ty: Type.t}
  | Profile of ProfileExp.t
@@ -56,6 +58,7 @@ datatype t =
               ty: Type.t}
  | Seq of t * t
  | Tuple of {exps: t vector,
+             mode: Mode.t,
              ty: Type.t}
  | Var of Var.t * Type.t
 and cases =
@@ -85,7 +88,7 @@ fun tuple (r as {exps, ...}) =
 
 val var = Var
 
-fun primApp {args, prim, targs, ty} =
+fun primApp {args, prim, mode, targs, ty} =
    let
       fun runtime () =
          Runtime {args = args,
@@ -94,6 +97,7 @@ fun primApp {args, prim, targs, ty} =
       fun primApp () =
          PrimApp {args = args,
                   prim = prim,
+                  mode = mode,
                   targs = targs,
                   ty = ty}
    in
@@ -104,7 +108,7 @@ fun primApp {args, prim, targs, ty} =
    end
 
 local
-   fun make c = conApp {con = c, args = Vector.new0 (), ty = Type.bool}
+   fun make c = conApp {con = c, args = Vector.new0 (), ty = Type.bool, mode = Mode.Constant}
 in
    val truee = make Con.truee
    val falsee = make Con.falsee
@@ -114,6 +118,7 @@ fun eq (e1, e2, ty) =
    primApp {prim = Prim.MLton_eq,
             targs = Vector.new1 ty,
             args = Vector.new2 (e1, e2),
+            mode = NONE,
             ty = Type.bool}
 
 local
@@ -158,8 +163,8 @@ in
                            NONE => empty
                          | SOME e => seq [str "  _ => ", layout e]],
               2)]
-       | ConApp {con, args, ty} =>
-            seq [Con.layout con, layouts args, str ": ", Type.layout ty]
+       | ConApp {con, args, ty, mode} =>
+            seq [Con.layout con, layouts args, str ": ", Type.layout ty, Mode.layout mode]
        | Const c => Const.layout c
        | Detuple {tuple, ...} => seq [str "detuple ", layout tuple]
        | DetupleBind {body, components, tuple, ...} =>
@@ -176,12 +181,12 @@ in
                              seq [Var.layout var, str " = ", layout exp])),
                      layout body)
        | Name _ => str "Name"
-       | PrimApp {args, prim, targs, ty} =>
+       | PrimApp {args, prim, targs, ty, mode} =>
             seq [Prim.layoutFull (prim, Type.layout),
                  Layout.list (Vector.toListMap (targs, Type.layout)),
                  str " ",
                  layouts args,
-                 str ": ", Type.layout ty]
+                 str ": ", Type.layout ty, Option.layout Mode.layout mode]
        | Profile e => ProfileExp.layout e
        | Raise e => seq [str "raise ", layout e]
        | Runtime {args, prim, ty} =>
@@ -193,7 +198,7 @@ in
             seq [str "#", str (Int.toString (1 + offset)), str " ",
                  layout tuple]
        | Seq (e1, e2) => seq [layout e1, str "; ", layout e2]
-       | Tuple {exps, ...} => layouts exps
+       | Tuple {exps, mode, ...} => seq [layouts exps, Mode.layout mode]
        | Var (x, t) =>
             seq [Var.layout x, str ": ", Type.layout t]
    and layouts es = Vector.layout layout es
@@ -354,13 +359,6 @@ fun linearize' (e: t, h: Handler.t, k: Cont.t): Label.t * Block.t list =
          Trace.trace3 ("DirectExp.linearize'.loop", layout, Handler.layout, Cont.layout,
                        Res.layout)
       val blocks: Block.t list ref = ref []
-      fun debugPrintBlocks () = 
-         let
-            val blockStrings = List.map (!blocks, Block.layout)
-            val str = Layout.list blockStrings
-         in
-            Error.warning ("DIRECT-EXP DEBUG: " ^ Layout.toString str)
-         end
       fun newBlock (args: (Var.t * Type.t) vector,
                     {statements: Statement.t list,
                      transfer: Transfer.t}): Label.t =
@@ -431,9 +429,9 @@ fun linearize' (e: t, h: Handler.t, k: Cont.t): Label.t * Block.t list =
                                | Word (s, v) => Cases.Word (s, doit v)
                            end}})
                end
-          | ConApp {con, args, ty} =>
+          | ConApp {con, args, ty, mode} =>
                loops (args, h, fn xs =>
-                      Cont.sendExp (k, ty, Exp.ConApp {con = con, args = xs}))
+                       Cont.sendExp (k, ty, Exp.ConApp {con = con, args = xs, mode = mode}))
           | Const c => Cont.sendExp (k, Type.ofConst c, Exp.Const c)
           | Detuple {tuple, length, body} =>
                loop (tuple, h,
@@ -460,7 +458,7 @@ fun linearize' (e: t, h: Handler.t, k: Cont.t): Label.t * Block.t list =
                             end
                       in
                          case e of
-                            Exp.Tuple xs => loop (body xs, h, k)
+                             Exp.Tuple {exps = xs, ...} => loop (body xs, h, k)
                           | Exp.Var x => doit x
                           | _ => 
                                let
@@ -512,12 +510,13 @@ fun linearize' (e: t, h: Handler.t, k: Cont.t): Label.t * Block.t list =
                   each decs
                end
           | Name (e, f) => loopf (e, h, fn (x, _) => loop (f x, h, k))
-          | PrimApp {prim, targs, args, ty} =>
+          | PrimApp {prim, targs, args, ty, mode} =>
                loops
                (args, h, fn xs =>
-                Cont.sendExp (k, ty, Exp.PrimApp {prim = prim,
-                                                  targs = targs,
-                                                  args = xs}))
+                 Cont.sendExp (k, ty, Exp.PrimApp {prim = prim,
+                                                   targs = targs,
+                                                   mode = mode,
+                                                   args = xs}))
           | Profile e => Cont.sendExp (k, Type.unit, Exp.Profile e)
           | Raise e =>
                loopf (e, h, fn (x, _) =>
@@ -559,7 +558,9 @@ fun linearize' (e: t, h: Handler.t, k: Cont.t): Label.t * Block.t list =
                      args = xs,
                      return = newLabel (args,
                                         tuple {exps = exps,
-                                               ty = ty},
+                                               ty = ty,
+                                               (* can the user somehow control this? *)
+                                               mode = Mode.Heap},
                                         h, k)}}
                 end)
           | Select {tuple, offset, ty} =>
@@ -567,8 +568,8 @@ fun linearize' (e: t, h: Handler.t, k: Cont.t): Label.t * Block.t list =
                       Cont.sendExp (k, ty, Exp.Select {tuple = tuple,
                                                        offset = offset}))
           | Seq (e1, e2) => loopf (e1, h, fn _ => loop (e2, h, k))
-          | Tuple {exps, ty} =>
-               loops (exps, h, fn xs => Cont.sendExp (k, ty, Exp.Tuple xs))
+          | Tuple {exps, ty, mode} =>
+                loops (exps, h, fn xs => Cont.sendExp (k, ty, Exp.Tuple {exps = xs, mode = mode}))
           | Var (x, ty) => Cont.sendVar (k, ty, x)) arg
       and loops (es: t vector, h: Handler.t, k: Var.t vector -> Res.t): Res.t =
          let

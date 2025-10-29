@@ -34,6 +34,7 @@ structure Profile = Profile (S)
 structure Redundant = Redundant (S)
 structure RedundantTests = RedundantTests (S)
 structure RemoveUnused = RemoveUnused (S)
+structure RemoveRegions = RemoveRegions (S)
 structure ShareZeroVec = ShareZeroVec (S)
 structure SimplifyTypes = SimplifyTypes (S)
 structure SplitTypes = SplitTypes (S)
@@ -44,6 +45,7 @@ type pass = {name: string,
              execute: bool}
 
 val ssaPassesDefault =
+   {name = "removeRegions1", doit = RemoveRegions.transform, execute = true} ::
    {name = "removeUnused1", doit = RemoveUnused.transform, execute = true} ::
    {name = "introduceLoops1", doit = IntroduceLoops.transform, execute = true} ::
    {name = "loopInvariant1", doit = LoopInvariant.transform, execute = true} ::

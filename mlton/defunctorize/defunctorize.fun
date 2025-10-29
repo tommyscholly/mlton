@@ -48,7 +48,6 @@ in
    structure Tyvar = Tyvar
    structure Var = Var
    structure XvarExp = VarExp
-   structure XexpReal = Exp
 end
 
 structure NestedPat = NestedPat (open Xml)
@@ -211,12 +210,29 @@ fun casee {ctxt: unit -> Layout.t,
                          argMode = Mode.Heap,
                          lambdaMode = Mode.Heap,
                          resultMode = Mode.Heap,
-                         body = (Xexp.toExp
-                                 (Xexp.detupleBind'
-                                  {tuple = Xexp.monoVar (arg, argType, Mode.Heap),
-                                   components = vars,
-                                   body = e (),
-                                   mode = Mode.Heap})),
+                         body = let
+                                    val regionPush = 
+                                       Xexp.primApp ({args = Vector.new0 (),
+                                                      prim = Prim.Region_push,
+                                                      targs = Vector.new0 (),
+                                                      ty = Xtype.unit}, Mode.Constant)
+                                 in
+                                    Xexp.toExp
+                                    (Xexp.sequence
+                                    (Vector.new2
+                                     (regionPush,
+                                      (Xexp.detupleBind'
+                                       {tuple = Xexp.monoVar (arg, argType, Mode.Heap),
+                                        components = vars,
+                                        body = e (),
+                                        mode = Mode.Heap}))))
+                                 end,
+                         (* body = (Xexp.toExp *)
+                         (*         (Xexp.detupleBind' *)
+                         (*          {tuple = Xexp.monoVar (arg, argType, Mode.Heap), *)
+                         (*           components = vars, *)
+                         (*           body = e (), *)
+                         (*           mode = Mode.Heap})), *)
                          mayInline = true})}
                    fun finish np =
                       (numPats := np
@@ -489,7 +505,7 @@ structure Xexp =
                                        con = Con.nill,
                                        targs = targs},
                                ac),
-                              (Xpat.T {arg = SOME (consArg, consArgTy),
+                              (Xpat.T {arg = SOME (consArg, consArgTy, mode),
                                        con = Con.cons,
                                        targs = targs},
                                detuple2
@@ -1030,6 +1046,17 @@ fun defunctorize (CoreML.Program.T {decs}) =
                          | SOME (argType, bodyType) =>
                               let
                                  val arg = Var.newNoname ()
+                                 val body = (conApp
+                                             {arg = Xexp.monoVar (arg, argType, mode),
+                                              con = con,
+                                              targs = targs,
+                                              ty = bodyType})
+                                 val regionPush = Xexp.primApp ({args = Vector.new0 (),
+                                                                prim = Prim.Region_push,
+                                                                targs = Vector.new0 (),
+                                                                ty = Xtype.unit}, Mode.Constant)
+                                 val wrappedBody = Xexp.sequence (Vector.new2 (regionPush, body))
+                                 (* val () = Error.warning ("Con: " ^ Layout.toString (Cexp.layout e)) *)
                               in
                                  Xexp.lambda
                                  {arg = arg,
@@ -1037,11 +1064,12 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                   argMode = mode,
                                   lambdaMode = mode,
                                   resultMode = mode,
-                                  body = (conApp
-                                          {arg = Xexp.monoVar (arg, argType, mode),
-                                           con = con,
-                                           targs = targs,
-                                           ty = bodyType}),
+                                  body = wrappedBody,
+                                  (* body = (conApp *)
+                                  (*         {arg = Xexp.monoVar (arg, argType, mode), *)
+                                  (*          con = con, *)
+                                  (*          targs = targs, *)
+                                  (*          ty = bodyType}), *)
                                   bodyType = bodyType,
                                   mayInline = true}
                               end
@@ -1112,7 +1140,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
 
                      end
                 | Exclave e => 
-                      let val (e, t) = loopExp e
+                      let val (e, _) = loopExp e
                           val regionPop = Xexp.primApp ({args = Vector.new0 (),
                                                          prim = Prim.Region_pop,
                                                          targs = Vector.new0 (),
@@ -1156,16 +1184,13 @@ fun defunctorize (CoreML.Program.T {decs}) =
             val resultMode = Cexp.mode originalBody
             val (body, bodyType) = loopExp originalBody
             
-            (* val wrappedBody = body *)
             val regionPush = Xexp.primApp ({args = Vector.new0 (),
                                            prim = Prim.Region_push,
                                            targs = Vector.new0 (),
                                            ty = Xtype.unit}, Mode.Constant)
-            val regionPushVar = Var.newNoname ()
-            val wrappedBody = Xexp.let1
-              {var = regionPushVar, exp = regionPush, body = body, mode = Mode.Constant}
+            val wrappedBody = Xexp.sequence (Vector.new2 (regionPush, body))
 
-            fun analyzeCaptures (body: Cexp.t, argVar: Var.t): Mode.t =
+            fun analyzeCaptures (body': Cexp.t, argVar: Var.t): Mode.t =
                let
                   val foundStackVar = ref false
 
@@ -1217,7 +1242,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                           Cdec.Datatype _ => ()
                         | Cdec.Exception _ => ()
                         | Cdec.Fun {decs, ...} => Vector.foreach (decs, fn {lambda, ...} => analyzeLambda (lambda, boundVars))
-                        | Cdec.Val {vbs, rvbs, ...} => Vector.foreach (vbs, fn vbs => analyzeValBind (vbs, boundVars))
+                        | Cdec.Val {vbs, ...} => Vector.foreach (vbs, fn vbs => analyzeValBind (vbs, boundVars))
                   and analyzeValBind ({exp, pat, ...}, boundVars: Var.t list ref): unit = 
                       let 
                           val () = Cpat.foreachVar (pat, fn x => List.push (boundVars, x)) 
@@ -1230,7 +1255,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                         val () = boundVars := arg :: !boundVars
                       in analyzeExp (body, boundVars) end
                                
-                  val _ = analyzeExp (originalBody, ref [argVar])
+                  val _ = analyzeExp (body', ref [argVar])
                in
                   if !foundStackVar then Mode.Stack else Mode.Heap
                end

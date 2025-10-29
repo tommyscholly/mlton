@@ -16,17 +16,17 @@ open Exp
 fun equalss (xs, xs') = Vector.equals (xs, xs', Var.equals)
 
 val expEquals =
-   fn (ConApp {con = c, args}, ConApp {con = c', args = args'}) =>
-         Con.equals (c, c') andalso equalss (args, args')
+    fn (ConApp {con = c, args, ...}, ConApp {con = c', args = args', ...}) =>
+          Con.equals (c, c') andalso equalss (args, args')
     | (Const c, Const c') => Const.equals (c, c')
-    | (PrimApp {prim = p, targs = ts, args = xs},
-       PrimApp {prim = p', targs = ts', args = xs'}) =>
-         (case (p, p') of
-             (Prim.Vector_vector, Prim.Vector_vector) =>
-                Vector.equals (ts, ts', Type.equals)
-                andalso equalss (xs, xs')
-           | _ => false)
-    | (Tuple xs, Tuple xs') => equalss (xs, xs')
+     | (PrimApp {prim = p, targs = ts, args = xs, ...},
+        PrimApp {prim = p', targs = ts', args = xs', ...}) =>
+          (case (p, p') of
+              (Prim.Vector_vector, Prim.Vector_vector) =>
+                 Vector.equals (ts, ts', Type.equals)
+                 andalso equalss (xs, xs')
+            | _ => false)
+     | (Tuple {exps = xs, ...}, Tuple {exps = xs', ...}) => equalss (xs, xs')
     | _ => false
 
 fun make () =

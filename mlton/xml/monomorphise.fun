@@ -133,7 +133,7 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
       (* It is necessary to create new variables for monomorphic variables
        * because they still may have type variables in their type.
        *)
-      fun renameMono (x, t) =
+      fun renameMono (x, t, m) =
          let
             val x' = Var.new x
             val ve = SvarExp.mono x'
@@ -143,12 +143,13 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
                else Error.bug "Monomorphise.renameMono: expected monomorphic instance"
             val _ = setVar (x, inst)
          in
-            (x', monoType t)
+            (x', monoType t, m)
          end
       val renameMono =
-         Trace.trace2 
-         ("Monomorphise.renameMono", 
-          Var.layout, Xtype.layout, Layout.tuple2 (Var.layout, Stype.layout)) 
+         Trace.trace3
+         ("Monomorphise.renameMono",
+          Var.layout, Xtype.layout, Mode.layout,
+          Layout.tuple3 (Var.layout, Stype.layout, Mode.layout))
          renameMono
       fun monoPat (Xpat.T {con, targs, arg}): Spat.t =
          let
@@ -310,7 +311,11 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
           | XprimExp.Const c => SprimExp.Const c
           | XprimExp.Handle {try, catch, handler} =>
                SprimExp.Handle {try = monoExp try,
-                                catch = renameMono catch,
+                                catch = 
+                                    let 
+                                       val (one, two, _) = 
+                                          renameMono (#1 catch, #2 catch, Mode.Heap) 
+                                    in (one, two) end,
                                 handler = monoExp handler}
           | XprimExp.Lambda l => SprimExp.Lambda (monoLambda l)
           | XprimExp.PrimApp {prim, targs, args} =>
@@ -328,7 +333,7 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
          let
             val {arg, argType, argMode, lambdaMode, resultMode, body, mayInline} = 
                Xlambda.dest l
-            val (arg, argType) = renameMono (arg, argType)
+            val (arg, argType, argMode) = renameMono (arg, argType, argMode)
          in
             Slambda.make {arg = arg,
                           argType = argType,
@@ -347,7 +352,7 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
           case d of
              Xdec.MonoVal {var, ty, exp, mode} =>
                 let
-                   val (var, ty) = renameMono (var, ty)
+                   val (var, ty, mode) = renameMono (var, ty, mode)
                 in 
                    fn () => 
                    [Sdec.MonoVal {var = var,

@@ -137,7 +137,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                       Cases.Con (Vector.new1
                                  (Pat.T {con = exnCon,
                                          targs = Vector.new0 (),
-                                         arg = SOME (tuple, exnConArgType)},
+                                         arg = SOME (tuple, exnConArgType, Mode.Heap)},
                                   f (monoVar (tuple, exnConArgType,
                                   Mode.Heap))))}, Mode.Heap)
                   end
@@ -360,13 +360,14 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                                     arg = SOME arg},
                                                    body)
                                             in case arg of
-                                               NONE => make ((refVar, Type.unitRef), body)
-                                             | SOME (x, t) =>
+                                               NONE => make ((refVar, Type.unitRef, Mode.Heap), body)
+                                             | SOME (x, t, m) =>
                                                   let
                                                      val tuple =
                                                         (Var.newNoname (),
                                                          Type.tuple (Vector.new2
-                                                                     (Type.unitRef, t)))
+                                                                     (Type.unitRef, t)),
+                                                         m)
                                                   in
                                                      make (tuple,
                                                            detupleBind
@@ -471,7 +472,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                               (exnValCons, fn {con, arg} =>
                                (Pat.T {con = con,
                                        targs = Vector.new0 (),
-                                       arg = SOME (Var.newNoname (), arg)},
+                                       arg = SOME (Var.newNoname (), arg, Mode.Heap)},
                                 Dexp.const (Const.string (Con.originalName con))))),
                              default = NONE,
                              ty = Type.string}, Mode.Heap)),

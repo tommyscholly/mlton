@@ -39,12 +39,12 @@ fun typeCheck (program as Program.T {datatypes, body}): unit =
                                     then ()
                                  else Type.error ("tyvar not in scope",
                                                   Tyvar.layout a)}
-      fun checkMode (constraint: Mode.t, expMode: Mode.t): unit =
-         if Mode.equals (constraint, expMode)
-            then ()
-         else Type.error ("mode constraint mismatch",
-                          Layout.align [Mode.layout constraint,
-                                        Mode.layout expMode])
+      (* fun checkMode (constraint: Mode.t, expMode: Mode.t): unit = *)
+      (*    if Mode.equals (constraint, expMode) *)
+      (*       then () *)
+      (*    else Type.error ("mode constraint mismatch", *)
+      (*                     Layout.align [Mode.layout constraint, *)
+      (*                                   Mode.layout expMode]) *)
       fun checkTypes v = Vector.foreach (v, checkType)
       val {get = getCon: Con.t -> {tyvars: Tyvar.t vector, ty: Type.t},
            set, ...} =
@@ -104,11 +104,13 @@ fun typeCheck (program as Program.T {datatypes, body}): unit =
          in
             case (arg, Type.deArrowOpt t) of
                  (NONE, NONE) => t
-               | (SOME (x, ty), SOME (t1, t2)) =>
+               | (SOME (x, ty, m), SOME (t1, t2)) =>
                     (checkType ty
-                     ; if Type.equals (t1, ty)
-                          then (setVar (x, {tyvars = Vector.new0 (),
-                                            ty = t1}) ; t2)
+                     ; if Type.equals (t1, ty) then
+                          (if Mode.equals (m, Mode.Undetermined)
+                             then (Error.warning "Xml.TypeCheck.checkPat: must have known mode at this point")
+                             else (); (setVar (x, {tyvars = Vector.new0 (),
+                                                  ty = t1}) ; t2))
                        else (Type.error
                              ("argument constraint of wrong type",
                               let open Layout
@@ -300,11 +302,11 @@ fun typeCheck (program as Program.T {datatypes, body}): unit =
                    ; Vector.foreach (decs, fn {ty, lambda, ...} =>
                                      check (ty, checkLambda lambda))
                    ; unbindTyvars tyvars)
-             | MonoVal {var, ty, exp, mode} =>
+             | MonoVal {var, ty, exp, mode = _} =>
                   (checkType ty
                    ; check (ty, checkPrimExp (exp, ty))
                    ; setVar (var, {tyvars = Vector.new0 (), ty = ty}))
-             | PolyVal {tyvars, var, ty, mode, exp} =>
+             | PolyVal {tyvars, var, ty, mode = _, exp} =>
                   (bindTyvars tyvars
                    ; checkType ty
                    ; check (ty, checkExp exp)

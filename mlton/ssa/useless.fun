@@ -31,6 +31,13 @@ open S
  * any primapp args must be as well.
  *)
 
+structure Option = 
+   struct
+      open Option
+      fun getOpt (SOME x, _) = x
+        | getOpt (NONE, default) = default
+   end
+
 structure Value =
    struct
       structure Set = DisjointSet
@@ -872,7 +879,8 @@ fun transform (program: Program.t): Program.t =
            in
               newGlobal {var = var,
                          ty = ty,
-                         exp = PrimApp {prim = Prim.MLton_bogus,
+                         exp = PrimApp {                                         prim = Prim.MLton_bogus,
+                                         mode = NONE,
                                         targs = Vector.new1 ty,
                                         args = Vector.new0 ()}}
               ; var
@@ -937,7 +945,8 @@ fun transform (program: Program.t): Program.t =
          in loop (0, n, 0)
          end
 
-      fun doitPrim (prim, targs, args, resultVar, resultType, resultValue) =
+      (* TODO: should mode always propagate? *)
+      fun doitPrim (prim, targs, args, resultVar, resultType, resultValue, mode) =
          let
             fun simple e = Vector.new1 (Statement.T
                                         {var = resultVar,
@@ -960,6 +969,7 @@ fun transform (program: Program.t): Program.t =
                   simple (PrimApp
                           {prim = prim,
                            args = args,
+                           mode = mode,
                            targs = (Prim.extractTargs
                                     (prim,
                                      {args = argTypes,
@@ -972,15 +982,17 @@ fun transform (program: Program.t): Program.t =
                end
             fun makePtr dePtr =
                if Type.isUnit (dePtr resultType)
-                  then simple (PrimApp {prim = prim,
-                                        targs = Vector.new1 Type.unit,
-                                        args = Vector.new1 unitVar})
+                   then simple (PrimApp {prim = prim,
+                                         targs = Vector.new1 Type.unit,
+                                         mode = mode,
+                                         args = Vector.new1 unitVar})
                   else doit ()
             fun makeSeq eltTy =
                if Type.isUnit eltTy
-                  then simple (PrimApp {prim = prim,
-                                        targs = Vector.new1 Type.unit,
-                                        args = Vector.map (args, fn _ => unitVar)})
+                   then simple (PrimApp {prim = prim,
+                                         targs = Vector.new1 Type.unit,
+                                         mode = mode,
+                                         args = Vector.map (args, fn _ => unitVar)})
                   else doit ()
          in
             case prim of
@@ -991,10 +1003,12 @@ fun transform (program: Program.t): Program.t =
                     | Value.ArrayRep.LengthRef =>
                          simple (PrimApp {prim = Prim.Ref_ref,
                                           targs = Vector.new1 (Type.word (WordSize.seqIndex ())),
+                                          mode = mode,
                                           args = Vector.new1 (arg 0)})
                     | Value.ArrayRep.UnitRef =>
                          simple (PrimApp {prim = Prim.Ref_ref,
                                           targs = Vector.new1 Type.unit,
+                                          mode = mode,
                                           args = Vector.new1 unitVar})
                     | Value.ArrayRep.Unit => simple (Var unitVar))
              | Prim.Array_array =>
@@ -1030,11 +1044,13 @@ fun transform (program: Program.t): Program.t =
                                        exp = len_exp}
                             ; simple (PrimApp {prim = Prim.Ref_ref,
                                                targs = Vector.new1 len_ty,
+                                               mode = mode,
                                                args = Vector.new1 len_var})
                          end
                     | Value.ArrayRep.UnitRef =>
                          simple (PrimApp {prim = Prim.Ref_ref,
                                           targs = Vector.new1 Type.unit,
+                                          mode = mode,
                                           args = Vector.new1 unitVar})
                     | Value.ArrayRep.Unit => simple (Var unitVar))
              | Prim.Array_length =>
@@ -1044,6 +1060,7 @@ fun transform (program: Program.t): Program.t =
                     | Value.ArrayRep.LengthRef =>
                          simple (PrimApp {prim = Prim.Ref_deref,
                                           targs = Vector.new1 (Type.word (WordSize.seqIndex ())),
+                                          mode = mode,
                                           args = args})
                     | Value.ArrayRep.UnitRef =>
                          Error.bug "Useless.doitPrim: Array_length/ArrayRep.UnitRef"
@@ -1056,6 +1073,7 @@ fun transform (program: Program.t): Program.t =
                     | (_, Value.ArrayRep.UnitRef) =>
                          simple (PrimApp {prim = Prim.Ref_ref,
                                           targs = Vector.new1 Type.unit,
+                                          mode = mode,
                                           args = Vector.new1 unitVar})
                     | (Value.ArrayRep.Array _, Value.ArrayRep.LengthRef) =>
                          let
@@ -1073,6 +1091,7 @@ fun transform (program: Program.t): Program.t =
                             val len_ref_exp =
                                PrimApp {prim = Prim.Ref_ref,
                                         targs = Vector.new1 len_ty,
+                                        mode = mode,
                                         args = Vector.new1 len_var}
                             val len_ref_stmt =
                                Statement.T {var = resultVar,
@@ -1085,18 +1104,21 @@ fun transform (program: Program.t): Program.t =
                     | (Value.ArrayRep.Length _, Value.ArrayRep.LengthRef) =>
                          simple (PrimApp {prim = Prim.Ref_ref,
                                           targs = Vector.new1 (Type.word (WordSize.seqIndex ())),
+                                          mode = mode,
                                           args = Vector.new1 (arg 0)})
                     | (Value.ArrayRep.LengthRef, Value.ArrayRep.LengthRef) =>
                          simple (Var (arg 0))
                     | (Value.ArrayRep.Array _, Value.ArrayRep.Length _) =>
                          simple (PrimApp {prim = Prim.Array_length,
                                           targs = targs,
+                                          mode = mode,
                                           args = args})
                     | (Value.ArrayRep.Length _, Value.ArrayRep.Length _) =>
                          simple (Var (arg 0))
                     | (Value.ArrayRep.LengthRef, Value.ArrayRep.Length _) =>
                          simple (PrimApp {prim = Prim.Ref_deref,
                                           targs = Vector.new1 (Type.word (WordSize.seqIndex ())),
+                                          mode = mode,
                                           args = args})
                     | (Value.ArrayRep.Array _, Value.ArrayRep.Array _) => doit ()
                     | _ => Error.bug "Useless.doitPrim: Array_toArray")
@@ -1107,12 +1129,14 @@ fun transform (program: Program.t): Program.t =
                     | (Value.ArrayRep.Array _, Value.VectorRep.Length _) =>
                          simple (PrimApp {prim = Prim.Array_length,
                                           targs = targs,
+                                          mode = mode,
                                           args = args})
                     | (Value.ArrayRep.Length _, Value.VectorRep.Length _) =>
                          simple (Var (arg 0))
                     | (Value.ArrayRep.LengthRef, Value.VectorRep.Length _) =>
                          simple (PrimApp {prim = Prim.Ref_deref,
                                           targs = Vector.new1 (Type.word (WordSize.seqIndex ())),
+                                          mode = mode,
                                           args = args})
                     | (Value.ArrayRep.Array _, Value.VectorRep.Vector _) => doit ()
                     | _ => Error.bug "Useless.doitPrim: Array_toVector")
@@ -1121,9 +1145,11 @@ fun transform (program: Program.t): Program.t =
                      then (case (Value.arrayRep (Value.arrayArg (value (arg 0)))) of
                               Value.ArrayRep.Array _ => doit ()
                             | _ => simple (ConApp {args = Vector.new0 (),
-                                                   con = Con.truee}))
+                                                   con = Con.truee,
+                                                   mode = Option.getOpt (mode, Mode.Heap)}))
                      else simple (ConApp {args = Vector.new0 (),
-                                          con = Con.truee})
+                                          con = Con.truee,
+                                          mode = Option.getOpt (mode, Mode.Heap)})
              | Prim.MLton_equal =>
                   let
                      val t0 = Value.newType (value (arg 0))
@@ -1132,6 +1158,7 @@ fun transform (program: Program.t): Program.t =
                      if Type.equals (t0, t1)
                         then simple (PrimApp {prim = prim,
                                               targs = Vector.new1 t0,
+                                              mode = mode,
                                               args = args})
                         else (* The arguments differ in the usefulness of
                               * contents of an Array, Ref, or Weak and
@@ -1140,7 +1167,8 @@ fun transform (program: Program.t): Program.t =
                               * not equal.
                               *)
                              simple (ConApp {args = Vector.new0 (),
-                                             con = Con.falsee})
+                                             con = Con.falsee,
+                                             mode = Option.getOpt (mode, Mode.Heap)})
                   end
              | Prim.Ref_ref => makePtr Type.deRef
              | Prim.Vector_length =>
@@ -1173,11 +1201,12 @@ fun transform (program: Program.t): Program.t =
          end
       val doitPrim =
          Trace.trace ("Useless.doitPrim",
-                      fn (prim, targs, args, resultVar, resultType, resultValue) =>
+                      fn (prim, targs, args, resultVar, resultType, resultValue, mode) =>
                       Layout.tuple [Prim.layout prim,
                                     Vector.layout Type.layout targs,
                                     Vector.layout Var.layout args,
                                     Option.layout Var.layout resultVar,
+                                    Option.layout Mode.layout mode,
                                     Type.layout resultType,
                                     Value.layout resultValue],
                       Vector.layout Statement.layout)
@@ -1190,9 +1219,10 @@ fun transform (program: Program.t): Program.t =
                                          exp = e})
          in
             case e of
-               ConApp {con, args} =>
+               ConApp {con, args, mode} =>
                   simple (ConApp {con = con,
-                                  args = keepUseful (args, conArgs con)})
+                                  args = keepUseful (args, conArgs con),
+                                  mode = mode})
              | Const c =>
                   (case c of
                       Const.WordVector ws =>
@@ -1202,6 +1232,7 @@ fun transform (program: Program.t): Program.t =
                                    then simple (PrimApp
                                                 {prim = Prim.Vector_vector,
                                                  targs = Vector.new1 Type.unit,
+                                           mode = NONE,
                                                  args = WordXVector.toVectorMap (ws, fn _ => unitVar)})
                                    else simple e
                            | Value.VectorRep.Length _ =>
@@ -1212,8 +1243,8 @@ fun transform (program: Program.t): Program.t =
                            | Value.VectorRep.Unit =>
                                 simple (Var unitVar))
                     | _ => simple e)
-             | PrimApp {prim, targs, args} =>
-                  doitPrim (prim, targs, args, resultVar, resultType, resultValue)
+             | PrimApp {prim, targs, args, mode} =>
+                  doitPrim (prim, targs, args, resultVar, resultType, resultValue, mode)
              | Select {tuple, offset} =>
                   let
                      val (offset, isOne) =
@@ -1226,7 +1257,7 @@ fun transform (program: Program.t): Program.t =
                         else simple (Select {tuple = tuple,
                                              offset = offset})
                   end
-             | Tuple xs =>
+             | Tuple {exps = xs, mode} =>
                   let
                      val slots = Value.detupleSlots resultValue
                      val xs =
@@ -1239,7 +1270,7 @@ fun transform (program: Program.t): Program.t =
                   in
                      if 1 = Vector.length xs
                         then simple (Var (Vector.first xs))
-                        else simple (Tuple xs)
+                        else simple (Tuple {exps = xs, mode = mode})
                   end
              | Var _ => simple e
              | Profile _ => simple e

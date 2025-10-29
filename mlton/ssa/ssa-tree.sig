@@ -73,15 +73,18 @@ signature SSA_TREE =
          sig
             datatype t =
                ConApp of {args: Var.t vector,
-                          con: Con.t}
+                          con: Con.t, 
+                          mode: Mode.t}
              | Const of Const.t
              | PrimApp of {args: Var.t vector,
                            prim: Type.t Prim.t,
+                           mode: Mode.t option,
                            targs: Type.t vector}
              | Profile of ProfileExp.t
              | Select of {offset: int,
                           tuple: Var.t}
-             | Tuple of Var.t vector
+             | Tuple of {exps: Var.t vector,
+                         mode: Mode.t}
              | Var of Var.t
 
             val equals: t * t -> bool

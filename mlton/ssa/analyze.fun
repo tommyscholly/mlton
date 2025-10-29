@@ -192,7 +192,7 @@ fun 'a analyze
          let
             val v =
                case exp of
-                  ConApp {con, args} => conApp {con = con, args = values args}
+                   ConApp {con, args, ...} => conApp {con = con, args = values args}
                 | Const c => const c
                 | PrimApp {prim, targs, args, ...} =>
                      primApp {prim = prim,
@@ -205,10 +205,10 @@ fun 'a analyze
                      select {tuple = value tuple,
                              offset = offset,
                              resultType = ty}
-                | Tuple xs =>
-                     if 1 = Vector.length xs
-                        then Error.bug "Analyze.loopStatement (unary tuple)"
-                     else tuple (values xs)
+                 | Tuple {exps = xs, ...} =>
+                      if 1 = Vector.length xs
+                         then Error.bug "Analyze.loopStatement (unary tuple)"
+                      else tuple (values xs)
                 | Var x => value x
          in
             Option.app

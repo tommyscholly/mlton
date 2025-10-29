@@ -16,12 +16,19 @@ struct
   and loopDec (d: Dec.t) : Dec.t * bool =
     case d of
       Dec.MonoVal {exp, ty, mode, var} =>
-        let val (p, hasPop) = checkPrimExpForPop exp
-        in (Dec.MonoVal {exp = p, ty = ty, mode = mode, var = var}, hasPop)
+        let
+          val (p, hasPop) = checkPrimExpForPop exp
+          (* val () = Error.warning *)
+          (*   ("MonoVal: " ^ Layout.toString (Var.layout var) ^ ": " ^ Layout.toString (PrimExp.layout p)) *)
+        in
+          (Dec.MonoVal {exp = p, ty = ty, mode = mode, var = var}, hasPop)
         end
     | Dec.PolyVal {exp, ty, tyvars, mode, var} =>
-        let val exp = loopExp (exp, false)
-        in (Dec.PolyVal {exp = exp, ty = ty, tyvars = tyvars, mode = mode, var = var}, false)
+        let
+          (* val () = Error.warning ("PolyVal: " ^ Layout.toString (Var.layout var)) *)
+          val exp = loopExp (exp, true)
+        in
+          (Dec.PolyVal {exp = exp, ty = ty, tyvars = tyvars, mode = mode, var = var}, false)
         end
     | Dec.Fun {decs, tyvars} =>
         let val decs = Vector.map (decs, fn {lambda, ty, var} => {lambda = loopLambda lambda, ty = ty, var = var})
@@ -47,7 +54,7 @@ struct
         if !shouldInsert then
           let
             val prim = PrimExp.PrimApp {prim = Prim.Region_pop, args = Vector.new0 (), targs = Vector.new0 ()}
-            val pop = Dec.MonoVal {exp = prim, ty = Type.unit, mode = Mode.Heap, var = Var.newString "pop"}
+            val pop = Dec.MonoVal {exp = prim, ty = Type.unit, mode = Mode.Heap, var = Var.newString "regionPop"}
           in
             decs @ [pop]
           end
@@ -70,6 +77,7 @@ struct
         in
           (PrimExp.Case {cases = cases, default = default, test = test}, false)
         end
+    (* | PrimExp.Lambda l => let val l = loopLambda l in (PrimExp.Lambda l, false) end *)
     | _ => (prim, false)
 
   and loopLambda (l: Lambda.t) : Lambda.t =

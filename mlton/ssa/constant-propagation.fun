@@ -991,6 +991,7 @@ structure Value =
                                                    SOME (Exp.PrimApp
                                                          {args = Vector.new1 length,
                                                           prim = Prim.Array_alloc {raw = raw},
+                                                          mode = SOME Mode.Heap,
                                                           targs = Vector.new1 eltTy}))
                                        | ArrayInit.Array {args} =>
                                             (case globals args of
@@ -999,6 +1000,8 @@ structure Value =
                                                    SOME (Exp.PrimApp
                                                          {args = Vector.map (args, #1),
                                                           prim = Prim.Array_array,
+                                                          (* TODO: mode *)
+                                                          mode = SOME Mode.Heap,
                                                           targs = Vector.new1 eltTy})))
                                 else NONE)
                          end
@@ -1010,10 +1013,11 @@ structure Value =
                                   if isSmallType ty
                                      then (case global arg of
                                               SOME (arg, _) =>
-                                                 SOME (Exp.PrimApp
-                                                       {args = Vector.new1 arg,
-                                                        prim = Prim.Ref_ref,
-                                                        targs = Vector.new1 argTy})
+                                                  SOME (Exp.PrimApp
+                                                        {args = Vector.new1 arg,
+                                                         prim = Prim.Ref_ref,
+                                                         mode = NONE,
+                                                         targs = Vector.new1 argTy})
                                             | _ => NONE)
                                      else NONE)
                          end
@@ -1033,9 +1037,10 @@ structure Value =
                                       (case globals args of
                                           NONE => No
                                         | SOME args =>
-                                             yes (Exp.ConApp
-                                                  {con = con,
-                                                   args = Vector.map (args, #1)}))
+                                              yes (Exp.ConApp
+                                                   {con = con,
+                                                    args = Vector.map (args, #1),
+                                                    mode = Mode.Heap}))
                                  | _ => No)
                           | Ref {birth, ...} =>
                                if !Control.globalizeRefs then
@@ -1045,7 +1050,7 @@ structure Value =
                                (case globals vs of
                                    NONE => No
                                  | SOME xts =>
-                                      yes (Exp.Tuple (Vector.map (xts, #1))))
+                                       yes (Exp.Tuple {exps = Vector.map (xts, #1), mode = Mode.Heap}))
                           | Vector {sequence} =>
                                (case Sequence.Elts.getElts (Sequence.elts sequence) of
                                    NONE => No
@@ -1056,10 +1061,11 @@ structure Value =
                                             case globals elts of
                                                NONE => No
                                              | SOME args =>
-                                                  yes (Exp.PrimApp
-                                                       {args = Vector.map (args, #1),
-                                                        prim = Prim.Vector_vector,
-                                                        targs = Vector.new1 eltTy})
+                                                   yes (Exp.PrimApp
+                                                        {args = Vector.map (args, #1),
+                                                         prim = Prim.Vector_vector,
+                                                         mode = NONE,
+                                                         targs = Vector.new1 eltTy})
                                          fun wordxvector elementSize =
                                             Exn.withEscape
                                             (fn escape =>

@@ -191,7 +191,7 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
             Vector.map (targs, fixType)
          end
       fun fixPat (I.Pat.T {arg, con, targs}): O.Pat.t =
-         O.Pat.T {arg = Option.map (arg, fn (x, t) => (x, fixType t)),
+         O.Pat.T {arg = Option.map (arg, fn (x, t, m) => (x, fixType t, m)),
                   con = con,
                   targs = fixConTargs (con, targs)}
       fun fixDec (d: I.Dec.t): O.Dec.t =

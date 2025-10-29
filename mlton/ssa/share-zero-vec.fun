@@ -55,7 +55,8 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                     ty = Type.array ty,
                     exp = PrimApp
                     {args = Vector.new0 (),
-                     prim = Prim.Array_array,
+                      prim = Prim.Array_array,
+                      mode = NONE,
                      targs = Vector.new1 ty}}
                 val () = List.push (newGlobals, statement)
              in
@@ -74,7 +75,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
          case Vector.peekMapi
               (stmts, fn Statement.T {var, ty, exp} =>
                case exp of
-                  PrimApp ({prim, args, targs}) =>
+                   PrimApp ({prim, args, targs, ...}) =>
                      (case (var, prim) of
                          (SOME var, Prim.Array_alloc {raw = false}) =>
                             if List.contains (arrVars, var, Var.equals)
@@ -112,7 +113,8 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                              ty = Type.bool,
                              exp = PrimApp
                                    {args = Vector.new2 (zeroVar, lenVar),
-                                    prim = Prim.Word_equal seqIndexSize,
+                                     prim = Prim.Word_equal seqIndexSize,
+                                     mode = NONE,
                                     targs = Vector.new0 ()}})
                         val transfer =
                            Transfer.Case
@@ -154,7 +156,8 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                              ty = arrTy,
                              exp = PrimApp
                                    {args = Vector.new1 lenVar,
-                                    prim = Prim.Array_alloc {raw = false},
+                                     prim = Prim.Array_alloc {raw = false},
+                                     mode = NONE,
                                     targs = Vector.new1 eltTy}})
                         val transfer =
                            Transfer.Goto

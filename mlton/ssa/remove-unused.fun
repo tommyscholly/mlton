@@ -383,15 +383,15 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
       fun visitVar (x: Var.t) = useVar x
       fun visitVars (xs: Var.t Vector.t) = Vector.foreach (xs, visitVar)
       fun visitExp (e: Exp.t) =
-         case e of
-            ConApp {con, args} =>
-               let
-                  val ci = conInfo con
-                  val () = ConInfo.con ci
-                  val () = flowVarInfoTysVars (ConInfo.args ci, args)
-               in
-                  ()
-               end
+          case e of
+             ConApp {con, args, ...} =>
+                let
+                   val ci = conInfo con
+                   val () = ConInfo.con ci
+                   val () = flowVarInfoTysVars (ConInfo.args ci, args)
+                in
+                   ()
+                end
           | Const _ => ()
           | PrimApp {prim, args, ...} =>
                let
@@ -456,7 +456,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                end
           | Profile _ => ()
           | Select {tuple, ...} => visitVar tuple
-          | Tuple xs => visitVars xs
+           | Tuple {exps = xs, ...} => visitVars xs
           | Var x => visitVar x
       val visitExpTh = fn e => fn () => visitExp e
       fun maybeVisitVarExp (var, exp) =
@@ -629,8 +629,9 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
              val () =
                 newTyconInfo
                 (tycon, Vector.map (cons, fn {con, ...} => con), dummy)
-             val dummyExp = ConApp {args = Vector.new0 (),
-                                    con = dummyCon}
+              val dummyExp = ConApp {args = Vector.new0 (),
+                                     con = dummyCon,
+                                     mode = Mode.Heap}
              val dummy = {con = dummyCon, args = dummyArgs, exp = dummyExp}
              val () =
                 Vector.foreach
@@ -953,30 +954,32 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
           else NONE)
 
       fun simplifyExp (e: Exp.t): Exp.t =
-         case e of
-            ConApp {con, args} =>
-               let
-                  val ci = conInfo con
-               in
-                  if ConInfo.isDeconed ci
+          case e of
+             ConApp {con, args, ...} =>
+                let
+                   val ci = conInfo con
+                in
+                   if ConInfo.isDeconed ci
                      then let
                              val ciArgs =
                                 ConInfo.args ci
                           in
-                             ConApp {args = (Vector.keepAllMap2
-                                             (args, ciArgs,
-                                              fn (x, (y, _)) =>
-                                              if VarInfo.isUsed y
-                                                 then SOME x
-                                              else NONE)),
-                                     con = con}
+                              ConApp {args = (Vector.keepAllMap2
+                                              (args, ciArgs,
+                                               fn (x, (y, _)) =>
+                                               if VarInfo.isUsed y
+                                                  then SOME x
+                                               else NONE)),
+                                      con = con,
+                                      mode = Mode.Heap}
                           end
                   else #exp (ConInfo.dummy ci)
                end
-          | PrimApp {prim, targs, args} =>
-               PrimApp {prim = prim,
-                        targs = Vector.map (targs, simplifyType),
-                        args = args}
+           | PrimApp {prim, targs, args, ...} =>
+                PrimApp {prim = prim,
+                         targs = Vector.map (targs, simplifyType),
+                         mode = NONE,
+                         args = args}
           | _ => e
       fun simplifyStatement (s as Statement.T {var, ty, exp}) : Statement.t option =
          case exp of

@@ -343,7 +343,7 @@ fun transform (Program.T {globals, datatypes, functions, main})
                          val cons = TyconInfo.cons (tyconInfo tycon)
                          val tyconValue
                            = case exp
-                               of SOME (ConApp {con, args})
+                                of SOME (ConApp {con, args, ...})
                                 => TyconValue.newKnown 
                                    (cons, con, 
                                     Vector.map 
