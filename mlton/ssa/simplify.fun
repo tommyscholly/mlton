@@ -45,7 +45,7 @@ type pass = {name: string,
              execute: bool}
 
 val ssaPassesDefault =
-   {name = "removeRegions1", doit = RemoveRegions.transform, execute = true} ::
+   (* {name = "removeRegions1", doit = RemoveRegions.transform, execute = true} :: *)
    {name = "removeUnused1", doit = RemoveUnused.transform, execute = true} ::
    {name = "introduceLoops1", doit = IntroduceLoops.transform, execute = true} ::
    {name = "loopInvariant1", doit = LoopInvariant.transform, execute = true} ::

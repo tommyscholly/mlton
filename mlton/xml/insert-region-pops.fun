@@ -77,7 +77,7 @@ struct
         in
           (PrimExp.Case {cases = cases, default = default, test = test}, false)
         end
-    (* | PrimExp.Lambda l => let val l = loopLambda l in (PrimExp.Lambda l, false) end *)
+    | PrimExp.Lambda l => let val l = loopLambda l in (PrimExp.Lambda l, false) end
     | _ => (prim, false)
 
   and loopLambda (l: Lambda.t) : Lambda.t =
