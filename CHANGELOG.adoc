@@ -1,5 +1,13 @@
 = CHANGELOG
 
+* 2025-10-29
+  ** Fix bug in `DeepFlatten` SSA2 optimization.  Thanks to Tom
+     Schollenberger (tommyscholly) for the bug report.
+
+* 2025-10-04
+  ** Fix bug in `Useless` SSA optimization.  Thanks to Humza Shahid
+     (hummy123) for the bug report.
+
 * 2025-06-23
   ** Add (expert) `-profile-tail-call-opt {always|self-only|never}`
   compile-time option that controls how the `SSA{,2}Shrink`
@@ -79,7 +87,7 @@ Here are the changes from version 20210117 to 20241230.
 
 * 2024-05-13
   ** Fix bug in `#line` directives that fails to acceptable
-  `(*#line line *"file" )`, which should be accepted with a default
+  `(*#line line "file"*)`, which should be accepted with a default
   column of 1.  Thanks to Norman Ramsey for the bug report.
 
 * 2024-03-28
