@@ -315,10 +315,10 @@ fun casee {ctxt: unit -> Layout.t,
                                      case NestedPat.node p of
                                         Var x =>
                                            (i + 1,
-                                            Xdec.MonoVal
-                                            {var = x,
-                                             ty = ty,
-                                             mode = NestedPat.mode p,
+                                             Xdec.MonoVal
+                                             {var = x,
+                                              ty = ty,
+                                              mode = Mode.defaultToHeap (NestedPat.mode p),
                                              exp = (XprimExp.Select
                                                     {tuple = tuple,
                                                      offset = i})}
@@ -429,6 +429,7 @@ structure Xexp =
          : Xexp.t =
          let
             val targs = #2 (valOf (Xtype.deConOpt ty))
+            val mode = Mode.defaultToHeap mode
             val eltTy = Vector.first targs
             val nill: Xexp.t =
                Xexp.conApp {arg = NONE,
@@ -557,6 +558,8 @@ fun defunctorize (CoreML.Program.T {decs}) =
       val {get = tyconExtraArgs: Tycon.t -> Xtype.t vector option,
            set = setTyconExtraArgs, destroy = destroy2, ...} =
          Property.destGetSetOnce (Tycon.plist, Property.initConst NONE)
+      val {get = getVarMode: Var.t -> Mode.t option, set = setVarMode, ...} =
+         Property.destGetSetOnce (Var.plist, Property.initConst NONE)
       val {destroy = destroy3, hom = loopTy} =
          let
             fun con (c, ts) =
@@ -711,11 +714,13 @@ fun defunctorize (CoreML.Program.T {decs}) =
          end
       and loopLambda (l: Clambda.t): unit =
          loopExp (#body (Clambda.dest l))
-      fun loopPat (p: Cpat.t): NestedPat.t =
-         let
-            (* TODO: check the mode *)
-            val (p, t, mode) = Cpat.dest p
-            val t' = loopTy t
+       fun loopPat (p: Cpat.t): NestedPat.t =
+          let
+             (* TODO: check the mode *)
+             val (p, t, mode) = Cpat.dest p
+             (* Default undetermined pattern modes to Heap *)
+             val mode = Mode.defaultToHeap mode
+             val t' = loopTy t
             datatype z = datatype Cpat.node
             val p =
                case p of
@@ -743,7 +748,8 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                                     (Vector.new2
                                                      (loopPat p,
                                                       NestedPat.make (np, t', mode)),
-                                                      Cpat.mode p)),
+                                                      Mode.defaultToHeap
+                                                      (Cpat.mode p))),
                                         con = Con.cons,
                                         targs = targs})
                      end
@@ -775,6 +781,10 @@ fun defunctorize (CoreML.Program.T {decs}) =
                 let
                    val {arg, argType, argMode, lambdaMode, resultMode, body, bodyType, mayInline} =
                       loopLambda lambda
+                   val _ = setVarMode (var, SOME resultMode)
+                   (* val _ = Error.warning *)
+                   (*     ("Var: " ^ (Layout.toString (Var.layout var)) ^ " mode: " *)
+                   (*      ^ (Layout.toString (Mode.layout resultMode))) *)
                 in
                    {lambda = Xlambda.make {arg = arg,
                                            argType = argType,
@@ -828,11 +838,17 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                    test = (e, NestedPat.ty p),
                                    tyconCons = tyconCons}
                          val isExpansive = Cexp.isExpansive exp
-                         val expMode = Cexp.mode exp
-                         val expMode = if expMode = Mode.Undetermined then Mode.Heap else expMode
-                         val (exp, expType) = loopExp exp
+                         val (exp, expType, expMode) = loopExp exp
+                          val expMode = Mode.defaultToHeap expMode
                          val pat = loopPat pat
-                         fun vd (x: Var.t) = valDec (tyvars, x, exp, expMode, expType, e)
+                         fun vd (x: Var.t) = 
+                            let val _ = setVarMode (x, SOME expMode)
+                                (* val _ = Error.warning *)
+                                (*    ("Var: " ^ (Layout.toString (Var.layout x)) ^ " mode: " *)
+                                (*     ^ (Layout.toString (Mode.layout expMode))) *)
+                            in
+                               valDec (tyvars, x, exp, expMode, expType, e)
+                            end
                       in
                          if Vector.isEmpty tyvars
                             then patDec (pat, exp, e, bodyType, true)
@@ -878,6 +894,8 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                                     tyvars = tyvars,
                                                     mode = expMode,
                                                     var = x}]
+                                  (* val _ = Error.warning *)
+                                  (*     ("isExpansive: " ^ (Layout.toString (Var.layout x))) *)
                                in
                                   patDec (NestedPat.replaceTypes (pat, subst),
                                           Xexp.lett {body = body, decs = decs},
@@ -982,11 +1000,14 @@ fun defunctorize (CoreML.Program.T {decs}) =
       (* Convert vector->list to allow processed Cdecs to be GC'ed. *)
       and loopDecsList (ds: Cdec.t list, (e: Xexp.t, t: Xtype.t)): Xexp.t =
          List.foldr (ds, e, fn (d, e) => loopDec (d, e, t))
-      and loopExp (e: Cexp.t): Xexp.t * Xtype.t =
-         let
-            (* TODO: erasing mode here, need to carry it through *)
-            val (n, ty, mode) = Cexp.dest e
-            val ty = loopTy ty
+        and loopExp (e: Cexp.t): Xexp.t * Xtype.t * Mode.t =
+          let
+             (* TODO: erasing mode here, need to carry it through *)
+             val (n, ty, mode) = Cexp.dest e
+             (* Default undetermined expression mode to Heap *)
+             val mode = Mode.defaultToHeap mode
+             val mode_ref = ref mode
+             val ty = loopTy ty
             fun conApp {arg, con, targs, ty} =
                if Con.equals (con, Con.reff)
                   then Xexp.primApp ({args = Vector.new1 arg,
@@ -1003,7 +1024,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                case n of
                   App (e1, e2) =>
                      let
-                        val (e2, _) = loopExp e2
+                         val (e2, _, _) = loopExp e2
                      in
                         case Cexp.node e1 of
                            Con (con, targs) =>
@@ -1012,15 +1033,17 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                       targs = conTargs (con, targs),
                                       ty = ty}
                          | _ =>
-                              Xexp.app ({arg = e2,
-                                        func = #1 (loopExp e1),
-                                        ty = ty}, mode)
+                              let val (e, _, m) = loopExp e1 in 
+                                 Xexp.app ({arg = e2,
+                                            func = e,
+                                            ty = ty}, m)
+                              end
                      end
                 | Case {ctxt, kind, nest, matchDiags, noMatch, region, rules, test, ...} =>
                      casee {ctxt = ctxt,
                             caseType = ty,
                             cases = Vector.map (rules, fn {exp, layPat, pat, regionPat} =>
-                                                {exp = #1 (loopExp exp),
+                                                 {exp = let val (e, _, _) = loopExp exp in e end,
                                                  layPat = layPat,
                                                  pat = loopPat pat,
                                                  regionPat = regionPat}),
@@ -1030,7 +1053,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                             matchDiags = matchDiags,
                             noMatch = noMatch,
                             region = region,
-                            test = loopExp test,
+                            test = let val (e, t, _) = loopExp test in (e, t) end,
                             tyconCons = tyconCons}
                 | Con (con, targs) =>
                      let
@@ -1088,20 +1111,26 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                 | _ => Error.bug "Defunctorize.loopExp: Const:strange boolean constant")
                         else Xexp.const c
                      end
-                | EnterLeave (e, si) =>
-                     let
-                        val expMode = Cexp.mode e
-                        val (e, t) = loopExp e
-                     in
-                        enterLeave (e, t, si, expMode)
-                     end
+                 | EnterLeave (e, si) =>
+                      let
+                         val expMode = Cexp.mode e
+                         (* Default undetermined mode to Heap *)
+                         val expMode = Mode.defaultToHeap expMode
+                          val (e, t, _) = loopExp e
+                      in
+                         enterLeave (e, t, si, expMode)
+                      end
                 | Handle {catch = (x, t), handler, try} =>
                      Xexp.handlee {catch = (x, loopTy t),
-                                   handler = #1 (loopExp handler),
-                                   try = #1 (loopExp try),
+                                    handler = let val (e, _, _) = loopExp handler in e end,
+                                    try = let val (e, _, _) = loopExp try in e end,
                                    ty = ty}
-                | Lambda l => Xexp.lambda (loopLambda l)
-                | Let (ds, e) => loopDecs (ds, loopExp e)
+                | Lambda l => let val l = loopLambda l
+                                  val resultMode = #resultMode l
+                                  val _ = mode_ref := resultMode
+                              in Xexp.lambda l
+                              end
+                | Let (ds, e) => loopDecs (ds, let val (e, t, _) = loopExp e in (e, t) end)
                 | List es =>
                      let
                         (* Must evaluate list components left-to-right if there
@@ -1110,18 +1139,24 @@ fun defunctorize (CoreML.Program.T {decs}) =
                         val numExpansive =
                            Vector.fold (es, 0, fn (e, n) =>
                                         if Cexp.isExpansive e then n + 1 else n)
-                        val ms = Vector.map (es, fn e =>
-                           let val m = Cexp.mode e
-                           in if m = Mode.Undetermined then Cexp.mode e else m
-                           end)
-                        val mode = Vector.fold (ms, Cexp.mode e, Mode.join)
+                        (* val ms = Vector.map (es, fn e => *)
+                        (*    let val m = Cexp.mode e *)
+                        (*    in if m = Mode.Undetermined then Cexp.mode e else m *)
+                        (*    end) *)
+                        (* val mode = Vector.fold (ms, Cexp.mode e, Mode.join) *)
+                        val es_ms = Vector.map (es, fn e => 
+                                             let val (e', _, m) = loopExp e
+                                             in (e', m) end)
+                                             
+                        val (es, ms) = Vector.unzip es_ms
+                        val mode = Vector.fold (ms, mode, Mode.join)
                      in
-                        Xexp.list (Vector.map (es, #1 o loopExp), ms, mode, ty,
+                         Xexp.list (es, ms, mode, ty,
                                    {forceLeftToRight = 2 <= numExpansive})
                      end
                 | PrimApp {args, prim, targs} =>
                      let
-                        val args = Vector.map (args, #1 o loopExp)
+                         val args = Vector.map (args, fn e => let val (e', _, _) = loopExp e in e' end)
                      in
                         if (case prim of
                                Prim.Real_rndToReal (s1, s2) =>
@@ -1140,7 +1175,11 @@ fun defunctorize (CoreML.Program.T {decs}) =
 
                      end
                 | Exclave e => 
-                      let val (e, _) = loopExp e
+                      let 
+                          val (node, ty, _) = Cexp.dest e
+                          val forcedStack = Cexp.make (node, ty, Mode.Stack)
+                          val (e, _, _) = loopExp forcedStack
+                          val _ = mode_ref := Mode.Stack
                           val regionPop = Xexp.primApp ({args = Vector.new0 (),
                                                          prim = Prim.Region_pop,
                                                          targs = Vector.new0 (),
@@ -1149,7 +1188,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                       in Xexp.sequence (Vector.new2 (regionPop, e))
                       (* in e *)
                       end
-                | Raise e => Xexp.raisee {exn = #1 (loopExp e), extend = true, ty = ty}
+                | Raise e => Xexp.raisee {exn = let val (e', _, _) = loopExp e in e' end, extend = true, ty = ty}
                 | Record r =>
                      (* The components of the record have to be evaluated left to
                       * right as they appeared in the source program, but then
@@ -1159,30 +1198,40 @@ fun defunctorize (CoreML.Program.T {decs}) =
                         val fes = Record.toVector r
                      in
                         Xexp.seq
-                        (Vector.map (fes, #1 o loopExp o #2), fn es =>
+                         (Vector.map (fes, fn (_, e) => let val (e', _, _) = loopExp e in e' end), fn es =>
                          Xexp.tuple {exps = (sortByField
                                              (Vector.map2
                                               (fes, es, fn ((f, _), e) => (f, e)))),
                                      ty = ty, mode = mode})
                      end
-                | Seq es => Xexp.sequence (Vector.map (es, #1 o loopExp))
-                | Var (var, targs) =>
-                     Xexp.var ({targs = Vector.map (targs (), loopTy),
-                               ty = ty,
-                               var = var ()}, mode)
+                | Seq es => Xexp.sequence (Vector.map (es, fn e => let val (e', _, _) = loopExp e in e' end))
+                 | Var (var, targs) =>
+                      let val varMode = getVarMode (var ())
+                          val mode = if varMode = NONE then mode else Option.valOf varMode
+                          (* Default undetermined variable mode to Heap *)
+                          val mode = Mode.defaultToHeap mode
+                          val _ = mode_ref := mode
+                     in
+                        Xexp.var ({targs = Vector.map (targs (), loopTy),
+                                   ty = ty,
+                                   var = var ()}, mode)
+                     end
                 | Vector es =>
-                     Xexp.primApp ({args = Vector.map (es, #1 o loopExp),
+                      Xexp.primApp ({args = Vector.map (es, fn e => let val (e', _, _) = loopExp e in e' end),
                                     prim = Prim.Vector_vector,
                                     targs = Vector.new1 (Xtype.deVector ty),
                                     ty = ty}, mode)
-         in
-            (exp, ty)
-         end
-      and loopLambda (l: Clambda.t) =
-         let
-            val {arg, argType, argMode, body = originalBody, mayInline} = Clambda.dest l
-            val resultMode = Cexp.mode originalBody
-            val (body, bodyType) = loopExp originalBody
+          in
+             (exp, ty, !mode_ref)
+          end
+       and loopLambda (l: Clambda.t) =
+          let
+             val {arg, argType, argMode, resultMode = _, body = originalBody, mayInline} = Clambda.dest l
+             (* Default undetermined lambda argMode to Heap *)
+             val argMode = Mode.defaultToHeap argMode
+             val (body, bodyType, resultMode) = loopExp originalBody
+             (* Default undetermined resultMode to Heap *)
+             val resultMode = Mode.defaultToHeap resultMode
             
             val regionPush = Xexp.primApp ({args = Vector.new0 (),
                                            prim = Prim.Region_push,
@@ -1260,17 +1309,19 @@ fun defunctorize (CoreML.Program.T {decs}) =
                   if !foundStackVar then Mode.Stack else Mode.Heap
                end
 
-            val lambdaMode = analyzeCaptures (originalBody, arg)
-         in
-            {arg = arg,
-             argType = loopTy argType,
-             argMode = argMode,
-             lambdaMode = lambdaMode,
-             resultMode = resultMode,
-             body = wrappedBody,
-             bodyType = bodyType,
-             mayInline = mayInline}
-         end
+             val lambdaMode = analyzeCaptures (originalBody, arg)
+             (* Default undetermined lambdaMode to Heap *)
+             val lambdaMode = Mode.defaultToHeap lambdaMode
+          in
+             {arg = arg,
+              argType = loopTy argType,
+              argMode = argMode,
+              lambdaMode = lambdaMode,
+              resultMode = resultMode,
+              body = wrappedBody,
+              bodyType = bodyType,
+              mayInline = mayInline}
+          end
       val body = Xexp.toExp (loopDecs (decs, (Xexp.unit (), Xtype.unit)))
       val _ = showMatchDiagnostics ()
       val _ = (destroy1 (); destroy2 (); destroy3 ())

@@ -424,7 +424,7 @@ fun transform (prog: Program.t): Program.t =
                     hVar: Var.t, hTy: Type.t): DirectExp.t =
          let
             val {decs, result} = Exp.dest e
-            val k = DirectExp.monoVar (kVar, kTy, Mode.Undetermined)
+            val k = DirectExp.monoVar (kVar, kTy, Mode.Heap)
             val k'Body =
                DirectExp.app
                ({func = k, arg = transVarExp result, ty = ansTy}, Mode.Heap)

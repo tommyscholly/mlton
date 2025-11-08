@@ -1102,27 +1102,31 @@ struct
         val isBool = Type.isBool expandedCbTy
         val getArg = Var.newNoname ()
         val setArg = Var.newNoname ()
+        val fetchBody = mkFetch {ctypeCbTy = ctypeCbTy, isBool = isBool, expandedCbTy = expandedCbTy, ptrExp = ptrExp}
+        val storeBody = mkStore
+          { ctypeCbTy = ctypeCbTy
+          , isBool = isBool
+          , ptrExp = ptrExp
+          , (* TODO: analyze mode here, right now defaulting to Heap *) valueExp = Cexp.var (setArg, expandedCbTy, Mode.Heap)
+          }
       in
         (Cexp.tuple o Vector.new2)
-          ( (Cexp.lambda o Lambda.make)
-              { arg = getArg
-              , argType = Type.unit
-              , argMode = Mode.Heap
-              , body = mkFetch {ctypeCbTy = ctypeCbTy, isBool = isBool, expandedCbTy = expandedCbTy, ptrExp = ptrExp}
-              , mayInline = true
-              }
-          , (Cexp.lambda o Lambda.make)
-              { arg = setArg
-              , argType = expandedCbTy
-              , argMode = Mode.Heap
-              , body = mkStore
-                  { ctypeCbTy = ctypeCbTy
-                  , isBool = isBool
-                  , ptrExp = ptrExp
-                  , (* TODO: analyze mode here, right now defaulting to Heap *) valueExp = Cexp.var (setArg, expandedCbTy, Mode.Heap)
-                  }
-              , mayInline = true
-              }
+           ( (Cexp.lambda o Lambda.make)
+               { arg = getArg
+               , argType = Type.unit
+               , argMode = Mode.Heap
+               , body = fetchBody
+               , resultMode = Cexp.mode fetchBody
+               , mayInline = true
+               }
+           , (Cexp.lambda o Lambda.make)
+               { arg = setArg
+               , argType = expandedCbTy
+               , argMode = Mode.Heap
+               , body = storeBody
+               , resultMode = Cexp.mode storeBody
+               , mayInline = true
+               }
           )
       end
 
@@ -1292,7 +1296,7 @@ struct
       in
         (* TODO: analyze mode here, right now defaulting to Heap *)
         wrap
-          ( (Cexp.lambda o Lambda.make) {arg = ptrArg, argType = expandedPtrTy, argMode = Mode.Heap, body = symExp, mayInline = true}
+           ( (Cexp.lambda o Lambda.make) {arg = ptrArg, argType = expandedPtrTy, argMode = Mode.Heap, body = symExp, resultMode = Cexp.mode symExp, mayInline = true}
           , elabedTy
           , Mode.Heap
           )
@@ -1809,10 +1813,10 @@ struct
                                      in
                                        (resultType, regionResultType)
                                      end)
-                                   val resultMode =
-                                     case resultMode of
-                                       SOME mode => mode
-                                     | NONE => Mode.Undetermined
+                                     val resultMode =
+                                       case resultMode of
+                                         SOME mode => mode
+                                       | NONE => Mode.Undetermined
                                  in
                                    { binds = binds
                                    , body = body
@@ -1823,31 +1827,8 @@ struct
                                    , resultType = resultType
                                    , resultMode = resultMode
                                    }
-                                 end)
-                               (* unify all the clause modes into one mode
-                                * for the function*)
-                               val functionMode = Vector.foldr (clauses, Mode.Undetermined, fn ({resultMode, ...}, acc) =>
-                                 Mode.join (acc, resultMode))
-                               val _ =
-                                 let
-                                   val modes = Vector.map (clauses, #resultMode)
-                                   val firstMode = Vector.sub (modes, 0)
-                                 in
-                                   Vector.foreachi (modes, fn (i, mode) =>
-                                     if i = 0 then
-                                       ()
-                                     else
-                                       case Mode.subsumes (firstMode, mode) of
-                                         SOME _ => ()
-                                       | NONE =>
-                                           let
-                                             val {regionPats, ...} = Vector.sub (clauses, i)
-                                           in
-                                             Control.error (regionPats, str "function clause with incompatible result mode", align
-                                               [seq [str "clause mode: ", Mode.layout mode], seq [str "expected: ", Mode.layout firstMode], ctxtFb ()])
-                                           end)
-                                 end
-                               val funTy =
+                                   end)
+                                val funTy =
                                  let
                                    fun chk ty =
                                      if Type.isUnknown ty then Type.new () else ty
@@ -1859,7 +1840,7 @@ struct
                                val _ = Avid.checkRedefineSpecial (funcVid, {allowIt = true, ctxt = ctxtFb, keyword = "fun"})
                                val _ = checkConRedefine (funcVid, "fun", ctxtFb)
                                val var = Var.fromAst func
-                               val _ = Env.extendVar (E, func, var, Scheme.fromType funTy, functionMode, {isRebind = false})
+                                val _ = Env.extendVar (E, func, var, Scheme.fromType funTy, Mode.Undetermined, {isRebind = false})
                                val _ = markFunc var
 
                              in
@@ -1868,7 +1849,7 @@ struct
                                , clauses = clauses
                                , ctxtFb = ctxtFb
                                , func = func
-                               , functionMode = functionMode
+                                , functionMode = Mode.Undetermined  (* Will be computed later *)
                                , funTy = funTy
                                , regionFb = regionFb
                                , resTy = resTy
@@ -1879,7 +1860,7 @@ struct
                              let
                                val nest = Avar.toString func :: nest
                                val resultTypeConstraint = Vector.exists (clauses, Option.isSome o #resultType)
-                               val rules = Vector.map (clauses, fn {binds, body, layPats, layPatsPrefix, pats, regionPats, resultType, resultMode} =>
+                                val (rules, inferredResultModes) = Vector.unzip (Vector.map (clauses, fn {binds, body, layPats, layPatsPrefix, pats, regionPats, resultType, resultMode} =>
                                  let
                                    val regionBody = Aexp.region body
                                    val body = Env.scope (E, fn () =>
@@ -1887,8 +1868,14 @@ struct
                                          Env.extendVar (E, x, x', Scheme.fromType ty, mode, {isRebind = false}))
                                      ; elabExp (body, nest, NONE, resultMode, true)
                                      ))
-                                   val body = Cexp.enterLeave (body, profileBody andalso ! Control.profileBranch, fn () =>
-                                     SourceInfo.function {name = ("<case " ^ Layout.toString (layPatsPrefix ()) ^ ">") :: nest, region = regionBody})
+                                    val body = Cexp.enterLeave (body, profileBody andalso ! Control.profileBranch, fn () =>
+                                      SourceInfo.function {name = ("<case " ^ Layout.toString (layPatsPrefix ()) ^ ">") :: nest, region = regionBody})
+                                    (* Infer result mode from body if no explicit annotation was provided *)
+                                    val inferredResultMode =
+                                      if Mode.equals (resultMode, Mode.Undetermined) then
+                                        Cexp.mode body  (* No explicit annotation, use inferred mode from body *)
+                                      else
+                                        resultMode  (* Use explicit annotation *)
                                    val _ =
                                      case resultType of
                                        SOME (resultType, regionResultType) =>
@@ -1913,23 +1900,49 @@ struct
                                              , str "function clause with expression of different type"
                                              , align [seq [str "expression: ", l2], seq [str "previous:   ", l1], ctxtFb ()]
                                              ))
-                                   val _ =
-                                     let
-                                       val actualMode = Cexp.mode body
-                                     in
-                                       case Mode.subsumes (resultMode, actualMode) of
-                                         SOME _ => ()
-                                       | NONE =>
-                                           Control.error (regionBody, str "function clause expression and result mode constraint disagree", align
-                                             [ seq [str "expression mode: ", Mode.layout actualMode]
-                                             , seq [str "constraint mode: ", Mode.layout resultMode]
-                                             , ctxtFb ()
-                                             ])
-                                     end
-                                 in
-                                   {exp = body, layPat = SOME layPats, pat = Cpat.tuple pats, regionPat = regionPats}
-                                 end)
-                               val args = Vector.map2 (argTys, !argModes, fn (argTy, argMode) => (Var.newNoname (), argTy, argMode))
+                                    val _ =
+                                      (* Only check mode consistency if there was an explicit result mode annotation *)
+                                      if not (Mode.equals (resultMode, Mode.Undetermined)) then
+                                        let
+                                          val actualMode = Cexp.mode body
+                                        in
+                                          case Mode.subsumes (resultMode, actualMode) of
+                                            SOME _ => ()
+                                          | NONE =>
+                                              Control.error (regionBody, str "function clause expression and result mode constraint disagree", align
+                                                [ seq [str "expression mode: ", Mode.layout actualMode]
+                                                , seq [str "constraint mode: ", Mode.layout resultMode]
+                                                , ctxtFb ()
+                                                ])
+                                        end
+                                      else
+                                        ()
+                                  in
+                                    ({exp = body, layPat = SOME layPats, pat = Cpat.tuple pats, regionPat = regionPats}, inferredResultMode)
+                                  end))
+                                (* Compute functionMode from inferred result modes *)
+                                val functionMode = Vector.foldr (inferredResultModes, Mode.Undetermined, fn (resultMode, acc) =>
+                                  Mode.join (acc, resultMode))
+                                val _ =
+                                  let
+                                    val modes = inferredResultModes
+                                    val firstMode = Vector.sub (modes, 0)
+                                  in
+                                    Vector.foreachi (modes, fn (i, mode) =>
+                                      if i = 0 then
+                                        ()
+                                      else
+                                        case Mode.subsumes (firstMode, mode) of
+                                          SOME _ => ()
+                                        | NONE =>
+                                            let
+                                              val {regionPats, ...} = Vector.sub (clauses, i)
+                                            in
+                                              Control.error (regionPats, str "function clause with incompatible result mode", align
+                                                [seq [str "clause mode: ", Mode.layout mode], seq [str "expected: ", Mode.layout firstMode], ctxtFb ()])
+                                            end)
+                                  end
+                                val args = Vector.map2 (argTys, !argModes, fn (argTy, argMode) => (Var.newNoname (), argTy, argMode))
                                fun check () =
                                  unify (Vector.foldr (argTys, resTy, Type.arrow), funTy, fn (l1, l2) =>
                                    ( Avar.region func
@@ -1949,7 +1962,7 @@ struct
                                val body = Cexp.enterLeave (body, profileBody, fn () => SourceInfo.function {name = nest, region = regionFb})
                                val lambda = Vector.foldr (args, body, fn ((arg, argTy, mode), body) =>
                                  Cexp.make
-                                   ( Cexp.Lambda (Lambda.make {arg = arg, argType = argTy, argMode = mode, body = body, mayInline = true})
+                                    ( Cexp.Lambda (Lambda.make {arg = arg, argType = argTy, argMode = mode, body = body, resultMode = Cexp.mode body, mayInline = true})
                                    , Type.arrow (argTy, Cexp.ty body)
                                    , mode
                                    ))
@@ -2152,7 +2165,7 @@ struct
                                    , profileBody
                                    , fn () => SourceInfo.function {name = nest, region = region}
                                    )
-                               val lambda = Lambda.make {arg = arg, argType = argType, argMode = Mode.Heap, body = body, mayInline = true}
+                                val lambda = Lambda.make {arg = arg, argType = argType, argMode = Mode.Heap, body = body, resultMode = Cexp.mode body, mayInline = true}
                              in
                                {check = check, bound = bound, lambda = lambda, var = var}
                              end)
@@ -2380,7 +2393,7 @@ struct
                      val body = Cexp.enterLeave (body, profileBody, fn () => SourceInfo.function {name = nest, region = region})
                    in
                      Cexp.make
-                       ( Cexp.Lambda (Lambda.make {arg = arg, argType = argType, argMode = Mode.Heap, body = body, mayInline = true})
+                        ( Cexp.Lambda (Lambda.make {arg = arg, argType = argType, argMode = Mode.Heap, body = body, resultMode = Cexp.mode body, mayInline = true})
                        , Type.arrow (argType, Cexp.ty body)
                        , Mode.Heap
                        )
@@ -2537,7 +2550,7 @@ struct
                                        }
                                    end
                            in
-                             (Cexp.lambda o Lambda.make) {arg = arg, argType = argType, argMode = Mode.Heap, body = body, mayInline = true}
+                              (Cexp.lambda o Lambda.make) {arg = arg, argType = argType, argMode = Mode.Heap, body = body, resultMode = Cexp.mode body, mayInline = true}
                            end
                      fun etaNoWrap {expandedTy, prim: Type.t Prim.t} : Cexp.t =
                        etaExtraNoWrap {expandedTy = expandedTy, extra = Vector.new0 (), prim = prim}
@@ -2656,29 +2669,31 @@ struct
                              case Type.toCPtrType expandedFPtrTy of
                                NONE => (error (); ())
                              | SOME _ => ()
-                           val fptr = Var.newNoname ()
-                           (* TODO: check the mode *)
-                           val fptrArg = Cexp.var (fptr, expandedFPtrTy, Mode.Heap)
-                         in
-                           wrap
-                             ( (Cexp.lambda o Lambda.make)
-                                 { arg = fptr
-                                 , argType = expandedFPtrTy
-                                 , argMode = Mode.Heap
-                                 , body = etaExtraNoWrap
-                                     { expandedTy = expandedCfTy
-                                     , extra = Vector.new1 fptrArg
-                                     , prim = import
-                                         { attributes = attributes
-                                         , name = NONE
-                                         , region = region
-                                         , elabedTy = elabedTy
-                                         , expandedTy = expandedCfTy
-                                         , layoutPrettyType = #1 o layoutPrettyType
-                                         }
-                                     }
-                                 , mayInline = true
-                                 }
+                            val fptr = Var.newNoname ()
+                            (* TODO: check the mode *)
+                            val fptrArg = Cexp.var (fptr, expandedFPtrTy, Mode.Heap)
+                            val lambdaBody = etaExtraNoWrap
+                              { expandedTy = expandedCfTy
+                              , extra = Vector.new1 fptrArg
+                              , prim = import
+                                  { attributes = attributes
+                                  , name = NONE
+                                  , region = region
+                                  , elabedTy = elabedTy
+                                  , expandedTy = expandedCfTy
+                                  , layoutPrettyType = #1 o layoutPrettyType
+                                  }
+                              }
+                          in
+                            wrap
+                              ( (Cexp.lambda o Lambda.make)
+                                  { arg = fptr
+                                  , argType = expandedFPtrTy
+                                  , argMode = Mode.Heap
+                                  , body = lambdaBody
+                                  , resultMode = Cexp.mode lambdaBody
+                                  , mayInline = true
+                                  }
                              , (* TODO: check the mode *)
                                elabedTy
                              , Mode.Heap

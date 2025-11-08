@@ -21,14 +21,14 @@ struct
           (* val () = Error.warning *)
           (*   ("MonoVal: " ^ Layout.toString (Var.layout var) ^ ": " ^ Layout.toString (PrimExp.layout p)) *)
         in
-          (Dec.MonoVal {exp = p, ty = ty, mode = mode, var = var}, hasPop)
+          (Dec.MonoVal {exp = p, ty = ty, mode = Mode.defaultToHeap mode, var = var}, hasPop)
         end
     | Dec.PolyVal {exp, ty, tyvars, mode, var} =>
         let
           (* val () = Error.warning ("PolyVal: " ^ Layout.toString (Var.layout var)) *)
           val exp = loopExp (exp, true)
         in
-          (Dec.PolyVal {exp = exp, ty = ty, tyvars = tyvars, mode = mode, var = var}, false)
+          (Dec.PolyVal {exp = exp, ty = ty, tyvars = tyvars, mode = Mode.defaultToHeap mode, var = var}, false)
         end
     | Dec.Fun {decs, tyvars} =>
         let val decs = Vector.map (decs, fn {lambda, ty, var} => {lambda = loopLambda lambda, ty = ty, var = var})

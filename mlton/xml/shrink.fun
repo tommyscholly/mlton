@@ -332,7 +332,7 @@ fun shrinkOnce (Program.T {datatypes, body}) =
          let
             val info as {numOccurrences, value, ...} = monoVarInfo var
             fun finish (exp, decs) =
-               MonoVal {var = var, ty = ty, mode = mode, exp = exp} :: decs
+                MonoVal {var = var, ty = ty, mode = Mode.defaultToHeap mode, exp = exp} :: decs
             fun nonExpansive (delete: unit -> unit,
                               set: unit -> (unit -> PrimExp.t) option) =
                if 0 = !numOccurrences

@@ -143,7 +143,7 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
                else Error.bug "Monomorphise.renameMono: expected monomorphic instance"
             val _ = setVar (x, inst)
          in
-            (x', monoType t, m)
+            (x', monoType t, Mode.defaultToHeap m)
          end
       val renameMono =
          Trace.trace3
@@ -353,6 +353,7 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
              Xdec.MonoVal {var, ty, exp, mode} =>
                 let
                    val (var, ty, mode) = renameMono (var, ty, mode)
+                   val mode = Mode.defaultToHeap mode
                 in 
                    fn () => 
                    [Sdec.MonoVal {var = var,
@@ -360,9 +361,10 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
                                   exp = monoPrimExp exp,
                                   mode = mode}]
                 end
-           | Xdec.PolyVal {var, tyvars, ty, exp, ...} =>
+           | Xdec.PolyVal {var, tyvars, ty, exp, mode} =>
                 let
                    val cache = Cache.new ()
+                   val mode = Mode.defaultToHeap mode
                    val _ =
                       setVar 
                       (var, fn ts =>
@@ -383,7 +385,7 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
                           @ (Sdec.MonoVal {var = SvarExp.var ve,
                                            ty = ty,
                                            exp = SprimExp.Var result,
-                                           mode = Mode.Undetermined} :: decs)
+                                           mode = mode} :: decs)
                        end))
                 end
            | Xdec.Fun {tyvars, decs} =>

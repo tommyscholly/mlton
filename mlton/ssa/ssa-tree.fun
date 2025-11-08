@@ -17,6 +17,13 @@ infix  1 <|> >>=
 infix  3 <*> <* *>
 infixr 4 <$> <$$> <$$$> <$$$$> <$ <$?>
 
+structure Option = 
+   struct
+      open Option
+      fun getOpt (SOME x, _) = x
+        | getOpt (NONE, default) = default
+   end
+
 structure Type =
    struct
       datatype t =
@@ -344,14 +351,14 @@ structure Exp =
                         Con.layout con,
                         if Vector.isEmpty args
                            then empty
-                           else seq [str " ", layoutArgs args]]
+                           else seq [str " ", layoutArgs args], Mode.layout mode]
              | Const c => Const.layout c
-              | PrimApp {prim, targs, mode, args} =>
+             | PrimApp {prim, targs, mode, args} =>
                    seq [str "prim ",
                         Prim.layoutFull (prim, Type.layout),
                         if !Control.showTypes
                            andalso not (Vector.isEmpty targs)
-                           then Layout.list (Vector.toListMap (targs, Type.layout))
+                           then seq [Layout.list (Vector.toListMap (targs, Type.layout)), Option.getOpt (Option.map (mode, Mode.layout), empty)]
                            else empty,
                         str " ",
                         layoutArgs args]
@@ -359,7 +366,7 @@ structure Exp =
              | Select {tuple, offset} =>
                   seq [str "#", Int.layout offset, str " ",
                        paren (layoutVar tuple)]
-              | Tuple {exps, ...} => layoutArgs exps
+             | Tuple {exps, mode} => seq [layoutArgs exps, Mode.layout mode]
              | Var x => layoutVar x
          end
       fun layout e = layout' (e, Var.layout)

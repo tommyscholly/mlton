@@ -150,11 +150,13 @@ signature CORE_ML =
             val dest: t -> {arg: Var.t,
                             argType: Type.t,
                             argMode: Mode.t,
+                            resultMode: Mode.t,
                             body: Exp.t,
                             mayInline: bool}
             val make: {arg: Var.t,
                        argType: Type.t,
                        argMode: Mode.t,
+                       resultMode: Mode.t,
                        body: Exp.t,
                        mayInline: bool} -> t
          end

@@ -215,10 +215,10 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
                   O.Dec.Fun {decs = decs,
                              tyvars = tyvars}
                end
-          | I.Dec.MonoVal {exp, ty, var, mode} =>
-               O.Dec.MonoVal {exp = fixPrimExp exp,
-                              ty = fixType ty,
-                              var = var, mode = mode}
+           | I.Dec.MonoVal {exp, ty, var, mode} =>
+                O.Dec.MonoVal {exp = fixPrimExp exp,
+                               ty = fixType ty,
+                               var = var, mode = Mode.defaultToHeap mode}
           | I.Dec.PolyVal {exp, ty, tyvars, mode, var} =>
                let
                   val exp = fixExp exp
@@ -226,11 +226,11 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
                   val bv = Vector.map (tyvars, tyvarIsUsed)
                   val _ = setVarKeep (var, SOME bv)
                in
-                  O.Dec.PolyVal {exp = exp,
-                                 ty = ty,
-                                 tyvars = keep (tyvars, bv),
-                                 mode = mode,
-                                 var = var}
+                   O.Dec.PolyVal {exp = exp,
+                                  ty = ty,
+                                  tyvars = keep (tyvars, bv),
+                                  mode = Mode.defaultToHeap mode,
+                                  var = var}
                end
       and fixExp (e: I.Exp.t): O.Exp.t =
          let

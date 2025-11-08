@@ -272,7 +272,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
           | _ => Error.bug "ImplementExceptions: saw unexpected dec") arg
       and loopMonoVal {var, ty, mode, exp} : Dec.t list =
          let
-            fun primExp e = [MonoVal {var = var, ty = ty, mode = mode, exp = e}]
+             fun primExp e = [MonoVal {var = var, ty = ty, mode = Mode.defaultToHeap mode, exp = e}]
             fun keep () = primExp exp
             fun makeExp e = Dexp.vall {var = var, exp = e, mode = mode}
          in
@@ -371,7 +371,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                                   in
                                                      make (tuple,
                                                            detupleBind
-                                                           {tuple = monoVar (#1 tuple, #2 tuple, Mode.Undetermined),
+                                                           {tuple = monoVar (#1 tuple, #2 tuple, Mode.Heap),
                                                             components =
                                                             Vector.new2 (refVar, x),
                                                             body = body})
@@ -493,7 +493,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                    resultMode = Mode.Heap,
                    body = (Dexp.sequence o Vector.new2)
                           (Dexp.bug "extendExtra unimplemented",
-                           Dexp.monoVar (dfltExtraVar, extraType, Mode.Undetermined)),
+                           Dexp.monoVar (dfltExtraVar, extraType, Mode.Heap)),
                    bodyType = extraType,
                    mayInline = true})),
           var = extendExtraVar}

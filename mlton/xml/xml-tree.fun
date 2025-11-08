@@ -246,8 +246,9 @@ in
                           if i = 0
                              then seq [str "fun ", layoutTyvars tyvars]
                              else str "and "
+                       val Lam {resultMode, ...} = lambda
                     in
-                       mayAlign [maybeConstrain (pre, var, ty, Mode.Undetermined, str " ="),
+                       mayAlign [maybeConstrain (pre, var, ty, resultMode, str " ="),
                                  indent (layoutLambda lambda, 2)]
                     end))
        | MonoVal {exp, ty, mode, var} =>
@@ -331,8 +332,9 @@ in
                  VarExp.layout x])
             xs
        | Var x => VarExp.layout x
-   and layoutLambda (Lam {arg, argType, argMode, lambdaMode, body, mayInline, ...}) =
-      mayAlign [maybeConstrain (seq [str "fn", Mode.layout lambdaMode, str " ",
+   and layoutLambda (Lam {arg, argType, argMode, lambdaMode, resultMode, body, mayInline, ...}) =
+      mayAlign [maybeConstrain (seq [str "fn", str " lambdaMode:", Mode.layout lambdaMode, 
+                                     str " ",
                                      str (if not mayInline then "noinline " else "")],
                                 arg, argType, argMode, str " =>"),
                 indent (layoutExp body, 2)]
@@ -849,8 +851,8 @@ structure DirectExp =
                     let
                       val x = Var.newNoname ()
                     in
-                      Exp.prefix (k (VarExp.mono x, t, m), MonoVal
-                        {var = x, ty = t, exp = e, mode = m})
+                       Exp.prefix (k (VarExp.mono x, t, m), MonoVal
+                         {var = x, ty = t, exp = e, mode = Mode.defaultToHeap m})
                     end
 
             fun name (k: VarExp.t * Type.t * Mode.t -> Exp.t): t = nameGen k
@@ -1026,7 +1028,7 @@ structure DirectExp =
             val Exp {decs, result} =
                sendName (exp, fn (x, t', _) => (t := t';
                                              Exp {decs = [], result = x}))
-         in decs @ [MonoVal {var = var, ty = !t, exp = Var result, mode = mode}]
+          in decs @ [MonoVal {var = var, ty = !t, exp = Var result, mode = Mode.defaultToHeap mode}]
          end
 
       fun sequence es =
@@ -1048,11 +1050,11 @@ structure DirectExp =
       fun lett {decs, body} = fn k => Exp.prefixs (send (body, k), decs)
 
       fun let1 {var, exp, body, mode = _} =
-         fn k =>
-         (* TODO: check check if the fn mode or the let1 param mode *)
-         send (exp, fn (exp, ty, mode) =>
-               Exp.prefix (send (body, k),
-                           Dec.MonoVal {var = var, ty = ty, exp = exp, mode = mode}))
+        fn k =>
+          (* TODO: check check if the fn mode or the let1 param mode *)
+          send (exp, fn (exp, ty, mode) =>
+            Exp.prefix (send (body, k), Dec.MonoVal
+              {var = var, ty = ty, exp = exp, mode = Mode.defaultToHeap mode}))
 
       fun lambda {arg, argType, argMode, lambdaMode, resultMode, body, bodyType, mayInline} =
          simple (Lambda (Lambda.make {arg = arg,
@@ -1102,21 +1104,21 @@ structure DirectExp =
          (body,
           case Vector.length components of
              0 => []
-           | 1 => [MonoVal {var = Vector.first components, ty = t, exp = e, mode = mode}]
+            | 1 => [MonoVal {var = Vector.first components, ty = t, exp = e, mode = Mode.defaultToHeap mode}]
            | _ =>
                 let
                    val ts = Type.deTuple t
                    val tupleVar = Var.newNoname ()
-                in MonoVal {var = tupleVar, ty = t, exp = e, mode = mode}
+                 in MonoVal {var = tupleVar, ty = t, exp = e, mode = Mode.defaultToHeap mode}
                    ::
                    #2 (Vector.fold2
                        (components, ts, (0, []),
                         fn (x, t, (i, ac)) =>
                         (i + 1,
-                         MonoVal {var = x, ty = t,
-                                  exp = Select {tuple = VarExp.mono tupleVar,
-                                                offset = i},
-                                  mode = mode}
+                          MonoVal {var = x, ty = t,
+                                   exp = Select {tuple = VarExp.mono tupleVar,
+                                                 offset = i},
+                                   mode = Mode.defaultToHeap mode}
                          :: ac)))
                 end)
 

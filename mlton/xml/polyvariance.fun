@@ -310,16 +310,16 @@ fun transform (program as Program.T {datatypes, body},
                                val {decs, result} = loopDecs (ds, result)
                                val decs =
                                   case varInfo var of
-                                     Replace var =>
-                                        MonoVal {var = var, ty = ty, mode = mode,
-                                                 exp = Lambda (loopLambda l)}
-                                        :: decs
+                                      Replace var =>
+                                         MonoVal {var = var, ty = ty, mode = Mode.defaultToHeap mode,
+                                                  exp = Lambda (loopLambda l)}
+                                         :: decs
                                    | Dup {duplicates, ...} =>
                                         List.fold
-                                        (!duplicates, decs, fn (var, decs) =>
-                                         MonoVal {var = var, ty = ty, mode = mode,
-                                                  exp = Lambda (loopLambda l)}
-                                         :: decs)
+                                         (!duplicates, decs, fn (var, decs) =>
+                                          MonoVal {var = var, ty = ty, mode = Mode.defaultToHeap mode,
+                                                   exp = Lambda (loopLambda l)}
+                                          :: decs)
                             in {decs = decs, result = result}
                             end
                        | _ =>
@@ -380,9 +380,9 @@ fun transform (program as Program.T {datatypes, body},
                                    | Var x => Var (loopVar x)
                                val var = bind var
                                val {decs, result} = loopDecs (ds, result)
-                            in {decs = (MonoVal {var = var, ty = ty, mode = mode, exp = exp}
-                                        :: decs),
-                                result = result}
+                             in {decs = (MonoVal {var = var, ty = ty, mode = Mode.defaultToHeap mode, exp = exp}
+                                         :: decs),
+                                 result = result}
                             end)
                 | Fun {decs, ...} =>
                      let
