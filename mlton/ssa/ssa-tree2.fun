@@ -519,7 +519,8 @@ structure Exp =
        | Inject of {sum: Tycon.t,
                     variant: Var.t}
        | Object of {con: Con.t option,
-                    args: Var.t vector}
+                    args: Var.t vector,
+                    mode: Mode.t}
        | PrimApp of {prim: Type.t Prim.t,
                      args: Var.t vector}
        | Select of {base: Var.t Base.t,
@@ -527,7 +528,7 @@ structure Exp =
        | Sequence of {args: Var.t vector vector}
        | Var of Var.t
 
-      val unit = Object {con = NONE, args = Vector.new0 ()}
+      val unit = Object {con = NONE, args = Vector.new0 (), mode = Mode.Constant}
 
       fun foreachVar (e, v) =
          let
@@ -550,7 +551,7 @@ structure Exp =
             case e of
                Const _ => e
              | Inject {sum, variant} => Inject {sum = sum, variant = fx variant}
-             | Object {con, args} => Object {con = con, args = fxs args}
+             | Object {con, args, mode} => Object {con = con, args = fxs args, mode = mode}
              | PrimApp {prim, args} => PrimApp {args = fxs args, prim = prim}
              | Select {base, offset} =>
                   Select {base = Base.map (base, fx), offset = offset}
@@ -568,12 +569,12 @@ structure Exp =
                Const c => Const.layout c
              | Inject {sum, variant} =>
                   seq [str "inj ", paren (layoutVar variant), str ": ", Tycon.layout sum]
-             | Object {con, args} =>
+             | Object {con, args, mode} =>
                   seq [str "obj ",
                        (case con of
                            NONE => empty
                          | SOME c => seq [Con.layout c, str " "]),
-                       layoutArgs args]
+                       layoutArgs args, Mode.layout mode]
              | PrimApp {args, prim} =>
                   seq [str "prim ", Prim.layoutFull (prim, Type.layout), str " ", layoutArgs args]
              | Select {base, offset} =>
@@ -603,7 +604,7 @@ structure Exp =
              (kw "obj" *>
               optional Con.parse >>= (fn con =>
               parseArgs >>= (fn args =>
-              pure {con = con, args = args}))),
+              pure {con = con, args = args, mode = Mode.Heap}))),
              PrimApp <$>
              (kw "prim" *>
               Prim.parseFull Type.parse >>= (fn prim =>
@@ -634,9 +635,10 @@ structure Exp =
       fun equals (e: t, e': t): bool =
          case (e, e') of
             (Const c, Const c') => Const.equals (c, c')
-          | (Object {con, args}, Object {con = con', args = args'}) =>
+          | (Object {con, args, mode}, Object {con = con', args = args', mode = mode'}) =>
                Option.equals (con, con', Con.equals)
                andalso varsEquals (args, args')
+               andalso Mode.equals (mode, mode')
           | (PrimApp {prim, args, ...},
              PrimApp {prim = prim', args = args', ...}) =>
                Prim.equals (prim, prim') andalso varsEquals (args, args')

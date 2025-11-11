@@ -890,7 +890,7 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
             case exp of
                Exp.Const _ => simple ()
              | Inject _ => simple ()
-             | Object {args, con} =>
+             | Object {args, con, mode} =>
                   (case var of
                       NONE => none ()
                     | SOME var =>
@@ -939,7 +939,8 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
                                               val obj =
                                                  Bind
                                                  {exp = Object {args = args,
-                                                                con = con},
+                                                                con = con,
+                                                                mode = mode},
                                                   ty = ty,
                                                   var = SOME var}
                                            in

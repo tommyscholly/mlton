@@ -702,7 +702,7 @@ fun closureConvert
             val argExp = convertVarInfo arg
             val ty = valueType resultVal
             val {cons, ...} = valueLambdasInfo funcVal
-         in Dexp.casee
+            val casee = Dexp.casee
             {test = convertVarInfo func,
              ty = ty,
              default = NONE,
@@ -726,6 +726,13 @@ fun closureConvert
                                    ty = valueType result},
                                   result, resultVal, resultMode)}
                end))}
+            val _ = if Mode.equals (resultMode, Mode.Stack) andalso Control.optFuelAvailAndUse ()
+                    then 
+                       Error.warning 
+                       ("apply: " ^ Layout.toString (Dexp.layout casee)
+                           ^ " is in stack mode" 
+                           ^ Option.toString Int.toString (!Control.optFuel)) else ()
+         in casee
          end
       (*------------------------------------*)
       (*             convertExp             *)
@@ -868,6 +875,12 @@ fun closureConvert
          (fn (e: SprimExp.t, v: Value.t, mode: Mode.t, ac: Accum.t) =>
          let
             val ty = valueType v
+            val _ = if Mode.equals (mode, Mode.Stack) andalso Control.optFuelAvailAndUse () 
+                    then 
+                       Error.warning 
+                       (Layout.toString (SprimExp.layout e) ^ " is in stack mode" 
+                        ^ Option.toString Int.toString (!Control.optFuel)) 
+                    else ()
             fun convertJoin (e, ac) =
                let val (e', ac) = convertExp (e, ac)
                (* TODO: maybe not this mode here? *)

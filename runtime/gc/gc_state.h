@@ -9,6 +9,11 @@
 
 #if (defined (MLTON_GC_INTERNAL_TYPES))
 
+struct RegionStackNode {
+  pointer partitionStart;
+  struct RegionStackNode* next;
+};
+
 struct GC_state {
   /* These fields are at the front because they are the most commonly
    * referenced, and having them at smaller offsets may decrease code
@@ -49,6 +54,10 @@ struct GC_state {
   GC_objectType objectTypes; /* Array of object types. */
   uint32_t objectTypesLength; /* Cardinality of objectTypes array. */
   struct GC_profiling profiling;
+  pointer regionBuffer;
+  size_t regionBufferSize;
+  pointer regionTop;
+  struct RegionStackNode* regionStack;
   GC_frameIndex (*returnAddressToFrameIndex) (GC_returnAddress ra);
   objptr savedThread; /* Result of GC_copyCurrentThread.
                        * Thread interrupted by arrival of signal.

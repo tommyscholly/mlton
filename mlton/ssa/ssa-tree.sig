@@ -150,6 +150,7 @@ signature SSA_TREE =
          sig
             datatype t =
                T of {args: (Var.t * Type.t) vector,
+               (* T of {args: (Var.t * Type.t * Mode.t) vector, *)
                      label: Label.t,
                      statements: Statement.t vector,
                      transfer: Transfer.t}

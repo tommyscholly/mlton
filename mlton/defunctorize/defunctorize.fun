@@ -425,7 +425,7 @@ structure Xexp =
 
       (* ms corresponds to the modes of the elements of es *)
       (* mode is the mode of the whole list *)
-      fun list (es: Xexp.t vector, ms: Mode.t vector, mode: Mode.t, ty: Xtype.t, {forceLeftToRight: bool})
+      fun list (es: Xexp.t vector, mode: Mode.t, ty: Xtype.t, {forceLeftToRight: bool})
          : Xexp.t =
          let
             val targs = #2 (valOf (Xtype.deConOpt ty))
@@ -455,10 +455,10 @@ structure Xexp =
                                 let
                                    val var = Var.newNoname ()
                                 in
-                                   Xexp.let1 {body = cons (e, monoVar (var, ty, Vector.sub (ms, i))),
+                                   Xexp.let1 {body = cons (e, monoVar (var, ty, mode)),
                                                exp = rest,
                                                var = var,
-                                               mode = Vector.sub (ms, i)}
+                                               mode = mode}
                                 end)
             else if Vector.length es < 20
                then Vector.foldr (es, nill, cons)
@@ -537,15 +537,15 @@ structure Xexp =
                       in
                          (l',
                           Xexp.let1 {body = body,
-                                      exp = cons (e, Xexp.monoVar (l', ty, Vector.sub (ms, i))),
+                                      exp = cons (e, Xexp.monoVar (l', ty, mode)),
                                       var = l,
-                                      mode = Vector.sub (ms, i)})
+                                      mode = mode})
                       end)
                in
                   Xexp.let1 {body = body,
                               exp = nill,
                               var = l,
-                              mode = Mode.Heap}
+                              mode = mode}
                end
          end
    end
@@ -1144,14 +1144,10 @@ fun defunctorize (CoreML.Program.T {decs}) =
                         (*    in if m = Mode.Undetermined then Cexp.mode e else m *)
                         (*    end) *)
                         (* val mode = Vector.fold (ms, Cexp.mode e, Mode.join) *)
-                        val es_ms = Vector.map (es, fn e => 
-                                             let val (e', _, m) = loopExp e
-                                             in (e', m) end)
-                                             
-                        val (es, ms) = Vector.unzip es_ms
-                        val mode = Vector.fold (ms, mode, Mode.join)
+                        val es = Vector.map (es, #1 o loopExp)
+                        val _ = Error.warning ("List mode: " ^ Layout.toString (Mode.layout mode))
                      in
-                         Xexp.list (es, ms, mode, ty,
+                         Xexp.list (es, mode, ty,
                                    {forceLeftToRight = 2 <= numExpansive})
                      end
                 | PrimApp {args, prim, targs} =>

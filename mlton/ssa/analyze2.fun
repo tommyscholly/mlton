@@ -205,7 +205,7 @@ fun 'a analyze
           | Inject {sum, variant} =>
                inject {sum = sum,
                        variant = value variant}
-          | Object {args, con} =>
+          | Object {args, con, mode = _} =>
                let
                   val args =
                      case Type.dest ty of

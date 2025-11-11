@@ -4,3 +4,5 @@
 mlton-*.tgz
 *.pre.*
 *.post.*
+*.du
+*.ud

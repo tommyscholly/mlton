@@ -28,6 +28,8 @@ local
 in
    structure Base = Base
    structure Prod = Prod
+   structure Atoms = Atoms
+   structure Mode = Atoms.Mode
 end
 
 fun convert (S.Program.T {datatypes, functions, globals, main}) =
@@ -93,7 +95,7 @@ fun convert (S.Program.T {datatypes, functions, globals, main}) =
                       stmt)
          in
             case exp of
-                S.Exp.ConApp {args, con, ...} =>
+                S.Exp.ConApp {args, con, mode, ...} =>
                   let
                      val sum =
                         case S2.Type.dest ty of
@@ -103,7 +105,8 @@ fun convert (S.Program.T {datatypes, functions, globals, main}) =
                   in
                      Vector.new2
                      (S2.Statement.Bind {exp = S2.Exp.Object {args = args,
-                                                              con = SOME con},
+                                                              con = SOME con,
+                                                              mode = mode},
                                          ty = conType con,
                                          var = SOME variant},
                       S2.Statement.Bind {exp = S2.Exp.Inject {variant = variant,
@@ -144,7 +147,8 @@ fun convert (S.Program.T {datatypes, functions, globals, main}) =
                                                    offset = 0})
                        | Prim.Ref_ref =>
                             simple (S2.Exp.Object {args = Vector.new1 (arg 0),
-                                                   con = NONE})
+                                                   con = NONE,
+                                                   mode = Mode.Heap})
                        | Prim.Vector_length =>
                             simple (S2.Exp.PrimApp {args = args,
                                                     prim = Prim.Array_length})
@@ -158,7 +162,7 @@ fun convert (S.Program.T {datatypes, functions, globals, main}) =
              | S.Exp.Select {offset, tuple} =>
                   simple (S2.Exp.Select {base = Base.Object tuple,
                                          offset = offset})
-             | S.Exp.Tuple {exps = v, mode = _} => simple (S2.Exp.Object {args = v, con = NONE})
+             | S.Exp.Tuple {exps = v, mode = m} => simple (S2.Exp.Object {args = v, con = NONE, mode = m})
              | S.Exp.Var x => simple (S2.Exp.Var x)
          end
       val convertStatement =

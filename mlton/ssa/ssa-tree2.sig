@@ -92,7 +92,8 @@ signature SSA_TREE2 =
              | Inject of {sum: Tycon.t,
                           variant: Var.t}
              | Object of {args: Var.t vector,
-                          con: Con.t option}
+                          con: Con.t option,
+                          mode: Mode.t}
              | PrimApp of {args: Var.t vector,
                            prim: Type.t Prim.t}
              | Select of {base: Var.t Base.t,

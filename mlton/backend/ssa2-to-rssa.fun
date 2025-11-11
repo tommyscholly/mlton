@@ -1044,7 +1044,7 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                            if isSome (toRtype ty)
                               then move (varOp variant)
                            else none ()
-                      | S.Exp.Object {args, con} =>
+                      | S.Exp.Object {args, con, mode = _} =>
                            (case toRtype ty of
                                NONE => none ()
                              | SOME dstTy =>
