@@ -154,7 +154,8 @@ structure Statement =
        | Move of {dst: Operand.t,
                   src: Operand.t}
        | Object of {dst: Var.t * Type.t,
-                    obj: Object.t}
+                    obj: Object.t,
+                    mode: Mode.t}
        | PrimApp of {args: Operand.t vector,
                      dst: (Var.t * Type.t) option,
                      prim: Type.t Prim.t}
@@ -172,7 +173,7 @@ structure Statement =
             case s of
                Bind {dst = (x, t), src, ...} => def (x, t, useOperand (src, a))
              | Move {dst, src} => useOperand (src, useOperand (dst, a))
-             | Object {dst = (x, t), obj} => def (x, t, Object.foldUse (obj, a, useOperand))
+             | Object {dst = (x, t), obj, ...} => def (x, t, Object.foldUse (obj, a, useOperand))
              | PrimApp {dst, args, ...} =>
                   Vector.fold (args,
                                Option.fold (dst, a, fn ((x, t), a) =>
@@ -212,7 +213,7 @@ structure Statement =
                         pinned = pinned,
                         src = oper src}
              | Move {dst, src} => Move {dst = oper dst, src = oper src}
-             | Object {dst, obj} => Object {dst = dst, obj = Object.replace' (obj, fs)}
+             | Object {dst, obj, mode} => Object {dst = dst, obj = Object.replace' (obj, fs), mode = mode}
              | PrimApp {args, dst, prim} =>
                   PrimApp {args = Vector.map (args, oper),
                            dst = dst,
@@ -236,9 +237,9 @@ structure Statement =
                   mayAlign
                   [Operand.layout dst,
                    indent (seq [str ":= ", Operand.layout src], 2)]
-             | Object {dst = (x, t), obj} =>
+             | Object {dst = (x, t), obj, mode} =>
                   mayAlign
-                  [seq [Var.layout x, constrain t],
+                  [seq [Var.layout x, constrain t, Mode.layout mode],
                    indent (seq [str "= ", Object.layout obj], 2)]
              | PrimApp {dst, prim, args, ...} =>
                   mayAlign
@@ -1105,7 +1106,8 @@ structure Program =
                statics: {dst: Var.t * Type.t, obj: Object.t} vector}
 
       fun clear (T {functions, main, statics, ...}) =
-         (Vector.foreach (statics, Statement.clear o Statement.Object)
+         (Vector.foreach (statics, fn {dst, obj} =>
+                          Statement.clear (Statement.Object {dst = dst, obj = obj, mode = Mode.Heap}))
           ; Function.clear main
           ; Func.clear (Function.name main)
           ; List.foreach (functions, fn f =>
@@ -1123,7 +1125,8 @@ structure Program =
                                output (seq [str "opt_", Int.layout i,
                                             str " = ", ObjectType.layout ty]))
             ; output (str "\nStatics:")
-            ; Vector.foreach (statics, output o Statement.layout o Statement.Object)
+            ; Vector.foreach (statics, fn {dst, obj} =>
+                              output (Statement.layout (Statement.Object {dst = dst, obj = obj, mode = Mode.Heap})))
             ; output (str "\nMain:")
             ; Function.layouts (main, output)
             ; output (str "\nFunctions:")

@@ -53,7 +53,9 @@ signature C_FUNCTION =
                            maySwitchThreadsTo: bool,
                            modifiesFrontier: bool,
                            readsStackTop: bool,
-                           writesStackTop: bool}
+                           writesStackTop: bool,
+                           readsRegionTop: bool,
+                           writesRegionTop: bool}
 
             val impure: t
             val pure: t
@@ -71,6 +73,8 @@ signature C_FUNCTION =
             val modifiesFrontier: t -> bool
             val readsStackTop: t -> bool
             val writesStackTop: t -> bool
+            val readsRegionTop: t -> bool
+            val writesRegionTop: t -> bool
          end
 
       structure Target:
@@ -111,10 +115,12 @@ signature C_FUNCTION =
       val parse: 'a Parse.t -> 'a t Parse.t
       val prototype: 'a t -> CType.t vector * CType.t option
       val readsStackTop: 'a t -> bool
+      val readsRegionTop: 'a t -> bool
       val return: 'a t -> 'a
       val symbolScope: 'a t -> SymbolScope.t
       val target: 'a t -> Target.t
       val writesStackTop: 'a t -> bool
+      val writesRegionTop: 'a t -> bool
       val vanilla: {args: 'a vector,
                     name: string,
                     prototype: CType.t vector * CType.t option,

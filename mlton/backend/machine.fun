@@ -298,6 +298,7 @@ structure Operand =
                             volatile: bool}
        | StackOffset of StackOffset.t
        | StackTop
+       | RegionTop
        | StaticHeapRef of StaticHeap.Ref.t
        | Temporary of Temporary.t
 
@@ -316,6 +317,7 @@ structure Operand =
         | SequenceOffset {ty, ...} => ty
         | StackOffset s => StackOffset.ty s
         | StackTop => Type.cpointer ()
+        | RegionTop => Type.cpointer ()
         | StaticHeapRef h => StaticHeap.Ref.ty h
         | Temporary t => Temporary.ty t
 
@@ -346,6 +348,7 @@ structure Operand =
                        constrain ty]
              | StackOffset so => StackOffset.layout so
              | StackTop => str "<StackTop>"
+             | RegionTop => str "<RegionTop>"
              | StaticHeapRef h => StaticHeap.Ref.layout h
              | Temporary t => Temporary.layout t
          end
@@ -530,6 +533,81 @@ structure Statement =
              (* Frontier += size; *)
              PrimApp {args = Vector.new2 (Frontier, bytes size),
                       dst = SOME Frontier,
+                      prim = Prim.CPointer_add})
+         end
+
+      fun stackObject {dst, header, size} =
+         let
+            datatype z = datatype Operand.t
+            fun bytes (b: Bytes.t): Operand.t =
+               Operand.word (WordX.fromBytes (b, WordSize.csize ()))
+            val metaDataSize = Runtime.normalMetaDataSize ()
+            val headerOffset = Runtime.headerOffset ()
+            val header = Operand.word header
+            val temp = Temporary (Temporary.new (Type.cpointer (), NONE))
+         in
+            Vector.new4
+            ((* tmp = RegionTop + GC_NORMAL_METADATA_SIZE; *)
+             PrimApp {args = Vector.new2 (RegionTop, bytes metaDataSize),
+                      dst = SOME temp,
+                      prim = Prim.CPointer_add},
+             (* dst = pointerToObjptr(tmp); *)
+             Move {dst = dst, src = Cast (temp, Operand.ty dst)},
+             (* OW(dst, -GC_HEADER_SIZE) = header; *)
+             Move {dst = Offset {base = dst,
+                                 offset = headerOffset,
+                                 ty = Type.objptrHeader (),
+                                 volatile = false},
+                   src = header},
+             (* RegionTop += size; *)
+             PrimApp {args = Vector.new2 (RegionTop, bytes size),
+                      dst = SOME RegionTop,
+                      prim = Prim.CPointer_add})
+         end
+
+      fun stackSequence {dst, header, length, size} =
+         let
+            datatype z = datatype Operand.t
+            fun bytes (b: Bytes.t): Operand.t =
+               Operand.word (WordX.fromBytes (b, WordSize.csize ()))
+            val metaDataSize = Runtime.sequenceMetaDataSize ()
+            val headerOffset = Runtime.headerOffset ()
+            val lengthOffset = Runtime.sequenceLengthOffset ()
+            val counterOffset = Runtime.sequenceCounterOffset ()
+            val header = Operand.word header
+            val length =
+               Operand.word (WordX.fromInt (length, WordSize.seqIndex ()))
+            val counter = Operand.zero (WordSize.seqIndex ())
+            val temp = Temporary (Temporary.new (Type.cpointer (), NONE))
+         in
+            Vector.new6
+            ((* tmp = RegionTop + GC_SEQUENCE_METADATA_SIZE; *)
+             PrimApp {args = Vector.new2 (RegionTop, bytes metaDataSize),
+                      dst = SOME temp,
+                      prim = Prim.CPointer_add},
+             (* dst = pointerToObjptr(tmp); *)
+             Move {dst = dst, src = Cast (temp, Operand.ty dst)},
+             (* OW(dst, -(GC_HEADER_SIZE + GC_SEQUENCE_LENGTH_SIZE + GC_SEQUENCE_COUNTER_SIZE)) = 0x0; *)
+             Move {dst = Offset {base = dst,
+                                 offset = counterOffset,
+                                 ty = Type.seqIndex (),
+                                 volatile = false},
+                   src = counter},
+             (* OW(dst, -(GC_HEADER_SIZE + GC_SEQUENCE_LENGTH_SIZE)) = length; *)
+             Move {dst = Offset {base = dst,
+                                 offset = lengthOffset,
+                                 ty = Type.seqIndex (),
+                                 volatile = false},
+                   src = length},
+             (* OW(dst, -GC_HEADER_SIZE) = header; *)
+             Move {dst = Offset {base = dst,
+                                 offset = headerOffset,
+                                 ty = Type.objptrHeader (),
+                                 volatile = false},
+                   src = header},
+             (* RegionTop += size; *)
+             PrimApp {args = Vector.new2 (RegionTop, bytes size),
+                      dst = SOME RegionTop,
                       prim = Prim.CPointer_add})
          end
 
@@ -1292,9 +1370,10 @@ structure Program =
                                 tyconTy = tyconTy,
                                 result = ty,
                                 scale = scale}))
-                      | StaticHeapRef r => checkStaticHeapRef r
-                      | StackTop => true
-                      | Temporary t => Alloc.doesDefine (alloc, Live.Temporary t)
+                     | StaticHeapRef r => checkStaticHeapRef r
+                     | StackTop => true
+                     | RegionTop => true
+                     | Temporary t => Alloc.doesDefine (alloc, Live.Temporary t)
                in
                   Err.check ("operand", ok, fn () => Operand.layout x)
                end

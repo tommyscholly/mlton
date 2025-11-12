@@ -401,7 +401,7 @@ fun checkScopes (program as Program.T {functions, main, statics, ...}): unit =
             ()
          end
       val _ = Vector.foreach (statics, fn {dst, obj} =>
-                              loopStmt (Statement.Object {dst = dst, obj = obj}, true))
+                              loopStmt (Statement.Object {dst = dst, obj = obj, mode = Mode.Heap}, true))
       val _ = List.foreach (functions, bindFunc o Function.name)
       val _ = loopFunc (main, true)
       val _ = List.foreach (functions, fn f => loopFunc (f, false))
@@ -525,7 +525,7 @@ fun typeCheck (p as Program.T {functions, main, objectTypes, profileInfo, static
                    ; checkOperand src
                    ; (Type.isSubtype (Operand.ty src, Operand.ty dst)
                       andalso Operand.isLocation dst))
-             | Object {dst = (_, dstTy), obj} =>
+             | Object {dst = (_, dstTy), obj, ...} =>
                   (Object.isOk (obj, {checkUse = checkOperand,
                                       tyconTy = tyconTy})
                    andalso Type.isSubtype (Object.ty obj, dstTy))
@@ -764,9 +764,9 @@ fun typeCheck (p as Program.T {functions, main, objectTypes, profileInfo, static
          end
       val _ =
          Vector.foreach
-         (statics, fn stmt as {dst, ...} =>
+         (statics, fn {dst, obj} =>
           (setVarType dst
-           ; check' (Statement.Object stmt, "static", statementOk, Statement.layout)))
+           ; check' (Statement.Object {dst = dst, obj = obj, mode = Mode.Heap}, "static", statementOk, Statement.layout)))
       val _ =
          List.foreach
          (functions, fn f => setFuncInfo (Function.name f, f))

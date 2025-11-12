@@ -11,6 +11,7 @@ signature REPRESENTATION_STRUCTS =
    sig
       structure Rssa: RSSA
       structure Ssa2: SSA2
+      sharing Rssa.Mode = Ssa2.Mode
       sharing Rssa.Prod = Ssa2.Prod
       sharing Rssa.RealSize = Ssa2.RealSize
       sharing Rssa.WordSize = Ssa2.WordSize
@@ -35,7 +36,8 @@ signature REPRESENTATION =
                       con: Ssa2.Con.t option,
                       dst: Rssa.Var.t * Rssa.Type.t,
                       objectTy: Ssa2.Type.t,
-                      oper: Ssa2.Var.t -> Rssa.Operand.t} -> Rssa.Statement.t list,
+                      oper: Ssa2.Var.t -> Rssa.Operand.t,
+                      mode: Ssa2.Mode.t} -> Rssa.Statement.t list,
              objectTypes: (Rssa.ObjptrTycon.t * Rssa.ObjectType.t) vector,
              select: {base: Rssa.Operand.t Ssa2.Base.t,
                       baseTy: Ssa2.Type.t,

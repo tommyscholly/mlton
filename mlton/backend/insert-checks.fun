@@ -127,7 +127,11 @@ structure Statement =
 
       fun bytesAllocated (s: t, {tyconTy}): Bytes.t =
          case s of
-            Object {obj, ...} => Object.size (obj, {tyconTy = tyconTy})
+            Object {obj, mode, ...} =>
+               (* Only count heap allocations, not stack allocations *)
+               (case mode of
+                   Mode.Stack => Bytes.zero
+                 | _ => Object.size (obj, {tyconTy = tyconTy}))
           | _ => Bytes.zero
    end
 
@@ -197,14 +201,16 @@ fun insertFunction (f: Function.t,
                         CFunction.T {args = Vector.new0 (),
                                      convention = CFunction.Convention.Cdecl,
                                      inline = false,
-                                     kind = CFunction.Kind.Runtime {bytesNeeded = NONE,
-                                                                    ensuresBytesFree = NONE,
-                                                                    mayGC = false,
-                                                                    maySwitchThreadsFrom = false,
-                                                                    maySwitchThreadsTo = false,
-                                                                    modifiesFrontier = false,
-                                                                    readsStackTop = false,
-                                                                    writesStackTop = false},
+                                    kind = CFunction.Kind.Runtime {bytesNeeded = NONE,
+                                                                   ensuresBytesFree = NONE,
+                                                                   mayGC = false,
+                                                                   maySwitchThreadsFrom = false,
+                                                                   maySwitchThreadsTo = false,
+                                                                   modifiesFrontier = false,
+                                                                   readsStackTop = false,
+                                                                   writesStackTop = false,
+                                                                   readsRegionTop = false,
+                                                                   writesRegionTop = false},
                                      prototype = (Vector.new0 (), NONE),
                                      return = Type.unit,
                                      symbolScope = CFunction.SymbolScope.Private,

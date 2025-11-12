@@ -60,7 +60,8 @@ signature RSSA_TREE =
              | Move of {dst: Operand.t,
                         src: Operand.t}
              | Object of {dst: Var.t * Type.t,
-                          obj: Object.t}
+                          obj: Object.t,
+                          mode: Mode.t}
              | PrimApp of {args: Operand.t vector,
                            dst: (Var.t * Type.t) option,
                            prim: Type.t Prim.t}
