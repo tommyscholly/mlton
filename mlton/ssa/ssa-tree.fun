@@ -298,7 +298,7 @@ structure Exp =
                    mode: Mode.t}
        | Var of Var.t
 
-      val unit = Tuple {exps = Vector.new0 (), mode = Mode.Heap}
+      val unit = Tuple {exps = Vector.new0 (), mode = Mode.Constant}
 
       (* Vals to determine the size for inline.fun and loop optimization*)
       val size : t -> int =

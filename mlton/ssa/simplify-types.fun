@@ -577,13 +577,13 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
          if varIsUseful x then x else unitVar
       fun simplifyVars xs = Vector.map (xs, simplifyVar)
       fun simplifyUsefulVars xs = Vector.keepAll (xs, varIsUseful)
-      fun tuple xs =
+      fun tuple (xs, mode) =
          let
             val xs = simplifyUsefulVars xs
          in
             if 1 = Vector.length xs
                then Var (Vector.first xs)
-                else Tuple {exps = xs, mode = Mode.Heap}
+                else Tuple {exps = xs, mode = mode}
          end
       fun simplifyUsefulFormals xts =
          Exn.withEscape
@@ -601,14 +601,14 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                  end)))
       fun simplifyExp (e: Exp.t): Exp.t =
          case e of
-             ConApp {con, args, ...} =>
+             ConApp {con, args, mode} =>
                 (case conRep con of
-                    ConRep.Transparent => tuple (simplifyUsefulVars args)
+                    ConRep.Transparent => tuple (simplifyUsefulVars args, mode)
                   | ConRep.Useful =>
-                       ConApp {con = con, args = simplifyUsefulVars args, mode = Mode.Heap}
+                       ConApp {con = con, args = simplifyUsefulVars args, mode = mode}
                   | ConRep.Useless =>
                        Error.bug "SimplifyTypes.simplfyExp: ConApp, ConRep.Useless")
-           | PrimApp {prim, targs, args, ...} =>
+           | PrimApp {prim, targs, args, mode} =>
                 let
                    fun normal () =
                       PrimApp {prim = prim,
@@ -617,7 +617,12 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                args = simplifyVars args}
                   fun equal () =
                      if Cardinality.isOne (typeCardinality (Vector.first targs))
-                         then ConApp {con = Con.truee, args = Vector.new0 (), mode = Mode.Heap}
+                         then ConApp {
+                             con = Con.truee, 
+                             args = Vector.new0 (),
+                             mode = case mode of
+                                      NONE => Mode.Heap
+                                    | SOME m => m}
                         else normal ()
                   fun length () =
                      if Cardinality.isZero (typeCardinality (Vector.first targs))
@@ -653,7 +658,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                 else offset)),
                    fn _ => Error.bug "SimplifyTypes.simplifyExp: Select")
                end
-           | Tuple {exps = xs, ...} => tuple xs
+          | Tuple {exps = xs, mode} => tuple (xs, mode)
           | _ => e
       val simplifyExp =
          Trace.trace ("SimplifyTypes.simplifyExp",

@@ -536,8 +536,10 @@ fun transform (program: Program.t): Program.t =
              end)
          val conArgs = #args o conInfo
          fun conApp {con: Con.t,
-                     args: Value.t vector} =
+                     args: Value.t vector,
+                     mode: Mode.t}: Value.t =
             let val {args = args', value, ...} = conInfo con
+                val _ = mode
             in coerces {from = args, to = args'}
                ; value ()
             end

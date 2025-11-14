@@ -112,11 +112,13 @@ struct
 
           val _ = Vector.foreachi (statements, processStatement)
 
-          val _ =
-            case transfer of
-              Transfer.Call {func, ...} =>
-                if Allocates.isStackAlloc (getFuncAlloc func) then markRegionsAllocate (!currentDepth) else ()
-            | _ => ()
+            val _ =
+              case transfer of
+                Transfer.Call {func, ...} =>
+                  if Allocates.isStackAlloc (getFuncAlloc func) orelse
+                     AllocatesInCaller.allocatesInCaller (getFuncAllocInCaller func)
+                  then markRegionsAllocate (!currentDepth) else ()
+              | _ => ()
         in
           !currentDepth
         end

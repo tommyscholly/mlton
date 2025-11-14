@@ -726,12 +726,12 @@ fun closureConvert
                                    ty = valueType result},
                                   result, resultVal, resultMode)}
                end))}
-            val _ = if Mode.equals (resultMode, Mode.Stack) andalso Control.optFuelAvailAndUse ()
-                    then 
-                       Error.warning 
-                       ("apply: " ^ Layout.toString (Dexp.layout casee)
-                           ^ " is in stack mode" 
-                           ^ Option.toString Int.toString (!Control.optFuel)) else ()
+            (* val _ = if Mode.equals (resultMode, Mode.Stack) andalso Control.optFuelAvailAndUse () *)
+            (*         then  *)
+            (*            Error.warning  *)
+            (*            ("apply: " ^ Layout.toString (Dexp.layout casee) *)
+            (*                ^ " is in stack mode"  *)
+            (*                ^ Option.toString Int.toString (!Control.optFuel)) else () *)
          in casee
          end
       (*------------------------------------*)
@@ -875,12 +875,12 @@ fun closureConvert
          (fn (e: SprimExp.t, v: Value.t, mode: Mode.t, ac: Accum.t) =>
          let
             val ty = valueType v
-            val _ = if Mode.equals (mode, Mode.Stack) andalso Control.optFuelAvailAndUse () 
-                    then 
-                       Error.warning 
-                       (Layout.toString (SprimExp.layout e) ^ " is in stack mode" 
-                        ^ Option.toString Int.toString (!Control.optFuel)) 
-                    else ()
+            (* val _ = if Mode.equals (mode, Mode.Stack) andalso Control.optFuelAvailAndUse ()  *)
+            (*         then  *)
+            (*            Error.warning  *)
+            (*            (Layout.toString (SprimExp.layout e) ^ " is in stack mode"  *)
+            (*             ^ Option.toString Int.toString (!Control.optFuel))  *)
+            (*         else () *)
             fun convertJoin (e, ac) =
                let val (e', ac) = convertExp (e, ac)
                (* TODO: maybe not this mode here? *)
@@ -950,12 +950,13 @@ fun closureConvert
                                (NONE, NONE) => Vector.new0 ()
                              | (SOME arg, SOME conArg) =>
                                   let
-                                     val arg = varExpInfo arg
-                                     val argVal = VarInfo.value arg
-                                     val arg = convertVarInfo arg
+                                     val argInfo = varExpInfo arg
+                                     val argVal = VarInfo.value argInfo
+                                     val argMode = VarInfo.mode argInfo
+                                     val arg = convertVarInfo argInfo
                                   in if Value.equals (argVal, conArg)
                                         then Vector.new1 arg
-                                     else Vector.new1 (coerce (arg, argVal, conArg, mode))
+                                     else Vector.new1 (coerce (arg, argVal, conArg, argMode))
                                   end
                              | _ => Error.bug "ClosureConvert.convertPrimExp: ConApp,constructor mismatch")})
              | SprimExp.Const c => simple (Dexp.const c)

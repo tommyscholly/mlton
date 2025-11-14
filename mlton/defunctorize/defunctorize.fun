@@ -1145,7 +1145,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                         (*    end) *)
                         (* val mode = Vector.fold (ms, Cexp.mode e, Mode.join) *)
                         val es = Vector.map (es, #1 o loopExp)
-                        val _ = Error.warning ("List mode: " ^ Layout.toString (Mode.layout mode))
+                        (* val _ = Error.warning ("List mode: " ^ Layout.toString (Mode.layout mode)) *)
                      in
                          Xexp.list (es, mode, ty,
                                    {forceLeftToRight = 2 <= numExpansive})

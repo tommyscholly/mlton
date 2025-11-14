@@ -629,9 +629,9 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
              val () =
                 newTyconInfo
                 (tycon, Vector.map (cons, fn {con, ...} => con), dummy)
-              val dummyExp = ConApp {args = Vector.new0 (),
-                                     con = dummyCon,
-                                     mode = Mode.Heap}
+             val dummyExp = ConApp {args = Vector.new0 (),
+                                    con = dummyCon,
+                                    mode = Mode.Heap}
              val dummy = {con = dummyCon, args = dummyArgs, exp = dummyExp}
              val () =
                 Vector.foreach
@@ -955,7 +955,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
 
       fun simplifyExp (e: Exp.t): Exp.t =
           case e of
-             ConApp {con, args, ...} =>
+             ConApp {con, args, mode} =>
                 let
                    val ci = conInfo con
                 in
@@ -971,7 +971,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                                   then SOME x
                                                else NONE)),
                                       con = con,
-                                      mode = Mode.Heap}
+                                      mode = mode}
                           end
                   else #exp (ConInfo.dummy ci)
                end

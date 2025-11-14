@@ -54,15 +54,15 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
        *)
       fun canon (e: Exp.t): Exp.t =
          case e of
-             ConApp {con, args, ...} =>
-                ConApp {con = con, args = canonVars args, mode = Mode.Heap}
+             ConApp {con, args, mode} =>
+                ConApp {con = con, args = canonVars args, mode = mode}
           | Const _ => e
-           | PrimApp {prim, targs, args, ...} =>
+          | PrimApp {prim, targs, args, mode} =>
                 let
                    fun doit args =
                       PrimApp {prim = prim,
                                targs = targs,
-                               mode = NONE,
+                               mode = mode,
                                args = args}
                   val args = canonVars args
                   fun arg i = Vector.sub (args, i)
@@ -96,7 +96,7 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
                end
           | Select {tuple, offset} => Select {tuple = canonVar tuple,
                                               offset = offset}
-           | Tuple {exps = xs, ...} => Tuple {exps = canonVars xs, mode = Mode.Heap}
+          | Tuple {exps = xs, mode} => Tuple {exps = canonVars xs, mode = mode}
           | Var x => Var (canonVar x)
           | _ => e
 

@@ -143,7 +143,10 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
                (x,
                 Statement.T {var = SOME x, 
                              ty = Type.bool,
-                                                           exp = ConApp {con = c, args = Vector.new0 (), mode = Mode.Heap}})
+                             exp = ConApp {
+                                 con = c, 
+                                 args = Vector.new0 (), 
+                                 mode = Mode.Constant}})
             end
       in
          val (trueVar, trueStmt) = make Con.truee

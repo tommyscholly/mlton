@@ -216,7 +216,7 @@ fun transform (program as Program.T {datatypes, globals, functions, main}) =
       val { value, func, ... } =
          analyze
          { coerce = fn {from, to} => TypeInfo.coerce (from, to),
-           conApp = fn {con, args} => TypeInfo.fromCon {con = con, args = args, tycon = conTycon con},
+           conApp = fn {con, args, mode = _} => TypeInfo.fromCon {con = con, args = args, tycon = conTycon con},
            const = TypeInfo.const,
            filter = fn (ty, con, args) => TypeInfo.coerce (ty, TypeInfo.fromCon {con=con, args=args, tycon = conTycon con}),
            filterWord = fn _ => (),

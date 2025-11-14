@@ -1059,24 +1059,24 @@ fun shrinkFunction {globals: Statement.t vector} =
                         value = SOME v}
             in
                case exp of
-                   ConApp {con, args, ...} =>
+                   ConApp {con, args, mode} =>
                       let
                          val args = varInfos args
                       in
                          construct (Value.Con {con = con, args = args},
                                     fn () => ConApp {con = con,
                                                      args = uses args,
-                                                     mode = Mode.Heap})
+                                                     mode = mode})
                       end
                 | Const c => construct (Value.Const c, fn () => exp)
-                 | PrimApp {prim, targs, args, ...} =>
+                 | PrimApp {prim, targs, args, mode} =>
                       let
                          val args = varInfos args
                          fun apply {prim, targs, args} =
                             doit {sideEffect = Prim.maySideEffect prim,
                                   makeExp = fn () => PrimApp {prim = prim,
                                                               targs = targs,
-                                                              mode = NONE,
+                                                              mode = mode,
                                                               args = uses args},
                                   value = NONE}
                         datatype z = datatype Prim.ApplyResult.t
@@ -1094,7 +1094,7 @@ fun shrinkFunction {globals: Statement.t vector} =
                                             fn () =>
                                              ConApp {con = con,
                                                      args = Vector.new0 (),
-                                                     mode = Mode.Heap})
+                                                     mode = Mode.Constant})
                               end
                          | Const c => construct (Value.Const c,
                                                  fn () => Exp.Const c)
@@ -1116,7 +1116,7 @@ fun shrinkFunction {globals: Statement.t vector} =
                                          fn () => Select {tuple = use tuple,
                                                           offset = offset})
                      end
-                 | Tuple {exps = xs, ...} =>
+                 | Tuple {exps = xs, mode} =>
                       let
                          val xs = varInfos xs
                      in
@@ -1148,7 +1148,7 @@ fun shrinkFunction {globals: Statement.t vector} =
                                 | _ => escape NONE)) of
                           SOME tuple => setVar tuple
                         | NONE => construct (Value.Tuple xs,
-                                              fn () => Tuple {exps = uses xs, mode = Mode.Heap})
+                                              fn () => Tuple {exps = uses xs, mode = mode})
                      end
                 | Var x => setVar (varInfo x)
                 | _ => doit {makeExp = fn () => exp,

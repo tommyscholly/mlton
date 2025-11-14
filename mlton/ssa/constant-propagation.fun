@@ -76,19 +76,24 @@ structure Value =
          struct
             datatype 'a t = T of {args: 'a vector,
                                   con: Con.t,
+                                  mode: Mode.t,
                                   unique: UniqueId.t}
 
-            fun new {args, con} = T {args = args,
-                                     con = con,
-                                     unique = UniqueId.new ()}
+            fun new {args, con, mode} = T {args = args,
+                                           con = con,
+                                           mode = mode,
+                                           unique = UniqueId.new ()}
 
             fun equals (T {args = args1,
                            con = con1,
+                           mode = mode1,
                            unique = unique1},
                         T {con = con2,
+                           mode = mode2,
                            unique = unique2, ...}) =
                UniqueId.equals (unique1, unique2)
                orelse (Con.equals (con1, con2)
+                       andalso Mode.equals (mode1, mode2)
                        andalso Vector.isEmpty args1)
 
             fun layout layoutA (T {args, con, ...}) =
@@ -108,8 +113,8 @@ structure Value =
             open Data
 
             val undefined = Data.newBottom
-            fun conApp {args, con} =
-               Data.newPoint (ConApp.new {args = args, con = con})
+            fun conApp {args, con, mode} =
+               Data.newPoint (ConApp.new {args = args, con = con, mode = mode})
             val getConApp = Data.getPoint
             val unknown = Data.newTop
             val makeUnknown = Data.makeTop
@@ -879,7 +884,8 @@ structure Value =
 
       fun bool b =
          new (Datatype (Data.conApp {args = Vector.new0 (),
-                                     con = Con.fromBool b}),
+                                     con = Con.fromBool b,
+                                     mode = Mode.Constant}),
               Type.bool)
 
       val const = fn c =>
@@ -1033,14 +1039,14 @@ structure Value =
                                  | NONE => No)
                           | Datatype d =>
                                (case Data.getConApp d of
-                                   SOME (ConApp.T {args, con, ...}) =>
+                                   SOME (ConApp.T {args, con, mode, ...}) =>
                                       (case globals args of
                                           NONE => No
                                         | SOME args =>
                                               yes (Exp.ConApp
                                                    {con = con,
                                                     args = Vector.map (args, #1),
-                                                    mode = Mode.Heap}))
+                                                    mode = mode}))
                                  | _ => No)
                           | Ref {birth, ...} =>
                                if !Control.globalizeRefs then
@@ -1142,19 +1148,20 @@ fun transform (program: Program.t): Program.t =
       local
          open Value
       in
-         fun conApp {con: Con.t, args: t vector}: t =
+         fun conApp {con: Con.t, args: t vector, mode: Mode.t}: t =
             let
                val {values = tos, result, ...} = conInfo con
             in
                coerces {froms = args, tos = tos}
-               ; new (Datatype (Data.conApp {args = args, con = con}), result)
+               ; new (Datatype (Data.conApp {args = args, con = con, mode = mode}), result)
             end
          val conApp =
             Trace.trace
             ("ConstantPropagation.Value.conApp",
-             fn {con, args} =>
+             fn {con, args, mode} =>
              Layout.record [("con", Con.layout con),
-                            ("args", Vector.layout layout args)],
+                            ("args", Vector.layout layout args),
+                            ("mode", Mode.layout mode)],
              layout)
             conApp
          fun filter (variant, con, args) =

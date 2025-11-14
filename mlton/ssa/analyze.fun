@@ -192,7 +192,11 @@ fun 'a analyze
          let
             val v =
                case exp of
-                   ConApp {con, args, ...} => conApp {con = con, args = values args}
+                  ConApp {con, args, mode} => 
+                      conApp {
+                          con = con, 
+                          args = values args, 
+                          mode = mode}
                 | Const c => const c
                 | PrimApp {prim, targs, args, ...} =>
                      primApp {prim = prim,

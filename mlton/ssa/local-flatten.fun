@@ -196,7 +196,7 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
                                    Statement.T
                                    {var = SOME x,
                                     ty = ty,
-                                                                         exp = Tuple {exps = Vector.map (vars, #1), mode = Mode.Heap}}
+                                    exp = Tuple {exps = Vector.map (vars, #1), mode = Mode.Heap}}
                                    :: stmts)
                                end)
                in (Vector.concatV argss, stmts)

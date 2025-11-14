@@ -398,7 +398,7 @@ fun typeCheck (program as Program.T {datatypes, ...}): unit =
               setConInfo (con, {args = args,
                                 result = result}))
           end)
-      fun conApp {con, args} =
+      fun conApp {con, args, mode = _} =
          let
             val {args = args', result, ...} = conInfo con
             val _ = coerces (args', args)
