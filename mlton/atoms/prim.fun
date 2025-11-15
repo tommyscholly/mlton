@@ -142,6 +142,8 @@ datatype 'a t =
  | Ref_assign (* to ssa2 *)
  | Ref_deref (* to ssa2 *)
  | Ref_ref (* to ssa2 *)
+ | Region_push (* to codegen *)
+ | Region_pop (* to codegen *)
  | String_toWord8Vector (* defunctorize *)
  | Thread_atomicBegin (* to rssa *)
  | Thread_atomicEnd (* to rssa *)
@@ -314,6 +316,8 @@ fun toString (n: 'a t): string =
        | Ref_assign => "Ref_assign"
        | Ref_deref => "Ref_deref"
        | Ref_ref => "Ref_ref"
+       | Region_push => "Region_push"
+       | Region_pop => "Region_pop"
        | String_toWord8Vector => "String_toWord8Vector"
        | Thread_atomicBegin => "Thread_atomicBegin"
        | Thread_atomicEnd => "Thread_atomicEnd"
@@ -646,6 +650,8 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Ref_assign => Ref_assign
     | Ref_deref => Ref_deref
     | Ref_ref => Ref_ref
+    | Region_push => Region_push
+    | Region_pop => Region_pop
     | String_toWord8Vector => String_toWord8Vector
     | Thread_atomicBegin => Thread_atomicBegin
     | Thread_atomicEnd => Thread_atomicEnd
@@ -851,6 +857,8 @@ val kind: 'a t -> Kind.t =
        | Ref_assign => SideEffect
        | Ref_deref => DependsOnState
        | Ref_ref => Moveable
+       | Region_push => SideEffect
+       | Region_pop => SideEffect
        | String_toWord8Vector => Functional
        | Thread_atomicBegin => SideEffect
        | Thread_atomicEnd => SideEffect
@@ -1368,6 +1376,8 @@ fun 'a checkApp (prim: 'a t,
        | Ref_assign => oneTarg (fn t => (twoArgs (reff t, t), unit))
        | Ref_deref => oneTarg (fn t => (oneArg (reff t), t))
        | Ref_ref => oneTarg (fn t => (oneArg t, reff t))
+       | Region_push => noTargs (fn () => (noArgs, unit))
+       | Region_pop => noTargs (fn () => (noArgs, unit))
        | Thread_atomicBegin => noTargs (fn () => (noArgs, unit))
        | Thread_atomicEnd => noTargs (fn () => (noArgs, unit))
        | Thread_atomicState => noTargs (fn () => (noArgs, word32))

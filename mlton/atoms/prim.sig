@@ -132,6 +132,8 @@ signature PRIM =
        | Ref_assign (* to ssa2 *)
        | Ref_deref (* to ssa2 *)
        | Ref_ref (* to ssa2 *)
+       | Region_push (* to codegen *)
+       | Region_pop (* to codegen *)
        | String_toWord8Vector (* defunctorize *)
        | Thread_atomicBegin (* to rssa *)
        | Thread_atomicEnd (* to rssa *)

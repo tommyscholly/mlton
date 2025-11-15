@@ -22,6 +22,7 @@ in
    structure Block = Block
    structure Kind = Kind
    structure Label = Label
+   structure Mode = Mode
    structure Object = Object
    structure ObjectType = ObjectType
    structure Operand = Operand
@@ -965,7 +966,8 @@ structure ObjptrRep =
             ([Object {dst = (dst, ty),
                       obj = Object.Normal
                             {init = Vector.fromListRev init,
-                             tycon = tycon}}]
+                             tycon = tycon},
+                      mode = Mode.Heap}]
              :: pre)
          end
 
@@ -1007,7 +1009,8 @@ structure ObjptrRep =
             ([Object {dst = (dst, ty),
                       obj = Object.Sequence
                             {init = Vector.fromListRev init,
-                             tycon = tycon}}]
+                             tycon = tycon},
+                      mode = Mode.Heap}]
              :: pre)
          end
 
@@ -2765,13 +2768,24 @@ fun compute (program as Ssa2.Program.T {datatypes, ...}) =
           S.Type.layout, TupleRep.layout)
          tupleRep
 
-      fun object {args, con, dst, objectTy, oper} =
+      fun object {args, con, dst, objectTy, oper, mode} =
          let
             val src = makeSrc (args, oper)
+            val stmts =
+               case con of
+                  NONE => TupleRep.tuple (tupleRep objectTy, {dst = dst, src = src})
+                | SOME con => ConRep.conApp (conRep con, {dst = dst, src = src})
+            (* Override mode in Object statements if needed *)
+            val stmts =
+               if Mode.equals (mode, Mode.Heap)
+                  then stmts
+               else List.map (stmts, fn stmt =>
+                       case stmt of
+                          Statement.Object {dst, obj, ...} =>
+                             Statement.Object {dst = dst, obj = obj, mode = mode}
+                        | _ => stmt)
          in
-            case con of
-               NONE => TupleRep.tuple (tupleRep objectTy, {dst = dst, src = src})
-             | SOME con => ConRep.conApp (conRep con, {dst = dst, src = src})
+            stmts
          end
       fun sequence {args, dst = (dst, _), sequenceTy, oper} =
          let

@@ -410,7 +410,7 @@ fun transform2 (Program.T {datatypes, globals, functions, main}) =
           | Inject {sum, variant} =>
                (visitTycon sum
                 ; visitVar variant)
-          | Object {args, con} =>
+          | Object {args, con, mode = _} =>
                let
                   val () =
                      case con of
@@ -713,9 +713,8 @@ fun transform2 (Program.T {datatypes, globals, functions, main}) =
                                           ConInfo.whenConed
                                           (conInfo con, visitLabelTh l))
                              end
-               end
-          | Exclave l => visitLabel l
-          | Goto {dst, args} =>
+                end
+           | Goto {dst, args} =>
                let
                   val li = labelInfo dst
                   val () = flowVarInfoTysVars (LabelInfo.args li, args)
@@ -749,7 +748,8 @@ fun transform2 (Program.T {datatypes, globals, functions, main}) =
                 (tycon, Vector.map (cons, fn {con, ...} => con), dummy)
              val dummyTy = Type.conApp (dummyCon, dummyArgs)
              val dummyExp = Object {args = Vector.new0 (),
-                                    con = SOME dummyCon}
+                                    con = SOME dummyCon,
+                                    mode = Mode.Heap}
              val dummy = {con = dummyCon, args = dummyArgs,
                           ty = dummyTy, exp = dummyExp}
              val () =
@@ -1100,7 +1100,7 @@ fun transform2 (Program.T {datatypes, globals, functions, main}) =
 
       fun simplifyExp (e: Exp.t): Exp.t =
          case e of
-            Object {con, args} =>
+            Object {con, args, mode} =>
                (case con of
                    NONE => e
                  | SOME con =>
@@ -1119,7 +1119,8 @@ fun transform2 (Program.T {datatypes, globals, functions, main}) =
                                                      fn (x, (y, _)) =>
                                                      if VarInfo.isUsed y
                                                         then SOME x
-                                                     else NONE))}
+                                                     else NONE)),
+                                            mode = mode}
                                  end
                          else #exp (ConInfo.dummy ci)
                       end)
@@ -1362,12 +1363,11 @@ fun transform2 (Program.T {datatypes, globals, functions, main}) =
                                        else keep (SOME l)
                                     end
                end
-          | Case {test, cases, default} =>
-               Case {test = test,
-                     cases = cases,
-                     default = default}
-          | Exclave l => Exclave l
-          | Goto {dst, args} =>
+           | Case {test, cases, default} =>
+                Case {test = test,
+                      cases = cases,
+                      default = default}
+           | Goto {dst, args} =>
                Goto {dst = dst,
                      args = (Vector.keepAllMap2
                              (args, LabelInfo.args (labelInfo dst),

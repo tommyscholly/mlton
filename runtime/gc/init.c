@@ -340,6 +340,12 @@ int GC_init (GC_state s, int argc, char **argv) {
   s->sysvals.physMem = GC_physMem ();
   s->weaks = NULL;
   s->saveWorldStatus = true;
+  s->regionBufferSize = 4096;
+  s->regionBuffer = (pointer)GC_mmapAnon_safe(NULL, 4096);
+  if (s->regionBuffer == (void*)-1)
+    die ("Cannot allocate region buffer");
+  s->regionTop = s->regionBuffer;
+  s->regionStack = NULL;
 
   initIntInf (s);
   initSignalStack ();

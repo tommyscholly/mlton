@@ -185,7 +185,7 @@ fun shrinkOnce (Program.T {datatypes, body}) =
       fun replace (x, i) = replaceInfo (x, monoVarInfo x, i)
       val shrinkVarExp = VarInfo.varExp o varExpInfo
       local
-         fun handleBoundVar (x, ts, _) =
+         fun handleBoundVar (x, ts, _, mode) =
             setVarInfo (x,
                         if Vector.isEmpty ts
                            then (InternalVarInfo.VarInfo
@@ -332,7 +332,7 @@ fun shrinkOnce (Program.T {datatypes, body}) =
          let
             val info as {numOccurrences, value, ...} = monoVarInfo var
             fun finish (exp, decs) =
-               MonoVal {var = var, ty = ty, mode = mode, exp = exp} :: decs
+                MonoVal {var = var, ty = ty, mode = Mode.defaultToHeap mode, exp = exp} :: decs
             fun nonExpansive (delete: unit -> unit,
                               set: unit -> (unit -> PrimExp.t) option) =
                if 0 = !numOccurrences
@@ -438,7 +438,7 @@ fun shrinkOnce (Program.T {datatypes, body}) =
                                  NONE => match Option.isNone
                                | SOME v =>
                                     match
-                                    (fn SOME (x, _) => (replace (x, v); true)
+                                    (fn SOME (x, _, _) => (replace (x, v); true)
                                   | _ => false)
                               end
                              | (_, SOME (Value.Const c)) =>
@@ -457,10 +457,6 @@ fun shrinkOnce (Program.T {datatypes, body}) =
                       Value.ConApp {con = con, targs = targs, arg = arg})
                   end
              | Const c => nonExpansiveValue (fn () => (), Value.Const c)
-             (* todo: this is probably dropping the inner exclave expression
-              * while keeping the exclave
-              * temporarily I am not shrinking e *)
-             | Exclave e => expansive (Exclave (e))
              | Handle {try, catch as (catchVar, _), handler} =>
                   let
                      val handler = shrinkExp handler

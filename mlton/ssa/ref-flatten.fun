@@ -1036,7 +1036,7 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
             fun none () = Vector.new0 ()
          in
             case exp of
-               Exp.Object {args, con} =>
+               Exp.Object {args, con, mode} =>
                   (case var of
                       NONE => none ()
                     | SOME var =>
@@ -1056,7 +1056,7 @@ fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
                                          Vector.concat
                                          [Vector.fromList extra,
                                           make (Exp.Object
-                                                {args = args, con = con})]
+                                                {args = args, con = con, mode = mode})]
                                       end))
              | PrimApp {args, prim} =>
                   make (PrimApp {args = args, prim = prim})

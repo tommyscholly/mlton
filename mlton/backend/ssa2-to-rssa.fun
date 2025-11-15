@@ -60,7 +60,9 @@ structure CFunction =
                                  maySwitchThreadsTo = true,
                                  modifiesFrontier = true,
                                  readsStackTop = true,
-                                 writesStackTop = true},
+                                 writesStackTop = true,
+                                 readsRegionTop = false,
+                                 writesRegionTop = false},
             prototype = (Vector.new1 CType.gcState, NONE),
             return = Type.unit,
             symbolScope = Private,
@@ -78,7 +80,9 @@ structure CFunction =
                                  maySwitchThreadsTo = false,
                                  modifiesFrontier = true,
                                  readsStackTop = true,
-                                 writesStackTop = true},
+                                 writesStackTop = true,
+                                 readsRegionTop = false,
+                                 writesRegionTop = false},
             prototype = let
                            open CType
                         in
@@ -99,7 +103,9 @@ structure CFunction =
                                  maySwitchThreadsTo = false,
                                  modifiesFrontier = true,
                                  readsStackTop = true,
-                                 writesStackTop = true},
+                                 writesStackTop = true,
+                                 readsRegionTop = false,
+                                 writesRegionTop = false},
             prototype = (Vector.new2 (CType.gcState, CType.cint ()), NONE),
             return = Type.unit,
             symbolScope = Private,
@@ -119,7 +125,9 @@ structure CFunction =
                                  maySwitchThreadsTo = false,
                                  modifiesFrontier = true,
                                  readsStackTop = true,
-                                 writesStackTop = true},
+                                 writesStackTop = true,
+                                 readsRegionTop = false,
+                                 writesRegionTop = false},
             prototype = (Vector.new4 (CType.gcState,
                                       CType.csize (),
                                       CType.seqIndex (),
@@ -145,7 +153,9 @@ structure CFunction =
                                  maySwitchThreadsTo = false,
                                  modifiesFrontier = false,
                                  readsStackTop = false,
-                                 writesStackTop = false},
+                                 writesStackTop = false,
+                                 readsRegionTop = false,
+                                 writesRegionTop = false},
             prototype = (Vector.new6 (CType.gcState,
                                       CType.Objptr,
                                       CType.seqIndex (),
@@ -168,11 +178,51 @@ structure CFunction =
                                  maySwitchThreadsTo = true,
                                  modifiesFrontier = true,
                                  readsStackTop = true,
-                                 writesStackTop = true},
+                                 writesStackTop = true,
+                                 readsRegionTop = false,
+                                 writesRegionTop = false},
             prototype = (Vector.new0 (), NONE),
             return = Type.unit,
             symbolScope = Private,
             target = Direct "Thread_returnToC"}
+
+      val regionPush = fn () =>
+         T {args = Vector.new1 (Type.gcState ()),
+            convention = Cdecl,
+            inline = false,
+            kind = Kind.Runtime {bytesNeeded = NONE,
+                                 ensuresBytesFree = NONE,
+                                 mayGC = false,
+                                 maySwitchThreadsFrom = false,
+                                 maySwitchThreadsTo = false,
+                                 modifiesFrontier = false,
+                                 readsStackTop = false,
+                                 writesStackTop = false,
+                                 readsRegionTop = true,
+                                 writesRegionTop = true},
+            prototype = (Vector.new1 CType.gcState, NONE),
+            return = Type.unit,
+            symbolScope = Public,
+            target = Direct "GC_regionPush"}
+
+      val regionPop = fn () =>
+         T {args = Vector.new1 (Type.gcState ()),
+            convention = Cdecl,
+            inline = false,
+            kind = Kind.Runtime {bytesNeeded = NONE,
+                                 ensuresBytesFree = NONE,
+                                 mayGC = false,
+                                 maySwitchThreadsFrom = false,
+                                 maySwitchThreadsTo = false,
+                                 modifiesFrontier = false,
+                                 readsStackTop = false,
+                                 writesStackTop = false,
+                                 readsRegionTop = false,
+                                 writesRegionTop = true},
+            prototype = (Vector.new1 CType.gcState, NONE),
+            return = Type.unit,
+            symbolScope = Public,
+            target = Direct "GC_regionPop"}
 
       (* CHECK; thread as objptr *)
       val threadSwitchTo = fn () =>
@@ -186,7 +236,9 @@ structure CFunction =
                                  maySwitchThreadsTo = true,
                                  modifiesFrontier = true,
                                  readsStackTop = true,
-                                 writesStackTop = true},
+                                 writesStackTop = true,
+                                 readsRegionTop = false,
+                                 writesRegionTop = false},
             prototype = (Vector.new3 (CType.gcState,
                                       CType.thread,
                                       CType.csize ()),
@@ -207,7 +259,9 @@ structure CFunction =
                                  maySwitchThreadsTo = false,
                                  modifiesFrontier = false,
                                  readsStackTop = false,
-                                 writesStackTop = false},
+                                 writesStackTop = false,
+                                 readsRegionTop = false,
+                                 writesRegionTop = false},
             prototype = (Vector.new2 (CType.gcState, CType.cpointer),
                          SOME CType.bool),
             return = Type.bool,
@@ -226,7 +280,9 @@ structure CFunction =
                                  maySwitchThreadsTo = false,
                                  modifiesFrontier = false,
                                  readsStackTop = false,
-                                 writesStackTop = false},
+                                 writesStackTop = false,
+                                 readsRegionTop = false,
+                                 writesRegionTop = false},
             prototype = (Vector.new2 (CType.gcState, CType.cpointer),
                          SOME CType.cpointer),
             return = return,
@@ -245,7 +301,9 @@ structure CFunction =
                                  maySwitchThreadsTo = false,
                                  modifiesFrontier = true,
                                  readsStackTop = true,
-                                 writesStackTop = true},
+                                 writesStackTop = true,
+                                 readsRegionTop = false,
+                                 writesRegionTop = false},
             prototype = (Vector.new3 (CType.gcState,
                                       CType.objptrHeader (),
                                       CType.cpointer),
@@ -265,7 +323,9 @@ structure CFunction =
                                  maySwitchThreadsTo = true,
                                  modifiesFrontier = true,
                                  readsStackTop = true,
-                                 writesStackTop = true},
+                                 writesStackTop = true,
+                                 readsRegionTop = false,
+                                 writesRegionTop = false},
             prototype = (Vector.new2 (CType.gcState, CType.cpointer), NONE),
             return = Type.unit,
             symbolScope = Private,
@@ -287,7 +347,9 @@ structure CFunction =
                                  maySwitchThreadsTo = false,
                                  modifiesFrontier = true, (* actually, just readsFrontier *)
                                  readsStackTop = true,
-                                 writesStackTop = true},
+                                 writesStackTop = true,
+                                 readsRegionTop = false,
+                                 writesRegionTop = false},
             prototype = (Vector.new2 (CType.gcState, CType.cpointer), NONE),
             return = Type.unit,
             symbolScope = Private,
@@ -309,7 +371,9 @@ structure CFunction =
                                  maySwitchThreadsTo = false,
                                  modifiesFrontier = true,
                                  readsStackTop = true,
-                                 writesStackTop = true},
+                                 writesStackTop = true,
+                                 readsRegionTop = false,
+                                 writesRegionTop = false},
             prototype = (Vector.new2 (CType.gcState, CType.cpointer),
                          SOME (CType.csize ())),
             return = Type.csize (),
@@ -332,7 +396,9 @@ structure CFunction =
                                                      maySwitchThreadsTo = false,
                                                      modifiesFrontier = true,
                                                      readsStackTop = amAllocationProfiling (),
-                                                     writesStackTop = false},
+                                                     writesStackTop = false,
+                                                     readsRegionTop = false,
+                                                     writesRegionTop = false},
                       prototype = (Vector.new4 (CType.gcState,
                                                 CType.intInf,
                                                 CType.intInf,
@@ -355,7 +421,9 @@ structure CFunction =
                                                      maySwitchThreadsTo = false,
                                                      modifiesFrontier = false,
                                                      readsStackTop = false,
-                                                     writesStackTop = false},
+                                                     writesStackTop = false,
+                                                     readsRegionTop = false,
+                                                     writesRegionTop = false},
                       prototype = (Vector.new3 (CType.gcState,
                                                 CType.intInf,
                                                 CType.intInf),
@@ -377,7 +445,9 @@ structure CFunction =
                                                      maySwitchThreadsTo = false,
                                                      modifiesFrontier = true,
                                                      readsStackTop = amAllocationProfiling (),
-                                                     writesStackTop = false},
+                                                     writesStackTop = false,
+                                                     readsRegionTop = false,
+                                                     writesRegionTop = false},
                       prototype = (Vector.new4 (CType.gcState,
                                                 CType.intInf,
                                                 CType.shiftArg,
@@ -401,7 +471,9 @@ structure CFunction =
                                                      maySwitchThreadsTo = false,
                                                      modifiesFrontier = true,
                                                      readsStackTop = amAllocationProfiling (),
-                                                     writesStackTop = false},
+                                                     writesStackTop = false,
+                                                     readsRegionTop = false,
+                                                     writesRegionTop = false},
                       prototype = (Vector.new4 (CType.gcState,
                                                 CType.intInf,
                                                 CType.Int32,
@@ -423,7 +495,9 @@ structure CFunction =
                                                      maySwitchThreadsTo = false,
                                                      modifiesFrontier = true,
                                                      readsStackTop = amAllocationProfiling (),
-                                                     writesStackTop = false},
+                                                     writesStackTop = false,
+                                                     readsRegionTop = false,
+                                                     writesRegionTop = false},
                       prototype = (Vector.new3 (CType.gcState,
                                                 CType.intInf,
                                                 CType.csize ()),
@@ -582,6 +656,8 @@ structure Prim =
                           word s2, wordCType (s2, sg))
              | Real_round s => realUnary s
              | Real_sub s => realBinary s
+             | Region_push => CFunction.regionPush ()
+             | Region_pop => CFunction.regionPop ()
              | Thread_returnToC => CFunction.returnToC ()
              | Word_add s => wordBinary (s, {signed = false})
              | Word_addCheckP (s, sg) => wordBinaryCheckP (s, sg)
@@ -899,9 +975,8 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                       args = vos args,
                                       return = return})
                end
-          | S.Transfer.Case r => translateCase r
-          | S.Transfer.Exclave l => ([], Transfer.Exclave l)
-          | S.Transfer.Goto {dst, args} =>
+           | S.Transfer.Case r => translateCase r
+           | S.Transfer.Goto {dst, args} =>
                ([], Transfer.Goto {dst = dst, args = vos args})
           | S.Transfer.Raise xs => ([], Transfer.Raise (vos xs))
           | S.Transfer.Return xs => ([], Transfer.Return (vos xs))
@@ -1008,15 +1083,16 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                            if isSome (toRtype ty)
                               then move (varOp variant)
                            else none ()
-                      | S.Exp.Object {args, con} =>
-                           (case toRtype ty of
-                               NONE => none ()
-                             | SOME dstTy =>
-                                  adds (object {args = args,
-                                                con = con,
-                                                dst = (valOf var, dstTy),
-                                                objectTy = ty,
-                                                oper = varOp}))
+                     | S.Exp.Object {args, con, mode} =>
+                          (case toRtype ty of
+                              NONE => none ()
+                            | SOME dstTy =>
+                                 adds (object {args = args,
+                                               con = con,
+                                               dst = (valOf var, dstTy),
+                                               objectTy = ty,
+                                               oper = varOp,
+                                               mode = mode}))
                       | S.Exp.PrimApp {args, prim} =>
                            let
                               val prim = translatePrim prim
@@ -1591,6 +1667,8 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                | Prim.World_save =>
                                     simpleCCallWithGCState
                                     (CFunction.worldSave ())
+                               | Prim.Region_push => simpleCCallWithGCState (CFunction.regionPush ())
+                               | Prim.Region_pop => simpleCCallWithGCState (CFunction.regionPop ())
                                | _ => simpleCodegenOrC prim
                            end
                       | S.Exp.Select {base, offset} =>

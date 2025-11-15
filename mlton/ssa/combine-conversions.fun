@@ -82,7 +82,7 @@ fun rules x3 (conversion as ((W2, W3, {signed=s2}), x2)) =
 
 fun markStatement stmt =
    case stmt of
-      Statement.T { exp = Exp.PrimApp { args, prim, targs=_ },
+       Statement.T { exp = Exp.PrimApp { args, prim, targs=_, ... },
                     ty = _,
                     var = SOME v } =>
         (case prim of
@@ -98,9 +98,10 @@ fun mapStatement stmt =
             SOME (SOME (prim as (W2, W3, _), x2)) =>
                if WordSize.equals (W2, W3)
                then Exp.Var x2
-               else Exp.PrimApp { args  = Vector.new1 x2,
-                                  prim  = Prim.Word_extdToWord prim,
-                                  targs = Vector.new0 () }
+                else Exp.PrimApp { args  = Vector.new1 x2,
+                                   prim  = Prim.Word_extdToWord prim,
+                                   mode = NONE,
+                                   targs = Vector.new0 () }
           | _ => exp
    in
       Statement.T { exp = exp, ty = ty, var = var }

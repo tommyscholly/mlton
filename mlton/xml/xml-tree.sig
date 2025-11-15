@@ -30,7 +30,7 @@ signature XML_TREE =
 
       structure Pat:
          sig
-            datatype t = T of {arg: (Var.t * Type.t) option,
+            datatype t = T of {arg: (Var.t * Type.t * Mode.t) option,
                                con: Con.t,
                                targs: Type.t vector}
 
@@ -92,7 +92,6 @@ signature XML_TREE =
                           con: Con.t,
                           targs: Type.t vector}
              | Const of Const.t
-             | Exclave of exp
              | Handle of {(* catch binds the exception in the handler. *)
                           catch: Var.t * Type.t,
                           handler: exp,
@@ -156,10 +155,10 @@ signature XML_TREE =
                {exp: t,
                 handleExp: t -> unit,
                 handlePrimExp: Var.t * Type.t * PrimExp.t -> unit,
-                handleBoundVar: Var.t * Tyvar.t vector * Type.t -> unit,
+                handleBoundVar: Var.t * Tyvar.t vector * Type.t * Mode.t -> unit,
                 handleVarExp: VarExp.t -> unit} -> unit
             val foreachBoundVar:
-               t * (Var.t * Tyvar.t vector * Type.t -> unit) -> unit
+               t * (Var.t * Tyvar.t vector * Type.t * Mode.t -> unit) -> unit
             val foreachExp: t * (t -> unit) -> unit
             val foreachPrimExp: t * (Var.t * Type.t * PrimExp.t -> unit) -> unit
             val foreachVarExp: t * (VarExp.t -> unit) -> unit
@@ -196,7 +195,6 @@ signature XML_TREE =
             val detupleBind': {tuple: t, components: Var.t vector, body: t, mode: Mode.t} -> t
             val devector: {vector: t, length: int, body: (VarExp.t * Type.t * Mode.t) vector -> t} -> t
             val equal: t * t -> t
-            val exclave: t * Type.t -> t
             val falsee: unit -> t
             val fromExp: Exp.t * Type.t * Mode.t -> t
             val fromLambda: Lambda.t * Type.t * Mode.t -> t

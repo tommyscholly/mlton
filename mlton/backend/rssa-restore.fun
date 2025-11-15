@@ -518,8 +518,8 @@ fun restoreFunction {main: Function.t, statics: {dst: Var.t * Type.t, obj: Objec
                    Statement.Bind {dst=tupleDst, pinned=pinned, src=src}
               | Statement.Move {src, ...} =>
                    Statement.Move {dst=Operand.Var dst, src=src}
-              | Statement.Object {obj, ...} =>
-                   Statement.Object {dst=tupleDst, obj = obj}
+              | Statement.Object {obj, mode, ...} =>
+                   Statement.Object {dst=tupleDst, obj = obj, mode = mode}
               | Statement.PrimApp {args, prim, ...} =>
                    Statement.PrimApp {args=args, dst=SOME tupleDst, prim=prim}
               | _ => st
@@ -628,9 +628,8 @@ fun restoreFunction {main: Function.t, statics: {dst: Var.t * Type.t, obj: Objec
                              func=func,
                              return=Return.NonTail
                               {cont=cont, handler=Handler.Handle h'}}
-                     end
-                  | Exclave l => Transfer.Exclave (route false l)
-                  | _ => Transfer.replace (t, {const = Operand.Const,
+                      end
+                   | _ => Transfer.replace (t, {const = Operand.Const,
                                                label = route false,
                                                var = rewriteVar o #var})
            in

@@ -45,7 +45,8 @@ structure VarInfo =
        | Inject of {sum: Tycon.t,
                     variant: t}
        | Object of {args: t vector,
-                    con: Con.t option}
+                    con: Con.t option,
+                    mode: Mode.t}
        | Select of {object: t,
                     offset: int}
 
@@ -67,13 +68,13 @@ structure VarInfo =
                Const c => Const.layout c
              | Inject {sum, variant} =>
                   seq [layout variant, str ": ", Tycon.layout sum]
-             | Object {args, con} =>
+             | Object {args, con, mode} =>
                   let
                      val args = Vector.layout layout args
                   in
                      case con of
                         NONE => args
-                      | SOME con => seq [Con.layout con, args]
+                      | SOME con => seq [Con.layout con, args, Mode.layout mode]
                   end
              | Select {object, offset} =>
                   seq [str "#", Int.layout (offset + 1),
@@ -226,10 +227,11 @@ fun shrinkFunction {globals: Statement.t vector} =
                 in
                    case exp of
                       Const c => construct (Value.Const c)
-                    | Object {args, con} =>
+                    | Object {args, con, mode} =>
                          construct
                          (Value.Object {args = Vector.map (args, varInfo),
-                                        con = con})
+                                        con = con,
+                                        mode = mode})
                     | Select {base, offset} =>
                          (case base of
                              Base.Object x =>
@@ -391,14 +393,8 @@ fun shrinkFunction {globals: Statement.t vector} =
                                                        profileStmts = profileStmts ()})
                         else
                            normal ()
-                     end
-                | Exclave l =>
-                     let
-                        val () = incLabel l
-                     in
-                        normal ()
-                     end
-                | Goto {dst, args = actuals} =>
+                      end
+                 | Goto {dst, args = actuals} =>
                      let
                         val () = incVars actuals
                         val m = labelMeaning dst
@@ -639,7 +635,7 @@ fun shrinkFunction {globals: Statement.t vector} =
                       VarInfo.T {value = ref (SOME v), ...} =>
                          (case v of
                              Value.Const c => Prim.ApplyArg.Const c
-                           | Value.Object {args, con} =>
+                           | Value.Object {args, con, mode = todoMode} =>
                                 (case (con, Vector.length args) of
                                     (SOME con, 0) =>
                                        Prim.ApplyArg.Con {con = con,
@@ -880,9 +876,8 @@ fun shrinkFunction {globals: Statement.t vector} =
                                         ; Option.app (default, deleteLabel)),
                        profileStmts = [],
                        test = test}
-                   end
-              | Exclave l => goto (l, Vector.new0 ())
-              | Goto {dst, args} => goto (dst, varInfos args)
+                    end
+               | Goto {dst, args} => goto (dst, varInfos args)
               | Raise xs => ([], Raise (simplifyVars xs))
               | Return xs => ([], Return (simplifyVars xs))
               | Runtime {prim, args, return} =>
@@ -1107,7 +1102,7 @@ fun shrinkFunction {globals: Statement.t vector} =
                   doit {makeExp = makeExp,
                         sideEffect = false,
                         value = SOME v}
-               fun tuple (xs: VarInfo.t vector) =
+               fun tuple (xs: VarInfo.t vector, mode: Mode.t) =
                   case (Exn.withEscape
                         (fn escape =>
                          let
@@ -1141,8 +1136,8 @@ fun shrinkFunction {globals: Statement.t vector} =
                               | _ => no ())
                          end)) of
                      NONE =>
-                        construct (Value.Object {args = xs, con = NONE},
-                                   fn () => Object {args = uses xs, con = NONE})
+                        construct (Value.Object {args = xs, con = NONE, mode = mode},
+                                   fn () => Object {args = uses xs, con = NONE, mode = mode})
                    | SOME object => setVar object
             in
                case exp of
@@ -1155,7 +1150,7 @@ fun shrinkFunction {globals: Statement.t vector} =
                                    fn () => Inject {sum = sum,
                                                     variant = use variant})
                      end
-                | Object {args, con} =>
+                | Object {args, con, mode} =>
                      let
                         val args = varInfos args
                         val isMutable =
@@ -1168,10 +1163,10 @@ fun shrinkFunction {globals: Statement.t vector} =
                          * tuples.
                          *)
                         if isMutable orelse isSome con then
-                           construct (Value.Object {args = args, con = con},
+                           construct (Value.Object {args = args, con = con, mode = mode},
                                       fn () => Object {args = uses args,
-                                                       con = con})
-                        else tuple args
+                                                       con = con, mode = mode})
+                        else tuple (args, mode)
                      end
                 | PrimApp {args, prim} =>
                      let
@@ -1194,7 +1189,8 @@ fun shrinkFunction {globals: Statement.t vector} =
                                  evalStatements
                                  (Vector.new2
                                   (Bind {exp = Object {args = Vector.new0 (),
-                                                       con = SOME con},
+                                                       con = SOME con,
+                                                       mode = Mode.Constant},
                                          ty = Type.object {args = Prod.empty (),
                                                            con = ObjectCon.Con con},
                                          var = SOME variant},

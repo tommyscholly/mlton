@@ -60,7 +60,8 @@ signature RSSA_TREE =
              | Move of {dst: Operand.t,
                         src: Operand.t}
              | Object of {dst: Var.t * Type.t,
-                          obj: Object.t}
+                          obj: Object.t,
+                          mode: Mode.t}
              | PrimApp of {args: Operand.t vector,
                            dst: (Var.t * Type.t) option,
                            prim: Type.t Prim.t}
@@ -103,12 +104,11 @@ signature RSSA_TREE =
                           * a var of the appropriate type to accept the result.
                           *)
                          return: Label.t option}
-             | Call of {args: Operand.t vector,
-                        func: Func.t,
-                        return: Return.t}
-             | Exclave of Label.t
-             | Goto of {args: Operand.t vector,
-                        dst: Label.t}
+              | Call of {args: Operand.t vector,
+                         func: Func.t,
+                         return: Return.t}
+              | Goto of {args: Operand.t vector,
+                         dst: Label.t}
              (* Raise implicitly raises to the caller.  
               * I.E. the local handler stack must be empty.
               *)

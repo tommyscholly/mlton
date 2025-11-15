@@ -123,8 +123,8 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
                        case exp of
                           ConApp {args, ...} => forces args
                         | PrimApp {args, ...} => forces args
-                        | Tuple args => (setVarInfo (valOf var, VarInfo.Tuple)
-                                         ; forces args)
+                         | Tuple {exps = args, ...} => (setVarInfo (valOf var, VarInfo.Tuple)
+                                          ; forces args)
                         | Var x => force x
                         | _ => ())
                    val _ =
@@ -133,11 +133,10 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
                        | Call {args, return, ...} =>
                             (forces args
                              ; Return.foreachLabel (return, forceArgs))
-                       | Case {cases, default, ...} =>
-                            (Cases.foreach (cases, forceArgs)
-                             ; Option.app (default, forceArgs))
-                       | Exclave _ => ()
-                       | Goto {dst, args} =>
+                        | Case {cases, default, ...} =>
+                             (Cases.foreach (cases, forceArgs)
+                              ; Option.app (default, forceArgs))
+                        | Goto {dst, args} =>
                             Vector.foreach2
                             (args, labelArgs dst,
                              fn (_, NONE) => ()
@@ -197,7 +196,7 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
                                    Statement.T
                                    {var = SOME x,
                                     ty = ty,
-                                    exp = Tuple (Vector.map (vars, #1))}
+                                    exp = Tuple {exps = Vector.map (vars, #1), mode = Mode.Heap}}
                                    :: stmts)
                                end)
                in (Vector.concatV argss, stmts)

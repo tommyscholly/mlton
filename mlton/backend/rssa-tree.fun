@@ -154,7 +154,8 @@ structure Statement =
        | Move of {dst: Operand.t,
                   src: Operand.t}
        | Object of {dst: Var.t * Type.t,
-                    obj: Object.t}
+                    obj: Object.t,
+                    mode: Mode.t}
        | PrimApp of {args: Operand.t vector,
                      dst: (Var.t * Type.t) option,
                      prim: Type.t Prim.t}
@@ -172,7 +173,7 @@ structure Statement =
             case s of
                Bind {dst = (x, t), src, ...} => def (x, t, useOperand (src, a))
              | Move {dst, src} => useOperand (src, useOperand (dst, a))
-             | Object {dst = (x, t), obj} => def (x, t, Object.foldUse (obj, a, useOperand))
+             | Object {dst = (x, t), obj, ...} => def (x, t, Object.foldUse (obj, a, useOperand))
              | PrimApp {dst, args, ...} =>
                   Vector.fold (args,
                                Option.fold (dst, a, fn ((x, t), a) =>
@@ -212,7 +213,7 @@ structure Statement =
                         pinned = pinned,
                         src = oper src}
              | Move {dst, src} => Move {dst = oper dst, src = oper src}
-             | Object {dst, obj} => Object {dst = dst, obj = Object.replace' (obj, fs)}
+             | Object {dst, obj, mode} => Object {dst = dst, obj = Object.replace' (obj, fs), mode = mode}
              | PrimApp {args, dst, prim} =>
                   PrimApp {args = Vector.map (args, oper),
                            dst = dst,
@@ -236,9 +237,9 @@ structure Statement =
                   mayAlign
                   [Operand.layout dst,
                    indent (seq [str ":= ", Operand.layout src], 2)]
-             | Object {dst = (x, t), obj} =>
+             | Object {dst = (x, t), obj, mode} =>
                   mayAlign
-                  [seq [Var.layout x, constrain t],
+                  [seq [Var.layout x, constrain t, Mode.layout mode],
                    indent (seq [str "= ", Object.layout obj], 2)]
              | PrimApp {dst, prim, args, ...} =>
                   mayAlign
@@ -344,12 +345,11 @@ structure Transfer =
          CCall of {args: Operand.t vector,
                    func: Type.t CFunction.t,
                    return: Label.t option}
-       | Call of {args: Operand.t vector,
-                  func: Func.t,
-                  return: Return.t}
-       | Exclave of Label.t
-       | Goto of {args: Operand.t vector,
-                  dst: Label.t}
+        | Call of {args: Operand.t vector,
+                   func: Func.t,
+                   return: Return.t}
+        | Goto of {args: Operand.t vector,
+                   dst: Label.t}
        | Raise of Operand.t vector
        | Return of Operand.t vector
        | Switch of Switch.t
@@ -364,14 +364,13 @@ structure Transfer =
                        record [("args", Vector.layout Operand.layout args),
                                ("func", CFunction.layout (func, Type.layout)),
                                ("return", Option.layout Label.layout return)]]
-             | Call {args, func, return} =>
-                  seq [Func.layout func, str " ",
-                       Vector.layout Operand.layout args,
-                       str " ", Return.layout return]
-             | Exclave l => seq [str "exclave ", Label.layout l]
-             | Goto {dst, args} =>
-                  seq [Label.layout dst, str " ",
-                       Vector.layout Operand.layout args]
+              | Call {args, func, return} =>
+                   seq [Func.layout func, str " ",
+                        Vector.layout Operand.layout args,
+                        str " ", Return.layout return]
+              | Goto {dst, args} =>
+                   seq [Label.layout dst, str " ",
+                        Vector.layout Operand.layout args]
              | Raise xs => seq [str "raise ", Vector.layout Operand.layout xs]
              | Return xs => seq [str "return ", Vector.layout Operand.layout xs]
              | Switch s => Switch.layout s
@@ -403,10 +402,9 @@ structure Transfer =
                                case return of
                                   NONE => a
                                 | SOME l => label (l, a))
-             | Call {args, return, ...} =>
-                  useOperands (args, Return.foldLabel (return, a, label))
-             | Exclave l => label (l, a)
-             | Goto {args, dst, ...} => label (dst, useOperands (args, a))
+              | Call {args, return, ...} =>
+                   useOperands (args, Return.foldLabel (return, a, label))
+              | Goto {args, dst, ...} => label (dst, useOperands (args, a))
              | Raise zs => useOperands (zs, a)
              | Return zs => useOperands (zs, a)
              | Switch s => Switch.foldLabelUse (s, a, {label = label,
@@ -476,13 +474,12 @@ structure Transfer =
                          func = func,
                          return = Option.map (return, label)}
              | Call {args, func, return} =>
-                  Call {args = opers args,
-                        func = func,
-                        return = Return.map (return, label)}
-             | Exclave l => Exclave (label l)
-             | Goto {args, dst} =>
-                  Goto {args = opers args,
-                        dst = label dst}
+                   Call {args = opers args,
+                         func = func,
+                         return = Return.map (return, label)}
+              | Goto {args, dst} =>
+                   Goto {args = opers args,
+                         dst = label dst}
              | Raise zs => Raise (opers zs)
              | Return zs => Return (opers zs)
              | Switch s => Switch (Switch.replace' (s, fs))
@@ -797,9 +794,8 @@ structure Function =
                                       | Return.Tail => ()
                                in
                                   ()
-                               end
-                          | Transfer.Exclave dst => edge (dst, "", Solid)
-                          | Transfer.Goto {dst, ...} => edge (dst, "", Solid)
+                                end
+                           | Transfer.Goto {dst, ...} => edge (dst, "", Solid)
                           | Transfer.Raise _ => ()
                           | Transfer.Return _ => ()
                           | Transfer.Switch (Switch.T {cases, default, ...}) =>
@@ -1110,7 +1106,8 @@ structure Program =
                statics: {dst: Var.t * Type.t, obj: Object.t} vector}
 
       fun clear (T {functions, main, statics, ...}) =
-         (Vector.foreach (statics, Statement.clear o Statement.Object)
+         (Vector.foreach (statics, fn {dst, obj} =>
+                          Statement.clear (Statement.Object {dst = dst, obj = obj, mode = Mode.Heap}))
           ; Function.clear main
           ; Func.clear (Function.name main)
           ; List.foreach (functions, fn f =>
@@ -1128,7 +1125,8 @@ structure Program =
                                output (seq [str "opt_", Int.layout i,
                                             str " = ", ObjectType.layout ty]))
             ; output (str "\nStatics:")
-            ; Vector.foreach (statics, output o Statement.layout o Statement.Object)
+            ; Vector.foreach (statics, fn {dst, obj} =>
+                              output (Statement.layout (Statement.Object {dst = dst, obj = obj, mode = Mode.Heap})))
             ; output (str "\nMain:")
             ; Function.layouts (main, output)
             ; output (str "\nFunctions:")

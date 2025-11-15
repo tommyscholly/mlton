@@ -43,6 +43,7 @@ in
    structure Const = Const
    structure Func = Func
    structure Function = Function
+   structure Mode = Mode
    structure Object = Object
    structure ObjectType = ObjectType
    structure Prim = Prim
@@ -552,6 +553,7 @@ fun toMachine (rssa: Rssa.Program.t) =
          case field of
             GCField.Frontier => M.Operand.Frontier
           | GCField.StackTop => M.Operand.StackTop
+          | GCField.RegionTop => M.Operand.RegionTop
           | _ => M.Operand.gcField field
       val exnStackOp = runtimeOp GCField.ExnStack
       val stackBottomOp = runtimeOp GCField.StackBottom
@@ -649,26 +651,34 @@ fun toMachine (rssa: Rssa.Program.t) =
              | Move {dst, src} =>
                   move {dst = translateOperand dst,
                         src = translateOperand src}
-             | Object {dst = (dst, _), obj as Object.Normal {init, tycon}} =>
+             | Object {dst = (dst, _), obj as Object.Normal {init, tycon}, mode} =>
                   let
                      val dst = varOperand dst
                      val header = ObjptrTycon.toHeader tycon
+                     val size = Object.size (obj, {tyconTy = tyconTy})
                      fun mkDst {offset, ty} =
                         M.Operand.Offset {base = dst,
                                           offset = offset,
                                           ty = ty,
                                           volatile = false}
+                     val allocStmts =
+                        case mode of
+                           Mode.Stack =>
+                              M.Statement.stackObject {dst = dst,
+                                                      header = header,
+                                                      size = size}
+                         | _ =>
+                              M.Statement.object {dst = dst,
+                                                 header = header,
+                                                 size = size}
                   in
-                     Vector.concat
-                     (M.Statement.object {dst = dst,
-                                          header = header,
-                                          size = Object.size (obj, {tyconTy = tyconTy})}
-                      :: mkInit (init, mkDst))
+                     Vector.concat (allocStmts :: mkInit (init, mkDst))
                   end
-             | Object {dst = (dst, _), obj as Object.Sequence {init, tycon}} =>
+             | Object {dst = (dst, _), obj as Object.Sequence {init, tycon}, mode} =>
                   let
                      val dst = varOperand dst
                      val header = ObjptrTycon.toHeader tycon
+                     val size = Object.size (obj, {tyconTy = tyconTy})
                      val elt = ObjectType.componentsSize (tyconTy tycon)
                      val (scale, mkIndex) =
                         case Scale.fromBytes elt of
@@ -683,12 +693,21 @@ fun toMachine (rssa: Rssa.Program.t) =
                               (s, fn index =>
                                M.Operand.word
                                (WordX.fromInt (index, WordSize.seqIndex ())))
+                     val allocStmts =
+                        case mode of
+                           Mode.Stack =>
+                              M.Statement.stackSequence {dst = dst,
+                                                        header = header,
+                                                        length = Vector.length init,
+                                                        size = size}
+                         | _ =>
+                              M.Statement.sequence {dst = dst,
+                                                   header = header,
+                                                   length = Vector.length init,
+                                                   size = size}
                   in
                      Vector.concat
-                     (M.Statement.sequence {dst = dst,
-                                            header = header,
-                                            length = Vector.length init,
-                                            size = Object.size (obj, {tyconTy = tyconTy})}
+                     (allocStmts
                       :: (List.concat o Vector.toListMapi)
                          (init, fn (index, init) =>
                           let
@@ -1063,9 +1082,8 @@ fun toMachine (rssa: Rssa.Program.t) =
                         in
                            (parallelMove {dsts = dsts', srcs = srcs'},
                             M.Transfer.Goto dst)
-                        end
-                   | R.Transfer.Exclave dst => (Vector.new0 (), M.Transfer.Goto dst)
-                   | R.Transfer.Raise srcs =>
+                         end
+                    | R.Transfer.Raise srcs =>
                         let
                            val handlerStackTop =
                               M.Operand.Temporary

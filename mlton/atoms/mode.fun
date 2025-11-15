@@ -30,17 +30,22 @@ functor Mode (S: MODE_STRUCTS): MODE =
           | (Undetermined, m) => m
           | (m, Undetermined) => m
 
-      fun subsumes (parent, child) =
-         case (parent, child) of
-            (m, Undetermined) => SOME m
-          (* if the parent is undetermined, it takes the mode of the child *)
-          | (Undetermined, m) => SOME m
-          | (Constant, m) => SOME m
-          | (m, Constant) => SOME m
-          (* an expression in stack mode can contain heap mode data *)
-          | (Stack, Heap) => SOME Stack
-          | (Heap, Stack) => NONE
-          | (Heap, Heap) => SOME Heap
-          | (Stack, Stack) => SOME Stack
+       fun subsumes (parent, child) =
+          case (parent, child) of
+             (m, Undetermined) => SOME m
+           (* if the parent is undetermined, it takes the mode of the child *)
+           | (Undetermined, m) => SOME m
+           | (Constant, m) => SOME m
+           | (m, Constant) => SOME m
+           (* an expression in stack mode can contain heap mode data *)
+           | (Stack, Heap) => SOME Stack
+           | (Heap, Stack) => NONE
+           | (Heap, Heap) => SOME Heap
+           | (Stack, Stack) => SOME Stack
+
+       fun defaultToHeap mode =
+          case mode of
+             Undetermined => Heap
+           | m => m
 
    end

@@ -92,7 +92,8 @@ signature SSA_TREE2 =
              | Inject of {sum: Tycon.t,
                           variant: Var.t}
              | Object of {args: Var.t vector,
-                          con: Con.t option}
+                          con: Con.t option,
+                          mode: Mode.t}
              | PrimApp of {args: Var.t vector,
                            prim: Type.t Prim.t}
              | Select of {base: Var.t Base.t,
@@ -138,7 +139,6 @@ signature SSA_TREE2 =
              | Case of {cases: (Con.t, Label.t) Cases.t,
                         default: Label.t option, (* Must be nullary. *)
                         test: Var.t}
-             | Exclave of Label.t
              | Goto of {args: Var.t vector,
                         dst: Label.t}
              (* Raise implicitly raises to the caller.  

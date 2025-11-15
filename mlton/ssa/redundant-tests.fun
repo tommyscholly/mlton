@@ -106,7 +106,7 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
          setVarInfo
       datatype z = datatype Fact.result
       datatype z = datatype Rel.t
-      fun makeVarInfo {args, prim, targs = _}: varInfo =
+       fun makeVarInfo {args, prim, targs = _, ...}: varInfo =
          let
             fun arg i =
                let
@@ -143,7 +143,10 @@ fun transform (Program.T {globals, datatypes, functions, main}) =
                (x,
                 Statement.T {var = SOME x, 
                              ty = Type.bool,
-                             exp = ConApp {con = c, args = Vector.new0 ()}})
+                             exp = ConApp {
+                                 con = c, 
+                                 args = Vector.new0 (), 
+                                 mode = Mode.Constant}})
             end
       in
          val (trueVar, trueStmt) = make Con.truee

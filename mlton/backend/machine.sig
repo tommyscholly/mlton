@@ -119,6 +119,7 @@ signature MACHINE =
                                   volatile: bool}
              | StackOffset of StackOffset.t
              | StackTop
+             | RegionTop
              | StaticHeapRef of StaticHeap.Ref.t
              | Temporary of Temporary.t
 
@@ -165,6 +166,8 @@ signature MACHINE =
             val move: {dst: Operand.t, src: Operand.t} -> t option
             val object: {dst: Operand.t, header: WordX.t, size: Bytes.t} -> t vector
             val sequence: {dst: Operand.t, header: WordX.t, length: int, size: Bytes.t} -> t vector
+            val stackObject: {dst: Operand.t, header: WordX.t, size: Bytes.t} -> t vector
+            val stackSequence: {dst: Operand.t, header: WordX.t, length: int, size: Bytes.t} -> t vector
          end
 
       structure Switch: SWITCH

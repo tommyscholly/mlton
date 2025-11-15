@@ -154,7 +154,6 @@ fun shouldDuplicate (program as Program.T {body, ...}, hofo, small, product)
                                          | ConApp {arg, ...} =>
                                               Option.app (arg, loopVar)
                                          | Const _ => ()
-                                         | Exclave exp => loopExp exp
                                          | Handle {try, handler, ...} =>
                                               (loopExp try; loopExp handler)
                                          | Lambda _ =>
@@ -269,7 +268,7 @@ fun transform (program as Program.T {datatypes, body},
          in setVarInfo (x, Replace x')
             ; x'
          end
-      fun bindVarType (x, t) = (bind x, t)
+      fun bindVarType (x, t, m) = (bind x, t, m)
       fun bindPat (Pat.T {con, targs, arg}) =
          Pat.T {con = con,
                 targs = targs,
@@ -311,16 +310,16 @@ fun transform (program as Program.T {datatypes, body},
                                val {decs, result} = loopDecs (ds, result)
                                val decs =
                                   case varInfo var of
-                                     Replace var =>
-                                        MonoVal {var = var, ty = ty, mode = mode,
-                                                 exp = Lambda (loopLambda l)}
-                                        :: decs
+                                      Replace var =>
+                                         MonoVal {var = var, ty = ty, mode = Mode.defaultToHeap mode,
+                                                  exp = Lambda (loopLambda l)}
+                                         :: decs
                                    | Dup {duplicates, ...} =>
                                         List.fold
-                                        (!duplicates, decs, fn (var, decs) =>
-                                         MonoVal {var = var, ty = ty, mode = mode,
-                                                  exp = Lambda (loopLambda l)}
-                                         :: decs)
+                                         (!duplicates, decs, fn (var, decs) =>
+                                          MonoVal {var = var, ty = ty, mode = Mode.defaultToHeap mode,
+                                                   exp = Lambda (loopLambda l)}
+                                          :: decs)
                             in {decs = decs, result = result}
                             end
                        | _ =>
@@ -356,10 +355,13 @@ fun transform (program as Program.T {datatypes, body},
                                                 targs = targs,
                                                 arg = Option.map (arg, loopVar)}
                                    | Const _ => exp
-                                   | Exclave exp => Exclave (loopExp exp)
                                    | Handle {try, catch, handler} =>
                                         Handle {try = loopExp try,
-                                                catch = bindVarType catch,
+                                                catch = 
+                                                    let 
+                                                       val (one, two, _) = 
+                                                          bindVarType (#1 catch, #2 catch, Mode.Heap) 
+                                                    in (one, two) end,
                                                 handler = loopExp handler}
                                    | Lambda _ =>
                                         Error.bug "Polyvariance.loopDecs: unexpected Lambda"
@@ -378,9 +380,9 @@ fun transform (program as Program.T {datatypes, body},
                                    | Var x => Var (loopVar x)
                                val var = bind var
                                val {decs, result} = loopDecs (ds, result)
-                            in {decs = (MonoVal {var = var, ty = ty, mode = mode, exp = exp}
-                                        :: decs),
-                                result = result}
+                             in {decs = (MonoVal {var = var, ty = ty, mode = Mode.defaultToHeap mode, exp = exp}
+                                         :: decs),
+                                 result = result}
                             end)
                 | Fun {decs, ...} =>
                      let

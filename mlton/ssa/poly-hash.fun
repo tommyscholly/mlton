@@ -46,6 +46,7 @@ structure Dexp =
             primApp {prim = prim s,
                      targs = Vector.new0 (),
                      args = Vector.new2 (e1, e2),
+                     mode = NONE,
                      ty = Type.word s}
       in
          val add = mk Prim.Word_add
@@ -59,6 +60,7 @@ structure Dexp =
             primApp {prim = prim (s, sg),
                      targs = Vector.new0 (),
                      args = Vector.new2 (e1, e2),
+                     mode = NONE,
                      ty = Type.word s}
       in
          val mul = mk Prim.Word_mul
@@ -68,6 +70,7 @@ structure Dexp =
          primApp {prim = Prim.Word_equal s,
                   targs = Vector.new0 (),
                   args = Vector.new2 (e1, e2),
+                  mode = NONE,
                   ty = Type.bool}
 end
 
@@ -92,6 +95,7 @@ structure Hash =
                                                (ws, workWordSize, 
                                                 {signed = false}),
                                         targs = Vector.new0 (),
+                                        mode = NONE,
                                         args = Vector.new1 w,
                                         ty = workTy}
 
@@ -429,6 +433,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                         {decs = [{var = #1 len, exp = 
                                   Dexp.primApp {prim = Prim.Vector_length,
                                                 targs = Vector.new1 ty,
+                                                mode = NONE,
                                                 args = Vector.new1 dvec,
                                                 ty = seqIndexTy}}],
                          body =
@@ -469,6 +474,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                 Dexp.primApp {prim = Prim.Vector_sub,
                                               targs = Vector.new1 ty,
                                               args = Vector.new2 (dvec, di),
+                                              mode = NONE,
                                               ty = ty},
                                 ty),
                                dvec, 
@@ -529,6 +535,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                            {prim = Prim.CPointer_toWord,
                             targs = Vector.new0 (),
                             args = Vector.new1 dx,
+                            mode = NONE,
                             ty = Type.word ws}
                      in
                         Hash.wordBytes (dst, toWord, ws)
@@ -546,12 +553,15 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                            {prim = Prim.IntInf_toWord,
                             targs = Vector.new0 (),
                             args = Vector.new1 dx,
+                            mode = NONE,
                             ty = Type.word sws}
                         val toVector =
                            Dexp.primApp
                            {prim = Prim.IntInf_toVector,
                             targs = Vector.new0 (),
                             args = Vector.new1 dx,
+                            (* TODO: should this always be heap? *)
+                            mode = SOME Mode.Heap,
                             ty = Type.vector (Type.word bws)}
                         val w = Var.newNoname ()
                         val dw = Dexp.var (w, Type.word sws)
@@ -584,6 +594,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                            {prim = Prim.Real_castToWord (rs, ws),
                             targs = Vector.new0 (),
                             args = Vector.new1 dx,
+                            mode = NONE,
                             ty = Type.word ws}
                      in
                         Hash.wordBytes (dst, toWord, ws)

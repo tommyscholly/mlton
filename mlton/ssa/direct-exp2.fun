@@ -413,7 +413,7 @@ fun linearize' (e: t, h: Handler.t, k: Cont.t): Label.t * Block.t list =
                end
           | ConApp {con, args, ty} =>
                loops (args, h, fn xs =>
-                      Cont.sendExp (k, ty, Exp.ConApp {con = con, args = xs}))
+                       Cont.sendExp (k, ty, Exp.ConApp {con = con, args = xs, mode = Mode.Heap}))
           | Const c => Cont.sendExp (k, Type.ofConst c, Exp.Const c)
           | Detuple {tuple, length, body} =>
                loop (tuple, h,

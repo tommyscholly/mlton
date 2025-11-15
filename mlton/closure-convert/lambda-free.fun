@@ -150,10 +150,9 @@ fun lambdaFree {program = Program.T {body, ...},
                 ; Option.app (default, fn e => exp (e, s))
                 ; Cases.foreach' (cases, fn e => exp (e, s),
                                   fn Pat.T {arg, ...} =>
-                                  Option.app (arg, fn (x, _) => bind (x, s))))
+                                  Option.app (arg, fn (x, _, _) => bind (x, s))))
           | ConApp {arg, ...} => varExpOpt (arg, s)
           | Const _ => ()
-          | Exclave e => exp (e, s)
           | Handle {try, catch, handler} =>
                (exp (try, s); bind (#1 catch, s); exp (handler, s))
           | Lambda l =>

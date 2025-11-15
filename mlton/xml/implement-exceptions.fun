@@ -137,7 +137,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                       Cases.Con (Vector.new1
                                  (Pat.T {con = exnCon,
                                          targs = Vector.new0 (),
-                                         arg = SOME (tuple, exnConArgType)},
+                                         arg = SOME (tuple, exnConArgType, Mode.Heap)},
                                   f (monoVar (tuple, exnConArgType,
                                   Mode.Heap))))}, Mode.Heap)
                   end
@@ -272,7 +272,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
           | _ => Error.bug "ImplementExceptions: saw unexpected dec") arg
       and loopMonoVal {var, ty, mode, exp} : Dec.t list =
          let
-            fun primExp e = [MonoVal {var = var, ty = ty, mode = mode, exp = e}]
+             fun primExp e = [MonoVal {var = var, ty = ty, mode = Mode.defaultToHeap mode, exp = e}]
             fun keep () = primExp exp
             fun makeExp e = Dexp.vall {var = var, exp = e, mode = mode}
          in
@@ -360,17 +360,18 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                                                     arg = SOME arg},
                                                    body)
                                             in case arg of
-                                               NONE => make ((refVar, Type.unitRef), body)
-                                             | SOME (x, t) =>
+                                               NONE => make ((refVar, Type.unitRef, Mode.Heap), body)
+                                             | SOME (x, t, m) =>
                                                   let
                                                      val tuple =
                                                         (Var.newNoname (),
                                                          Type.tuple (Vector.new2
-                                                                     (Type.unitRef, t)))
+                                                                     (Type.unitRef, t)),
+                                                         m)
                                                   in
                                                      make (tuple,
                                                            detupleBind
-                                                           {tuple = monoVar (#1 tuple, #2 tuple, Mode.Undetermined),
+                                                           {tuple = monoVar (#1 tuple, #2 tuple, Mode.Heap),
                                                             components =
                                                             Vector.new2 (refVar, x),
                                                             body = body})
@@ -471,7 +472,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                               (exnValCons, fn {con, arg} =>
                                (Pat.T {con = con,
                                        targs = Vector.new0 (),
-                                       arg = SOME (Var.newNoname (), arg)},
+                                       arg = SOME (Var.newNoname (), arg, Mode.Heap)},
                                 Dexp.const (Const.string (Con.originalName con))))),
                              default = NONE,
                              ty = Type.string}, Mode.Heap)),
@@ -492,7 +493,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
                    resultMode = Mode.Heap,
                    body = (Dexp.sequence o Vector.new2)
                           (Dexp.bug "extendExtra unimplemented",
-                           Dexp.monoVar (dfltExtraVar, extraType, Mode.Undetermined)),
+                           Dexp.monoVar (dfltExtraVar, extraType, Mode.Heap)),
                    bodyType = extraType,
                    mayInline = true})),
           var = extendExtraVar}

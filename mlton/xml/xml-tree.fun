@@ -90,7 +90,7 @@ end
 
 structure Pat =
    struct
-      datatype t = T of {arg: (Var.t * Type.t) option,
+      datatype t = T of {arg: (Var.t * Type.t * Mode.t) option,
                          con: Con.t,
                          targs: Type.t vector}
 
@@ -102,9 +102,9 @@ structure Pat =
                  layoutTargs targs,
                  case arg of
                     NONE => empty
-                  | SOME (var, ty) =>
+                  | SOME (var, ty, mode) =>
                        seq [str " ",
-                            paren (maybeConstrain (empty, var, ty, Mode.Undetermined, empty))]]
+                            paren (maybeConstrain (empty, var, ty, mode, empty))]]
       end
 
       local
@@ -118,7 +118,7 @@ structure Pat =
                        (Var.parse >>= (fn var =>
                         sym ":" *>
                         Type.parse >>= (fn ty =>
-                        pure (var, ty))))) >>= (fn arg =>
+                        pure (var, ty, Mode.Undetermined))))) >>= (fn arg =>
              pure {con = con, targs = targs, arg = arg}))))
       end
 
@@ -187,7 +187,6 @@ and primExp =
                (* TODO: add modes *)
                arg: VarExp.t option}
   | Const of Const.t
-  | Exclave of exp
   | Handle of {try: exp,
                catch: Var.t * Type.t,
                handler: exp}
@@ -247,8 +246,9 @@ in
                           if i = 0
                              then seq [str "fun ", layoutTyvars tyvars]
                              else str "and "
+                       val Lam {resultMode, ...} = lambda
                     in
-                       mayAlign [maybeConstrain (pre, var, ty, Mode.Undetermined, str " ="),
+                       mayAlign [maybeConstrain (pre, var, ty, resultMode, str " ="),
                                  indent (layoutLambda lambda, 2)]
                     end))
        | MonoVal {exp, ty, mode, var} =>
@@ -301,7 +301,6 @@ in
                     NONE => empty
                   | SOME x => seq [str " ", VarExp.layout x]]
        | Const c => Const.layout c
-       | Exclave e => seq [str "exclave ", layoutExp e]
        | Handle {catch, handler, try} =>
             mayAlign [layoutExp try,
                       mayAlign [maybeConstrain
@@ -333,8 +332,9 @@ in
                  VarExp.layout x])
             xs
        | Var x => VarExp.layout x
-   and layoutLambda (Lam {arg, argType, argMode, lambdaMode, body, mayInline, ...}) =
-      mayAlign [maybeConstrain (seq [str "fn", Mode.layout lambdaMode, str " ",
+   and layoutLambda (Lam {arg, argType, argMode, lambdaMode, resultMode, body, mayInline, ...}) =
+      mayAlign [maybeConstrain (seq [str "fn", str " lambdaMode:", Mode.layout lambdaMode, 
+                                     str " ",
                                      str (if not mayInline then "noinline " else "")],
                                 arg, argType, argMode, str " =>"),
                 indent (layoutExp body, 2)]
@@ -595,10 +595,10 @@ structure Exp =
       fun foreach {exp: t,
                    handleExp: t -> unit,
                    handlePrimExp: Var.t * Type.t * PrimExp.t -> unit,
-                   handleBoundVar: Var.t * Tyvar.t vector * Type.t -> unit,
+                   handleBoundVar: Var.t * Tyvar.t vector * Type.t * Mode.t -> unit,
                    handleVarExp: VarExp.t -> unit}: unit =
          let
-            fun monoVar (x, t) = handleBoundVar (x, Vector.new0 (), t)
+            fun monoVar (x, t, m) = handleBoundVar (x, Vector.new0 (), t, m)
             fun handleVarExps xs = Vector.foreach (xs, handleVarExp)
             fun loopExp e =
                let val {decs, result} = dest e
@@ -622,10 +622,9 @@ structure Exp =
                     | App {func, arg} => (handleVarExp func
                                           ; handleVarExp arg)
                     | Raise {exn, ...} => handleVarExp exn
-                    | Exclave e => loopExp e
                     | Handle {try, catch, handler, ...} =>
                          (loopExp try
-                          ; monoVar catch
+                          ; monoVar (#1 catch, #2 catch, Mode.Heap)
                           ; loopExp handler)
                     | Case {test, cases, default} =>
                          (handleVarExp test
@@ -637,19 +636,21 @@ structure Exp =
                           ; Option.app (default, loopExp))))
             and loopDec d =
                case d of
-                  MonoVal {var, ty, exp, ...} =>
-                     (monoVar (var, ty); loopPrimExp (var, ty, exp))
-                | PolyVal {var, tyvars, ty, exp, ...} =>
-                     (handleBoundVar (var, tyvars, ty)
+                  MonoVal {var, ty, exp, mode, ...} =>
+                     (monoVar (var, ty, mode); loopPrimExp (var, ty, exp))
+                | PolyVal {var, tyvars, ty, exp, mode, ...} =>
+                     (handleBoundVar (var, tyvars, ty, mode)
                       ; loopExp exp)
                 | Exception _ => ()
                 | Fun {tyvars, decs, ...} =>
-                     (Vector.foreach (decs, fn {ty, var, ...} =>
-                                      handleBoundVar (var, tyvars, ty))
+                     (Vector.foreach (decs, fn {ty, var, lambda} =>
+                                      let val Lam {lambdaMode, ...} = lambda
+                                      in handleBoundVar (var, tyvars, ty, lambdaMode)
+                                      end)
                       ; Vector.foreach (decs, fn {lambda, ...} =>
                                         loopLambda lambda))
-            and loopLambda (Lam {arg, argType, body, ...}): unit =
-               (monoVar (arg, argType); loopExp body)
+            and loopLambda (Lam {arg, argType, argMode, body, ...}): unit =
+               (monoVar (arg, argType, argMode); loopExp body)
          in loopExp exp
          end
 
@@ -755,7 +756,7 @@ structure Exp =
             fun clearPat (Pat.T {arg, ...}) =
                case arg of
                   NONE => ()
-                | SOME (x, _) => Var.clear x
+                | SOME (x, _, _) => Var.clear x
             fun clearExp e = clearDecs (decs e)
             and clearDecs ds = List.foreach (ds, clearDec)
             and clearDec d =
@@ -850,8 +851,8 @@ structure DirectExp =
                     let
                       val x = Var.newNoname ()
                     in
-                      Exp.prefix (k (VarExp.mono x, t, m), MonoVal
-                        {var = x, ty = t, exp = e, mode = m})
+                       Exp.prefix (k (VarExp.mono x, t, m), MonoVal
+                         {var = x, ty = t, exp = e, mode = Mode.defaultToHeap m})
                     end
 
             fun name (k: VarExp.t * Type.t * Mode.t -> Exp.t): t = nameGen k
@@ -957,8 +958,6 @@ structure DirectExp =
                     default = Option.map (default, toExp)},
                    ty, mode))
 
-      fun exclave (e, ty) = simple (Exclave (toExp e), ty, Mode.Stack)
-
       fun raisee {exn: t, extend: bool, ty: Type.t}: t =
          convert (exn, fn (x, _, _) => (Raise {exn = x, extend = extend}, ty, Mode.Heap))
 
@@ -1029,7 +1028,7 @@ structure DirectExp =
             val Exp {decs, result} =
                sendName (exp, fn (x, t', _) => (t := t';
                                              Exp {decs = [], result = x}))
-         in decs @ [MonoVal {var = var, ty = !t, exp = Var result, mode = mode}]
+          in decs @ [MonoVal {var = var, ty = !t, exp = Var result, mode = Mode.defaultToHeap mode}]
          end
 
       fun sequence es =
@@ -1050,12 +1049,12 @@ structure DirectExp =
 
       fun lett {decs, body} = fn k => Exp.prefixs (send (body, k), decs)
 
-      fun let1 {var, exp, body, mode} =
-         fn k =>
-         (* TODO: check check if the fn mode or the let1 param mode *)
-         send (exp, fn (exp, ty, mode) =>
-               Exp.prefix (send (body, k),
-                           Dec.MonoVal {var = var, ty = ty, exp = exp, mode = mode}))
+      fun let1 {var, exp, body, mode = _} =
+        fn k =>
+          (* TODO: check check if the fn mode or the let1 param mode *)
+          send (exp, fn (exp, ty, mode) =>
+            Exp.prefix (send (body, k), Dec.MonoVal
+              {var = var, ty = ty, exp = exp, mode = Mode.defaultToHeap mode}))
 
       fun lambda {arg, argType, argMode, lambdaMode, resultMode, body, bodyType, mayInline} =
          simple (Lambda (Lambda.make {arg = arg,
@@ -1105,21 +1104,21 @@ structure DirectExp =
          (body,
           case Vector.length components of
              0 => []
-           | 1 => [MonoVal {var = Vector.first components, ty = t, exp = e, mode = mode}]
+            | 1 => [MonoVal {var = Vector.first components, ty = t, exp = e, mode = Mode.defaultToHeap mode}]
            | _ =>
                 let
                    val ts = Type.deTuple t
                    val tupleVar = Var.newNoname ()
-                in MonoVal {var = tupleVar, ty = t, exp = e, mode = mode}
+                 in MonoVal {var = tupleVar, ty = t, exp = e, mode = Mode.defaultToHeap mode}
                    ::
                    #2 (Vector.fold2
                        (components, ts, (0, []),
                         fn (x, t, (i, ac)) =>
                         (i + 1,
-                         MonoVal {var = x, ty = t,
-                                  exp = Select {tuple = VarExp.mono tupleVar,
-                                                offset = i},
-                                  mode = mode}
+                          MonoVal {var = x, ty = t,
+                                   exp = Select {tuple = VarExp.mono tupleVar,
+                                                 offset = i},
+                                   mode = Mode.defaultToHeap mode}
                          :: ac)))
                 end)
 

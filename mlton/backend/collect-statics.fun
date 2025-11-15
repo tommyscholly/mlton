@@ -219,12 +219,16 @@ structure Globals =
                end
             fun statementIsStatic stmt =
                case stmt of
-                  Statement.Object {dst as (dstVar, _), obj} =>
-                     if objectIsStatic obj
-                        then (List.push (newStatics, {dst = dst, obj = obj})
-                              ; setVarIsStatic (dstVar, true)
-                              ; true)
-                        else false
+                  Statement.Object {dst as (dstVar, _), obj, mode} =>
+                     (* Only collect heap-mode statics, not stack-mode *)
+                     (case mode of
+                         Mode.Stack => false
+                       | _ =>
+                           if objectIsStatic obj
+                              then (List.push (newStatics, {dst = dst, obj = obj})
+                                    ; setVarIsStatic (dstVar, true)
+                                    ; true)
+                              else false)
                 | _ => false
 
             val () =

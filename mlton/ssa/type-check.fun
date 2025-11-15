@@ -89,7 +89,7 @@ fun checkScopes (program as
                 | PrimApp {args, targs, ...} => (loopTypes targs; getVars args)
                 | Profile _ => ()
                 | Select {tuple, ...} => getVar tuple
-                | Tuple xs => getVars xs
+                 | Tuple {exps = xs, ...} => getVars xs
                 | Var x => getVar x
          in
             ()
@@ -152,9 +152,8 @@ fun checkScopes (program as
                       | Cases.Word (ws, cs) => doitWord (ws, cs)
                in
                   ()
-               end
-          | Exclave _ => ()
-          | Goto {args, ...} => getVars args
+                end
+           | Goto {args, ...} => getVars args
           | Raise xs => getVars xs
           | Return xs => getVars xs
           | Runtime {args, ...} => getVars args
@@ -399,7 +398,7 @@ fun typeCheck (program as Program.T {datatypes, ...}): unit =
               setConInfo (con, {args = args,
                                 result = result}))
           end)
-      fun conApp {con, args} =
+      fun conApp {con, args, mode = _} =
          let
             val {args = args', result, ...} = conInfo con
             val _ = coerces (args', args)

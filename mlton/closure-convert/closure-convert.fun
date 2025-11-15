@@ -101,6 +101,7 @@ structure Accum =
                   body = Dexp.tuple {exps = (Vector.fromListMap
                                              (globals, fn {var, ty, ...} =>
                                               Dexp.var (var, ty))),
+                                     mode = Mode.Heap,
                                      ty = Type.tuple tys}},
                  Ssa.Handler.Caller)
              val {blocks, ...} =
@@ -123,7 +124,7 @@ structure Accum =
                    val ss = Block.statements (Vector.first blocks)
                    val vs =
                       case Ssa.Statement.exp (Vector.last ss) of
-                         Ssa.Exp.Tuple vs =>
+                         Ssa.Exp.Tuple {exps = vs, ...} =>
                             if Vector.length vars = Vector.length vs
                                then vs
                             else Error.bug (concat ["ClosureConvert.Accum.done: ",
@@ -175,6 +176,9 @@ structure LambdaInfo =
                 *)
                name: Func.t,
                recs: Var.t vector ref,
+               argMode: Mode.t,
+               resultMode: Mode.t,
+               lambdaMode: Mode.t,
                (* The type of its environment record. *)
                ty: Type.t option ref
                }
@@ -184,6 +188,7 @@ structure LambdaInfo =
       in
          val frees = ! o mk #frees
          val name = mk #name
+         val lambdaMode = mk #lambdaMode
       end
    end
 
@@ -192,6 +197,7 @@ structure VarInfo =
       type t = {frees: Var.t list ref ref,
                 isGlobal: bool ref,
                 lambda: Slambda.t option,
+                mode: Mode.t,
                 replacement: Var.t ref,
                 status: Status.t ref,
                 value: Value.t}
@@ -201,6 +207,7 @@ structure VarInfo =
       in
          val lambda = valOf o make #lambda
          val value = make #value
+         val mode = make #mode
       end
    end
 
@@ -232,6 +239,7 @@ fun closureConvert
          ("ClosureConvert.isGlobal", Var.layout, Bool.layout)
          isGlobal
       val value = #value o varInfo
+      val varMode = #mode o varInfo
       val varExp = value o SvarExp.var
       val expValue = varExp o Sexp.result
       (* ---------------------------------- *)
@@ -258,18 +266,19 @@ fun closureConvert
          let
             open Sxml
             val bogusFrees = ref []
-            fun newVar' (x, v, lambda) =
+            fun newVar' (x, v, mode: Mode.t, lambda) =
                setVarInfo (x, {frees = ref bogusFrees,
                                isGlobal = ref false,
                                lambda = lambda,
+                               mode = mode,
                                replacement = ref x,
                                status = ref Status.init,
                                value = v})
-            fun newVar (x, v) = newVar' (x, v, NONE)
+            fun newVar (x, v, mode) = newVar' (x, v, mode, NONE)
             val newVar =
-               Trace.trace2 
+               Trace.trace3 
                ("ClosureConvert.newVar",
-                Var.layout, Layout.ignore, Unit.layout)
+                Var.layout, Layout.ignore, Mode.layout, Unit.layout)
                newVar
             fun varExps xs = Vector.map (xs, varExp)
             fun loopExp (e: Exp.t): Value.t =
@@ -286,8 +295,12 @@ fun closureConvert
                   case d of
                      Fun {decs, ...} =>
                         (Vector.foreach (decs, fn {var, lambda, ty, ...} =>
-                                         newVar' (var, Value.fromType ty,
-                                                  SOME lambda))
+                                         let 
+                                            val {lambdaMode, ...} = Lambda.dest lambda
+                                         in
+                                            newVar' (var, Value.fromType ty,
+                                                     lambdaMode, SOME lambda)
+                                         end)
                          ; (Vector.foreach
                             (decs, fn {var, lambda, ...} =>
                              Value.unify (value var,
@@ -297,9 +310,9 @@ fun closureConvert
                end
             and loopBind arg =
                traceLoopBind
-               (fn {var, ty, exp, ...} =>
+               (fn {var, ty, exp, mode, ...} =>
                let
-                  fun set v = newVar (var, v)
+                  fun set v = newVar (var, v, mode)
                   fun new () =
                      let val v = Value.fromType ty
                      in set v; v
@@ -331,7 +344,7 @@ fun closureConvert
                            fun handlePat (Pat.T {con, arg, ...}) =
                               case (arg,      conArg con) of
                                  (NONE,        NONE)       => ()
-                               | (SOME (x, _), SOME v)     => newVar (x, v)
+                               | (SOME (x, _, m), SOME v)     => newVar (x, v, m)
                                | _ => Error.bug "ClosureConvert.loopBind: Case"
                            val _ = Cases.foreach' (cases, branch, handlePat)
                            val _ = Option.app (default, branch)
@@ -345,17 +358,11 @@ fun closureConvert
                           | _ => Error.bug "ClosureConvert.loopBind: ConApp"
                          ; new' ())
                    | Const _ => new' ()
-                   | Exclave exp =>
-                         let 
-                            val result = new ()
-                         in 
-                            Value.coerce {from = loopExp exp, to = result}
-                         end
                    | Handle {try, catch = (x, t), handler} =>
                         let
                            val result = new ()
                         in Value.coerce {from = loopExp try, to = result}
-                           ; newVar (x, Value.fromType t)
+                           ; newVar (x, Value.fromType t, Mode.Heap)
                            ; Value.coerce {from = loopExp handler, to = result}
                         end
                    | Lambda l => set (loopLambda (l, var))
@@ -376,7 +383,7 @@ fun closureConvert
             and loopLambda (lambda: Lambda.t, x: Var.t): Value.t =
                let
                   val _ = List.push (allLambdas, lambda)
-                  val {arg, argType, body, ...} = Lambda.dest lambda
+                  val {arg, argType, argMode, resultMode, lambdaMode, body, ...} = Lambda.dest lambda
                   val _ =
                      setLambdaInfo
                      (lambda,
@@ -384,8 +391,11 @@ fun closureConvert
                                     frees = ref (Vector.new0 ()),
                                     name = Func.newString (Var.originalName x),
                                     recs = ref (Vector.new0 ()),
+                                    argMode = argMode,
+                                    resultMode = resultMode,
+                                    lambdaMode = lambdaMode,
                                     ty = ref NONE})
-                  val _ = newVar (arg, Value.fromType argType)
+                  val _ = newVar (arg, Value.fromType argType, argMode)
                in
                   Value.lambda (lambda,
                                 Type.arrow (argType, Value.ty (loopExp body)))
@@ -399,7 +409,7 @@ fun closureConvert
          Control.diagnostics
          (fn display =>
           Sexp.foreachBoundVar
-          (body, fn (x, _, _) => display (let open Layout
+          (body, fn (x, _, _, _) => display (let open Layout
                                           in seq [Var.layout x,
                                                   str " ",
                                                   Value.layout (value x)]
@@ -590,9 +600,9 @@ fun closureConvert
       (*               coerce               *)
       (*------------------------------------*)
       val traceCoerce =
-         Trace.trace3
+         Trace.trace4
          ("ClosureConvert.coerce",
-          Dexp.layout, Value.layout, Value.layout, Dexp.layout)
+          Dexp.layout, Value.layout, Value.layout, Mode.layout, Dexp.layout)
       (*       val traceCoerceTuple =
        *         let val layoutValues = List.layout (", ", Value.layout)
        *         in Trace.trace3 ("ClosureConvert.coerceTuple", Dexp.layout,
@@ -601,13 +611,13 @@ fun closureConvert
        *)
       fun coerce arg: Dexp.t =
          traceCoerce
-         (fn (e: Dexp.t, from: Value.t, to: Value.t) =>
+         (fn (e: Dexp.t, from: Value.t, to: Value.t, mode: Mode.t) =>
           if Value.equals (from, to)
              then e
           else
              case (Value.dest from, Value.dest to) of
                 (Value.Tuple vs, Value.Tuple vs') =>
-                   coerceTuple (e, valueType from, vs, valueType to, vs')
+                   coerceTuple (e, valueType from, vs, valueType to, vs', mode)
               | (Value.Lambdas ls, Value.Lambdas ls') =>
                    if Lambdas.equals (ls, ls')
                       then e
@@ -642,6 +652,7 @@ fun closureConvert
                                    body = (Dexp.conApp
                                            {con = !r,
                                             ty = ty,
+                                            mode = mode,
                                             args =
                                             Vector.new1 (Dexp.var tuple)})}
                                end))}
@@ -652,7 +663,8 @@ fun closureConvert
          (*      traceCoerceTuple *)
          (fn (e: Dexp.t,
               ty: Type.t, vs: Value.t vector,
-              ty': Type.t, vs': Value.t vector) =>
+              ty': Type.t, vs': Value.t vector,
+              mode: Mode.t) =>
           if Type.equals (ty, ty')
              then e
           else
@@ -664,7 +676,8 @@ fun closureConvert
               Dexp.tuple
               {exps = Vector.map3 (components, vs, vs',
                                    fn (x, v, v') =>
-                                   coerce (Dexp.var (x, valueType v), v, v')),
+                                   coerce (Dexp.var (x, valueType v), v, v', mode)),
+               mode = mode,
                ty = ty'}}) arg
       fun convertVarInfo (info as {replacement, ...}: VarInfo.t) =
          Dexp.var (!replacement, varInfoType info)
@@ -679,16 +692,17 @@ fun closureConvert
       (*------------------------------------*)
       (*               apply                *)
       (*------------------------------------*)
-      fun apply {func, arg, resultVal}: Dexp.t =
+      fun apply {func, arg, resultVal, resultMode: Mode.t}: Dexp.t =
          let
             val func = varExpInfo func
             val arg = varExpInfo arg
+            val argMode = #mode arg
             val funcVal = VarInfo.value func
             val argVal = VarInfo.value arg
             val argExp = convertVarInfo arg
             val ty = valueType resultVal
             val {cons, ...} = valueLambdasInfo funcVal
-         in Dexp.casee
+            val casee = Dexp.casee
             {test = convertVarInfo func,
              ty = ty,
              default = NONE,
@@ -707,18 +721,27 @@ fun closureConvert
                                   {func = name,
                                    args = Vector.new2 (Dexp.var env,
                                                        coerce (argExp, argVal,
-                                                               value param)),
+                                                               value param,
+                                                               argMode)),
                                    ty = valueType result},
-                                  result, resultVal)}
+                                  result, resultVal, resultMode)}
                end))}
+            (* val _ = if Mode.equals (resultMode, Mode.Stack) andalso Control.optFuelAvailAndUse () *)
+            (*         then  *)
+            (*            Error.warning  *)
+            (*            ("apply: " ^ Layout.toString (Dexp.layout casee) *)
+            (*                ^ " is in stack mode"  *)
+            (*                ^ Option.toString Int.toString (!Control.optFuel)) else () *)
+         in casee
          end
       (*------------------------------------*)
       (*             convertExp             *)
       (*------------------------------------*)
-      fun lambdaInfoTuple (info as LambdaInfo.T {frees, ...}): Dexp.t =
+      fun lambdaInfoTuple (info as LambdaInfo.T {frees, lambdaMode, ...}): Dexp.t =
          Dexp.tuple {exps = Vector.map (!frees, convertVar),
+                     mode = lambdaMode,
                      ty = lambdaInfoType info}
-      fun recursives (old: Var.t vector, new: Var.t vector, env) =
+       fun recursives (old: Var.t vector, new: Var.t vector, env, mode: Mode.t) =
          Vector.fold2
          (old, new, [], fn (old, new, ac) =>
           let
@@ -728,16 +751,17 @@ fun closureConvert
              case Vector.peek (cons, fn {lambda = l', ...} =>
                                Slambda.equals (l, l')) of
                 NONE => Error.bug "ClosureConvert.recursives: lambda must exist in its own set"
-              | SOME {con, ...} =>
+              | SOME {con, lambda, ...} =>
                    {var = new,
                     ty = ty,
                     exp = Dexp.conApp {con = con, ty = ty,
+                                       mode = mode,
                                        args = Vector.new1 (Dexp.var env)}}
                    :: ac
           end)
       val recursives =
          Trace.trace ("ClosureConvert.recursives",
-                      fn (a, b, _) =>
+                      fn (a, b, _, _) =>
                       Layout.tuple [Vector.layout Var.layout a,
                                     Vector.layout Var.layout b],
                       Layout.ignore)
@@ -797,10 +821,10 @@ fun closureConvert
                List.fold
                (decs, ([], ac), fn (d, (binds, ac)) =>
                 case d of
-                   Sdec.MonoVal {exp, var, ...} =>
+                   Sdec.MonoVal {exp, var, mode, ...} =>
                       let
                          val info as {isGlobal, value, ...} = varInfo var
-                         val (exp, ac) = convertPrimExp (exp, value, ac)
+                         val (exp, ac) = convertPrimExp (exp, value, mode, ac)
                          val bind = {var = newVarInfo (var, info),
                                      ty = valueType value,
                                      exp = exp}
@@ -812,19 +836,21 @@ fun closureConvert
                       if Vector.isEmpty decs
                          then (binds, ac)
                       else
-                         let
-                            val {lambda, var, ...} = Vector.first decs
-                            val info = lambdaInfo lambda
-                            val tupleVar = Var.newString "tuple"
-                            val tupleTy = lambdaInfoType info
-                            val binds' =
-                               {var = tupleVar,
-                                ty = tupleTy,
-                                exp = lambdaInfoTuple info}
-                               :: (recursives
-                                   (Vector.map (decs, #var),
-                                    Vector.map (decs, newVar o #var),
-                                    (tupleVar, tupleTy)))
+                          let
+                             val {lambda, var, ...} = Vector.first decs
+                             val info = lambdaInfo lambda
+                             val {lambdaMode, ...} = Slambda.dest lambda
+                             val tupleVar = Var.newString "tuple"
+                             val tupleTy = lambdaInfoType info
+                             val binds' =
+                                {var = tupleVar,
+                                 ty = tupleTy,
+                                 exp = lambdaInfoTuple info}
+                                :: (recursives
+                                    (Vector.map (decs, #var),
+                                     Vector.map (decs, newVar o #var),
+                                     (tupleVar, tupleTy),
+                                     lambdaMode))
                             val (binds, ac) =
                                if isGlobal var
                                   then (binds, Accum.addGlobals (ac, binds'))
@@ -846,18 +872,25 @@ fun closureConvert
                           SprimExp.layout o #1,
                           Layout.ignore,
                           Trace.assertTrue)
-         (fn (e: SprimExp.t, v: Value.t, ac: Accum.t) =>
+         (fn (e: SprimExp.t, v: Value.t, mode: Mode.t, ac: Accum.t) =>
          let
             val ty = valueType v
+            (* val _ = if Mode.equals (mode, Mode.Stack) andalso Control.optFuelAvailAndUse ()  *)
+            (*         then  *)
+            (*            Error.warning  *)
+            (*            (Layout.toString (SprimExp.layout e) ^ " is in stack mode"  *)
+            (*             ^ Option.toString Int.toString (!Control.optFuel))  *)
+            (*         else () *)
             fun convertJoin (e, ac) =
                let val (e', ac) = convertExp (e, ac)
-               in (coerce (e', expValue e, v), ac)
+               (* TODO: maybe not this mode here? *)
+               in (coerce (e', expValue e, v, mode), ac)
                end
             fun simple e = (e, ac)
          in
             case e of
                SprimExp.App {func, arg} =>
-                  (apply {func = func, arg = arg, resultVal = v},
+                  (apply {func = func, arg = arg, resultVal = v, resultMode = mode},
                    ac)
              | SprimExp.Case {test, cases, default} =>
                   let
@@ -891,7 +924,7 @@ fun closureConvert
                                   val args =
                                      case (conArg con, arg) of
                                         (NONE, NONE) => Vector.new0 ()
-                                      | (SOME v, SOME (arg, _)) =>
+                                      | (SOME v, SOME (arg, _, _)) =>
                                            Vector.new1 (newVar arg, valueType v)
                                       | _ => Error.bug "ClosureConvert.convertPrimExp: Case,constructor mismatch"
                                in
@@ -912,29 +945,21 @@ fun closureConvert
                   (Dexp.conApp
                    {con = con,
                     ty = ty,
+                    mode = mode,
                     args = (case (arg, conArg con) of
                                (NONE, NONE) => Vector.new0 ()
                              | (SOME arg, SOME conArg) =>
                                   let
-                                     val arg = varExpInfo arg
-                                     val argVal = VarInfo.value arg
-                                     val arg = convertVarInfo arg
+                                     val argInfo = varExpInfo arg
+                                     val argVal = VarInfo.value argInfo
+                                     val argMode = VarInfo.mode argInfo
+                                     val arg = convertVarInfo argInfo
                                   in if Value.equals (argVal, conArg)
                                         then Vector.new1 arg
-                                     else Vector.new1 (coerce (arg, argVal, conArg))
+                                     else Vector.new1 (coerce (arg, argVal, conArg, argMode))
                                   end
                              | _ => Error.bug "ClosureConvert.convertPrimExp: ConApp,constructor mismatch")})
              | SprimExp.Const c => simple (Dexp.const c)
-             | SprimExp.Exclave exp =>
-                  let
-                     val (body, ac) = convertJoin (exp, ac)
-                     val () = 
-                        Error.warning (
-                           "EXCLAVE DEBUG: " 
-                           ^ Layout.toString (SprimExp.layout e)
-                        )
-                  in (Dexp.exclave {body = body, ty = ty}, ac)
-                  end
              | SprimExp.Handle {try, catch = (catch, _), handler} =>
                   let
                      val catchInfo = varInfo catch
@@ -956,6 +981,7 @@ fun closureConvert
                      NONE => Error.bug "ClosureConvert.convertPrimExp: Lambda,lambda must exist in its own set"
                    | SOME {con, ...} =>
                         (Dexp.conApp {con = con, ty = ty,
+                                      mode = LambdaInfo.lambdaMode info,
                                       args = Vector.new1 (lambdaInfoTuple info)},
                          ac)
                   end
@@ -966,9 +992,10 @@ fun closureConvert
                      val v1 = Vector.new1
                      val v2 = Vector.new2
                      val v3 = Vector.new3
-                     fun primApp (targs, args) =
+                     fun primApp (targs, args, mode: Mode.t option) =
                         Dexp.primApp {args = args,
                                       prim = prim,
+                                      mode = mode,
                                       targs = targs,
                                       ty = ty}
                   in
@@ -982,7 +1009,10 @@ fun closureConvert
                                 primApp (v1 (valueType v),
                                          Vector.map (ys, fn y =>
                                                      coerce (convertVarInfo y,
-                                                             VarInfo.value y, v)))
+                                                             VarInfo.value y, v,
+                                                             VarInfo.mode y)),
+                                         (* TODO: ask fluet *)
+                                         SOME mode)
                              end
                         | Prim.Array_update =>
                              let
@@ -994,7 +1024,8 @@ fun closureConvert
                                          v3 (convertVarInfo a,
                                              convertVarExp (arg 1),
                                              coerce (convertVarInfo y,
-                                                     VarInfo.value y, v)))
+                                                     VarInfo.value y, v, VarInfo.mode y)),
+                                         NONE)
                              end
                         | Prim.MLton_eq =>
                              let
@@ -1003,7 +1034,8 @@ fun closureConvert
                                 fun doit () =
                                    primApp (v1 (valueType (VarInfo.value a0)),
                                             v2 (convertVarInfo a0,
-                                                convertVarInfo a1))
+                                                convertVarInfo a1),
+                                            NONE)
                              in
                                 case (Value.dest (VarInfo.value a0),
                                       Value.dest (VarInfo.value a1)) of
@@ -1020,7 +1052,8 @@ fun closureConvert
                                 fun doit () =
                                    primApp (v1 (valueType (VarInfo.value a0)),
                                             v2 (convertVarInfo a0,
-                                                convertVarInfo a1))
+                                                convertVarInfo a1),
+                                            NONE)
                              in
                                 case (Value.dest (VarInfo.value a0),
                                       Value.dest (VarInfo.value a1)) of
@@ -1043,7 +1076,9 @@ fun closureConvert
                                 primApp (v1 (valueType v),
                                          v2 (convertVarInfo r,
                                              coerce (convertVarInfo y,
-                                                     VarInfo.value y, v)))
+                                                     VarInfo.value y, v,
+                                                     VarInfo.mode y)),
+                                         NONE)
                              end
                         | Prim.Ref_ref =>
                              let
@@ -1052,7 +1087,9 @@ fun closureConvert
                              in
                                 primApp (v1 (valueType v),
                                          v1 (coerce (convertVarInfo y,
-                                                     VarInfo.value y, v)))
+                                                     VarInfo.value y, v,
+                                                     VarInfo.mode y)),
+                                         NONE)
                              end
                         | Prim.MLton_serialize =>
                              let
@@ -1062,7 +1099,9 @@ fun closureConvert
                              in
                                 primApp (v1 (valueType v),
                                          v1 (coerce (convertVarInfo y,
-                                                     VarInfo.value y, v)))
+                                                     VarInfo.value y, v,
+                                                     VarInfo.mode y)),
+                                         NONE)
                              end
                         | Prim.Vector_vector =>
                              let
@@ -1072,7 +1111,9 @@ fun closureConvert
                                 primApp (v1 (valueType v),
                                          Vector.map (ys, fn y =>
                                                      coerce (convertVarInfo y,
-                                                             VarInfo.value y, v)))
+                                                             VarInfo.value y, v,
+                                                             VarInfo.mode y)),
+                                        SOME mode)
                              end
                         | Prim.Weak_new =>
                              let
@@ -1081,7 +1122,9 @@ fun closureConvert
                              in
                                 primApp (v1 (valueType v),
                                          v1 (coerce (convertVarInfo y,
-                                                     VarInfo.value y, v)))
+                                                     VarInfo.value y, v,
+                                                     VarInfo.mode y)),
+                                         NONE)
                              end
                         | _ =>
                              let
@@ -1097,7 +1140,8 @@ fun closureConvert
                                               deRef = Type.deRef,
                                               deVector = Type.deVector,
                                               deWeak = Type.deWeak}}),
-                                  Vector.map (args, convertVarInfo))
+                                  Vector.map (args, convertVarInfo),
+                                  NONE)
                              end)
                   end
              | SprimExp.Profile e => simple (Dexp.profile e)
@@ -1109,6 +1153,7 @@ fun closureConvert
                                        ty = ty})
              | SprimExp.Tuple xs =>
                   simple (Dexp.tuple {exps = Vector.map (xs, convertVarExp),
+                                      mode = mode,
                                       ty = ty})
              | SprimExp.Var y => simple (convertVarExp y)
          end) arg
@@ -1116,7 +1161,7 @@ fun closureConvert
                          info as LambdaInfo.T {frees, name, recs, ...},
                          ac: Accum.t): Accum.t =
          let
-            val {arg = argVar, body, mayInline, ...} = Slambda.dest lambda
+            val {arg = argVar, argMode, resultMode, lambdaMode, body, mayInline, ...} = Slambda.dest lambda
             val argVarInfo = varInfo argVar
             val env = Var.newString "env"
             val envType = lambdaInfoType info
@@ -1131,7 +1176,7 @@ fun closureConvert
              newScope
              (recs, fn recs' =>
               let
-                 val decs = recursives (recs, recs', (env, envType))
+                  val decs = recursives (recs, recs', (env, envType), lambdaMode)
                  val (body, ac) = convertExp (body, ac)
                  val body =
                     Dexp.lett

@@ -519,7 +519,8 @@ structure Exp =
        | Inject of {sum: Tycon.t,
                     variant: Var.t}
        | Object of {con: Con.t option,
-                    args: Var.t vector}
+                    args: Var.t vector,
+                    mode: Mode.t}
        | PrimApp of {prim: Type.t Prim.t,
                      args: Var.t vector}
        | Select of {base: Var.t Base.t,
@@ -527,7 +528,7 @@ structure Exp =
        | Sequence of {args: Var.t vector vector}
        | Var of Var.t
 
-      val unit = Object {con = NONE, args = Vector.new0 ()}
+      val unit = Object {con = NONE, args = Vector.new0 (), mode = Mode.Constant}
 
       fun foreachVar (e, v) =
          let
@@ -550,7 +551,7 @@ structure Exp =
             case e of
                Const _ => e
              | Inject {sum, variant} => Inject {sum = sum, variant = fx variant}
-             | Object {con, args} => Object {con = con, args = fxs args}
+             | Object {con, args, mode} => Object {con = con, args = fxs args, mode = mode}
              | PrimApp {prim, args} => PrimApp {args = fxs args, prim = prim}
              | Select {base, offset} =>
                   Select {base = Base.map (base, fx), offset = offset}
@@ -568,12 +569,12 @@ structure Exp =
                Const c => Const.layout c
              | Inject {sum, variant} =>
                   seq [str "inj ", paren (layoutVar variant), str ": ", Tycon.layout sum]
-             | Object {con, args} =>
+             | Object {con, args, mode} =>
                   seq [str "obj ",
                        (case con of
                            NONE => empty
                          | SOME c => seq [Con.layout c, str " "]),
-                       layoutArgs args]
+                       layoutArgs args, Mode.layout mode]
              | PrimApp {args, prim} =>
                   seq [str "prim ", Prim.layoutFull (prim, Type.layout), str " ", layoutArgs args]
              | Select {base, offset} =>
@@ -603,7 +604,7 @@ structure Exp =
              (kw "obj" *>
               optional Con.parse >>= (fn con =>
               parseArgs >>= (fn args =>
-              pure {con = con, args = args}))),
+              pure {con = con, args = args, mode = Mode.Heap}))),
              PrimApp <$>
              (kw "prim" *>
               Prim.parseFull Type.parse >>= (fn prim =>
@@ -634,9 +635,10 @@ structure Exp =
       fun equals (e: t, e': t): bool =
          case (e, e') of
             (Const c, Const c') => Const.equals (c, c')
-          | (Object {con, args}, Object {con = con', args = args'}) =>
+          | (Object {con, args, mode}, Object {con = con', args = args', mode = mode'}) =>
                Option.equals (con, con', Con.equals)
                andalso varsEquals (args, args')
+               andalso Mode.equals (mode, mode')
           | (PrimApp {prim, args, ...},
              PrimApp {prim = prim', args = args', ...}) =>
                Prim.equals (prim, prim') andalso varsEquals (args, args')
@@ -826,12 +828,11 @@ structure Transfer =
        | Call of {args: Var.t vector,
                   func: Func.t,
                   return: Return.t}
-       | Case of {test: Var.t,
-                  cases: (Con.t, Label.t) Cases.t,
-                  default: Label.t option} (* Must be nullary. *)
-       | Exclave of Label.t
-       | Goto of {dst: Label.t,
-                  args: Var.t vector}
+        | Case of {test: Var.t,
+                   cases: (Con.t, Label.t) Cases.t,
+                   default: Label.t option} (* Must be nullary. *)
+        | Goto of {dst: Label.t,
+                   args: Var.t vector}
        | Raise of Var.t vector
        | Return of Var.t vector
        | Runtime of {prim: Type.t Prim.t,
@@ -848,12 +849,11 @@ structure Transfer =
                   (func f
                    ; Return.foreachLabel (return, label)
                    ; vars args)
-             | Case {test, cases, default, ...} =>
-                  (var test
-                   ; Cases.foreach (cases, label)
-                   ; Option.app (default, label))
-             | Exclave l => label l
-             | Goto {dst, args, ...} => (vars args; label dst)
+              | Case {test, cases, default, ...} =>
+                   (var test
+                    ; Cases.foreach (cases, label)
+                    ; Option.app (default, label))
+              | Goto {dst, args, ...} => (vars args; label dst)
              | Raise xs => vars xs
              | Return xs => vars xs
              | Runtime {args, return, ...} =>
@@ -882,14 +882,13 @@ structure Transfer =
                   Call {func = func, 
                         args = fxs args,
                         return = Return.map (return, fl)}
-             | Case {test, cases, default} =>
-                  Case {test = fx test, 
-                        cases = Cases.map(cases, fl),
-                        default = Option.map(default, fl)}
-             | Exclave l => Exclave (fl l)
-             | Goto {dst, args} => 
-                  Goto {dst = fl dst, 
-                        args = fxs args}
+              | Case {test, cases, default} =>
+                   Case {test = fx test,
+                         cases = Cases.map(cases, fl),
+                         default = Option.map(default, fl)}
+              | Goto {dst, args} =>
+                   Goto {dst = fl dst,
+                         args = fxs args}
              | Raise xs => Raise (fxs xs)
              | Return xs => Return (fxs xs)
              | Runtime {prim, args, return} =>
@@ -949,10 +948,9 @@ structure Transfer =
                                  | Handler.Handle l => Label.layout l]
                       | Return.Tail => seq [str "call tail ", call]
                   end
-             | Case arg => layoutCase arg
-             | Exclave l => seq [str "exclave ", Label.layout l]
-             | Goto {dst, args} =>
-                  seq [str "goto ", Label.layout dst, str " ", layoutArgs args]
+              | Case arg => layoutCase arg
+              | Goto {dst, args} =>
+                   seq [str "goto ", Label.layout dst, str " ", layoutArgs args]
              | Raise xs => seq [str "raise ", layoutArgs xs]
              | Return xs => seq [str "return ", layoutArgs xs]
              | Runtime {prim, args, return} =>
@@ -998,12 +996,11 @@ structure Transfer =
                         kw "dead" *> mkCall (Return.NonTail {cont = cont, handler = Handler.Dead}),
                         Label.parse >>= (fn h => mkCall (Return.NonTail {cont = cont, handler = Handler.Handle h}))]))]),
              Case <$>
-             any ((kw "case" *> parseCase (Con.parse, Cases.Con)) ::
-                  (List.map (WordSize.all, fn ws =>
-                             kw ("case" ^ WordSize.toString ws) *>
-                             parseCase (WordX.parse, fn cases => Cases.Word (ws, cases))))),
-             Exclave <$> (kw "exclave" *> Label.parse),
-             Goto <$>
+              any ((kw "case" *> parseCase (Con.parse, Cases.Con)) ::
+                   (List.map (WordSize.all, fn ws =>
+                              kw ("case" ^ WordSize.toString ws) *>
+                              parseCase (WordX.parse, fn cases => Cases.Word (ws, cases))))),
+              Goto <$>
              (kw "goto" *>
               Label.parse >>= (fn dst =>
               parseArgs >>= (fn args =>
@@ -1034,11 +1031,10 @@ structure Transfer =
                Var.equals (test, test')
                andalso Cases.equals (cases, cases', Con.equals, Label.equals)
                andalso Option.equals (default, default', Label.equals)
-          | (Goto {dst, args}, Goto {dst = dst', args = args'}) =>
-               Label.equals (dst, dst') andalso
-               varsEquals (args, args')
-          | (Exclave l, Exclave l') => Label.equals (l, l')
-          | (Raise xs, Raise xs') => varsEquals (xs, xs')
+           | (Goto {dst, args}, Goto {dst = dst', args = args'}) =>
+                Label.equals (dst, dst') andalso
+                varsEquals (args, args')
+           | (Raise xs, Raise xs') => varsEquals (xs, xs')
           | (Return xs, Return xs') => varsEquals (xs, xs')
           | (Runtime {prim, args, return},
              Runtime {prim = prim', args = args', return = return'}) =>
@@ -1072,10 +1068,9 @@ structure Transfer =
                            hash2 (Label.hash l, w)),
                           fn (l, w) => 
                           hash2 (Label.hash l, w)))
-             | Goto {dst, args} =>
-                  hashVars (args, Label.hash dst)
-             | Exclave l => Label.hash l
-             | Raise xs => hashVars (xs, raisee)
+              | Goto {dst, args} =>
+                   hashVars (args, Label.hash dst)
+              | Raise xs => hashVars (xs, raisee)
              | Return xs => hashVars (xs, return)
              | Runtime {args, return, ...} => hashVars (args, Label.hash return)
       end
@@ -1425,11 +1420,10 @@ structure Function =
                                         NONE => ()
                                       | SOME j =>
                                            edge (j, "Default", Solid)
-                               in
-                                  ()
-                               end
-                          | Exclave l => edge (l, "", Solid)
-                          | Goto {dst, ...} => edge (dst, "", Solid)
+                                in
+                                   ()
+                                end
+                           | Goto {dst, ...} => edge (dst, "", Solid)
                           | Raise _ => ()
                           | Return _ => ()
                           | Runtime {return, ...} => edge (return, "", Dotted)

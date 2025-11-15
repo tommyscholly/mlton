@@ -113,10 +113,9 @@ fun 'a analyze
                         in
                            ()
                         end
+                end
 
-               end
-          | Exclave l => ()
-          | Case {test, cases, default, ...} =>
+           | Case {test, cases, default, ...} =>
                let
                   val test = value test
                   fun ensureSize (w, s) =
@@ -206,7 +205,7 @@ fun 'a analyze
           | Inject {sum, variant} =>
                inject {sum = sum,
                        variant = value variant}
-          | Object {args, con} =>
+          | Object {args, con, mode = _} =>
                let
                   val args =
                      case Type.dest ty of

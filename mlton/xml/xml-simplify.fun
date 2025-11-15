@@ -14,12 +14,14 @@ open S
 
 structure SimplifyTypes = SimplifyTypes (structure Input = S
                                          structure Output = S)
+structure RegionPops = RegionPops (structure X = S)
 
 type pass = {name: string,
              doit: Program.t -> Program.t,
              execute: bool}
 
 val xmlPassesDefault =
+   {name = "xmlRegionPops", doit = RegionPops.insertRegionPops, execute = true} ::
    {name = "xmlShrink", doit = S.shrink, execute = true} ::
    {name = "xmlSimplifyTypes", doit = SimplifyTypes.simplifyTypes, execute = true} ::
    nil
@@ -43,7 +45,8 @@ local
       end
 
    val passGens =
-      (List.map([("xmlShrink", S.shrink),
+      (List.map([("xmlRegionPops", RegionPops.insertRegionPops),
+                 ("xmlShrink", S.shrink),
                  ("xmlSimplifyTypes", SimplifyTypes.simplifyTypes)],
                 mkSimplePassGen))
 in

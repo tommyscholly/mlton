@@ -72,6 +72,7 @@ structure Dexp =
             primApp {prim = prim s,
                      targs = Vector.new0 (),
                      args = Vector.new2 (e1, e2),
+                     mode = NONE,
                      ty = Type.word s}
       in
          val add = mk Prim.Word_add
@@ -83,6 +84,7 @@ structure Dexp =
          primApp {prim = Prim.Word_equal s,
                   targs = Vector.new0 (),
                   args = Vector.new2 (e1, e2),
+                  mode = NONE,
                   ty = Type.bool}
    end
 
@@ -225,6 +227,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                         Dexp.primApp {prim = Prim.Vector_length,
                                       targs = Vector.new1 ty,
                                       args = Vector.new1 dvec,
+                                      mode = NONE,
                                       ty = Type.word seqIndexWordSize}
                      val body =
                         Dexp.lett
@@ -272,6 +275,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                         Dexp.primApp {prim = Prim.Vector_sub,
                                       targs = Vector.new1 ty,
                                       args = Vector.new2 (dvec, di),
+                                      mode = NONE,
                                       ty = ty}
                      val args =
                         Vector.new4
@@ -342,12 +346,14 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                         {prim = Prim.IntInf_toWord,
                          targs = Vector.new0 (),
                          args = Vector.new1 dx,
+                         mode = NONE,
                          ty = Type.word sws}
                      fun toVector dx =
                         Dexp.primApp
                         {prim = Prim.IntInf_toVector,
                          targs = Vector.new0 (),
                          args = Vector.new1 dx,
+                         mode = NONE,
                          ty = Type.vector (Type.word bws)}
                      val one = Dexp.word (WordX.one sws)
                      val body =
@@ -394,6 +400,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                Dexp.primApp {prim = p,
                              targs = targs, 
                              args = Vector.new2 (dx1, dx2),
+                             mode = NONE,
                              ty = Type.bool}
             fun eq () = prim (Prim.MLton_eq, Vector.new1 ty)
             fun hasConstArg () = #isConst (varInfo x1) orelse #isConst (varInfo x2)
@@ -421,6 +428,7 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                         {prim = Prim.Real_castToWord (rs, ws),
                          targs = Vector.new0 (),
                          args = Vector.new1 dx,
+                         mode = NONE,
                          ty = Type.word ws}
                   in
                      Dexp.wordEqual (toWord dx1, toWord dx2, ws)
@@ -554,7 +562,8 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                                    {var = var,
                                                     ty = Type.bool,
                                                     exp = Exp.PrimApp
-                                                          {prim = Prim.CPointer_equal,
+                                                           {prim = Prim.CPointer_equal,
+                                                            mode = NONE,
                                                            targs = Vector.new0 (),
                                                            args = Vector.new2 (cp0,cp1)}}
                                              in
@@ -573,19 +582,21 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                                    {var = SOME w,
                                                     ty = wt,
                                                     exp = Exp.PrimApp
-                                                          {prim = Prim.Real_castToWord (rs, ws),
+                                                           {prim = Prim.Real_castToWord (rs, ws),
+                                                            mode = NONE,
                                                            targs = Vector.new0 (),
                                                            args = Vector.new1 r}}
                                                 val wordEqStmt =
                                                    Statement.T
                                                    {var = var,
                                                     ty = Type.bool,
-                                                    exp = Exp.PrimApp
-                                                          {prim = Prim.Word_equal ws,
-                                                           targs = Vector.new0 (),
-                                                           args = Vector.new2 (w0,w1)}}
-                                             in
-                                                adds [wordEqStmt, 
+                                                     exp = Exp.PrimApp
+                                                           {prim = Prim.Word_equal ws,
+                                                            targs = Vector.new0 (),
+                                                            mode = NONE,
+                                                            args = Vector.new2 (w0,w1)}}
+                                              in
+                                                 adds [wordEqStmt,
                                                       realCastToWordStmt (r1, w1),
                                                       realCastToWordStmt (r0, w0)]
                                              end
@@ -597,13 +608,14 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                                    Statement.T
                                                    {var = var,
                                                     ty = Type.bool,
-                                                    exp = Exp.PrimApp
-                                                          {prim = Prim.Word_equal ws,
-                                                           targs = Vector.new0 (),
-                                                           args = Vector.new2 (w0,w1)}}
-                                             in
-                                                adds [wordEqStmt]
-                                             end
+                                                     exp = Exp.PrimApp
+                                                           {prim = Prim.Word_equal ws,
+                                                            targs = Vector.new0 (),
+                                                            mode = NONE,
+                                                            args = Vector.new2 (w0,w1)}}
+                                              in
+                                                 adds [wordEqStmt]
+                                              end
                                         | _ => normal ())
                                  | (Prim.MLton_equal, 1) =>
                                       let

@@ -42,6 +42,7 @@ fun typeCheck (program as Program.T {datatypes, body}): unit =
       fun checkMode (constraint: Mode.t, expMode: Mode.t): unit =
          if Mode.equals (constraint, expMode)
             then ()
+         else if Mode.equals (constraint, Mode.Undetermined) then (Error.warning "Xml.TypeCheck.checkMode: mode constraint is undetermined"; ())
          else Type.error ("mode constraint mismatch",
                           Layout.align [Mode.layout constraint,
                                         Mode.layout expMode])
@@ -104,11 +105,15 @@ fun typeCheck (program as Program.T {datatypes, body}): unit =
          in
             case (arg, Type.deArrowOpt t) of
                  (NONE, NONE) => t
-               | (SOME (x, ty), SOME (t1, t2)) =>
-                    (checkType ty
-                     ; if Type.equals (t1, ty)
-                          then (setVar (x, {tyvars = Vector.new0 (),
-                                            ty = t1}) ; t2)
+               | (SOME (x, ty, m), SOME (t1, t2)) =>
+                     (checkType ty
+                      ; if Type.equals (t1, ty) then
+                           (if Mode.equals (m, Mode.Undetermined)
+                              then Error.warning ("Xml.TypeCheck.checkPat: pattern variable " ^ 
+                                                  Var.toString x ^ " at constructor " ^ 
+                                                  Con.toString con ^ " has undetermined mode")
+                              else (); (setVar (x, {tyvars = Vector.new0 (),
+                                                   ty = t1}) ; t2))
                        else (Type.error
                              ("argument constraint of wrong type",
                               let open Layout
@@ -230,7 +235,6 @@ fun typeCheck (program as Program.T {datatypes, body}): unit =
                       | SOME e => checkApp (t, e)
                   end
              | Const c => Type.ofConst c
-             | Exclave e => checkExp e
              | Handle {try, catch = (catch, catchType), handler, ...} =>
                   let
                      val _ = if isExnType catchType
@@ -274,16 +278,26 @@ fun typeCheck (program as Program.T {datatypes, body}): unit =
                   else Type.tuple (checkVarExps xs)
              | Var x => checkVarExp x
          end) arg
-      and checkLambda arg: Type.t =
-         traceCheckLambda
-         (fn (l: Lambda.t) =>
-         let
-            val {arg, argType, body, ...} = Lambda.dest l
-            val _ = checkType argType
-            val _ = setVar (arg, {tyvars = Vector.new0 (), ty = argType})
-         in
-            Type.arrow (argType, checkExp body)
-         end) arg
+       and checkLambda arg: Type.t =
+          traceCheckLambda
+          (fn (l: Lambda.t) =>
+          let
+             val {arg, argType, argMode, lambdaMode, resultMode, body, ...} = Lambda.dest l
+             val _ = checkType argType
+             val _ = if Mode.equals (argMode, Mode.Undetermined)
+                        then Error.warning ("Xml.TypeCheck.checkLambda: lambda argMode is undetermined for arg " ^ 
+                                            Var.toString arg)
+                        else ()
+             val _ = if Mode.equals (lambdaMode, Mode.Undetermined)
+                        then Error.warning "Xml.TypeCheck.checkLambda: lambda lambdaMode is undetermined"
+                        else ()
+             val _ = if Mode.equals (resultMode, Mode.Undetermined)
+                        then Error.warning "Xml.TypeCheck.checkLambda: lambda resultMode is undetermined"
+                        else ()
+             val _ = setVar (arg, {tyvars = Vector.new0 (), ty = argType})
+          in
+             Type.arrow (argType, checkExp body)
+          end) arg
       and checkDec arg: unit =
          traceCheckDec
          (fn (d: Dec.t) =>
@@ -301,16 +315,24 @@ fun typeCheck (program as Program.T {datatypes, body}): unit =
                    ; Vector.foreach (decs, fn {ty, lambda, ...} =>
                                      check (ty, checkLambda lambda))
                    ; unbindTyvars tyvars)
-             | MonoVal {var, ty, exp, mode} =>
-                  (checkType ty
-                   ; check (ty, checkPrimExp (exp, ty))
-                   ; setVar (var, {tyvars = Vector.new0 (), ty = ty}))
-             | PolyVal {tyvars, var, ty, mode, exp} =>
-                  (bindTyvars tyvars
-                   ; checkType ty
-                   ; check (ty, checkExp exp)
-                   ; unbindTyvars tyvars
-                   ; setVar (var, {tyvars = tyvars, ty = ty}))
+              | MonoVal {var, ty, exp, mode} =>
+                   (checkType ty
+                    ; (if Mode.equals (mode, Mode.Undetermined)
+                         then Error.warning ("Xml.TypeCheck.checkDec.MonoVal: variable " ^ 
+                                             Var.toString var ^ " has undetermined mode")
+                         else ())
+                    ; check (ty, checkPrimExp (exp, ty))
+                    ; setVar (var, {tyvars = Vector.new0 (), ty = ty}))
+              | PolyVal {tyvars, var, ty, mode, exp} =>
+                   (bindTyvars tyvars
+                    ; checkType ty
+                    ; (if Mode.equals (mode, Mode.Undetermined)
+                         then Error.warning ("Xml.TypeCheck.checkDec.PolyVal: variable " ^ 
+                                             Var.toString var ^ " has undetermined mode")
+                         else ())
+                    ; check (ty, checkExp exp)
+                    ; unbindTyvars tyvars
+                    ; setVar (var, {tyvars = tyvars, ty = ty}))
          end) arg
       val _ =
          Vector.foreach

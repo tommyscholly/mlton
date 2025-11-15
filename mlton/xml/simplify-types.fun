@@ -191,7 +191,7 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
             Vector.map (targs, fixType)
          end
       fun fixPat (I.Pat.T {arg, con, targs}): O.Pat.t =
-         O.Pat.T {arg = Option.map (arg, fn (x, t) => (x, fixType t)),
+         O.Pat.T {arg = Option.map (arg, fn (x, t, m) => (x, fixType t, m)),
                   con = con,
                   targs = fixConTargs (con, targs)}
       fun fixDec (d: I.Dec.t): O.Dec.t =
@@ -215,10 +215,10 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
                   O.Dec.Fun {decs = decs,
                              tyvars = tyvars}
                end
-          | I.Dec.MonoVal {exp, ty, var, mode} =>
-               O.Dec.MonoVal {exp = fixPrimExp exp,
-                              ty = fixType ty,
-                              var = var, mode = mode}
+           | I.Dec.MonoVal {exp, ty, var, mode} =>
+                O.Dec.MonoVal {exp = fixPrimExp exp,
+                               ty = fixType ty,
+                               var = var, mode = Mode.defaultToHeap mode}
           | I.Dec.PolyVal {exp, ty, tyvars, mode, var} =>
                let
                   val exp = fixExp exp
@@ -226,11 +226,11 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
                   val bv = Vector.map (tyvars, tyvarIsUsed)
                   val _ = setVarKeep (var, SOME bv)
                in
-                  O.Dec.PolyVal {exp = exp,
-                                 ty = ty,
-                                 tyvars = keep (tyvars, bv),
-                                 mode = mode,
-                                 var = var}
+                   O.Dec.PolyVal {exp = exp,
+                                  ty = ty,
+                                  tyvars = keep (tyvars, bv),
+                                  mode = Mode.defaultToHeap mode,
+                                  var = var}
                end
       and fixExp (e: I.Exp.t): O.Exp.t =
          let
@@ -276,7 +276,6 @@ fun simplifyTypes (I.Program.T {body, datatypes}) =
                                  con = con,
                                  targs = fixConTargs (con, targs)}
           | I.PrimExp.Const c => O.PrimExp.Const c
-          | I.PrimExp.Exclave e => O.PrimExp.Exclave (fixExp e)
           | I.PrimExp.Handle {catch = (x, t), handler, try} =>
                O.PrimExp.Handle {catch = (x, fixType t),
                                  handler = fixExp handler,

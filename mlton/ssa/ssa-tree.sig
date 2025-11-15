@@ -73,15 +73,18 @@ signature SSA_TREE =
          sig
             datatype t =
                ConApp of {args: Var.t vector,
-                          con: Con.t}
+                          con: Con.t, 
+                          mode: Mode.t}
              | Const of Const.t
              | PrimApp of {args: Var.t vector,
                            prim: Type.t Prim.t,
+                           mode: Mode.t option,
                            targs: Type.t vector}
              | Profile of ProfileExp.t
              | Select of {offset: int,
                           tuple: Var.t}
-             | Tuple of Var.t vector
+             | Tuple of {exps: Var.t vector,
+                         mode: Mode.t}
              | Var of Var.t
 
             val equals: t * t -> bool
@@ -119,8 +122,6 @@ signature SSA_TREE =
              | Case of {cases: (Con.t, Label.t) Cases.t,
                         default: Label.t option, (* Must be nullary. *)
                         test: Var.t}
-             (* invariant: the exclave'd expression in the next block *)
-             | Exclave of Label.t
              | Goto of {args: Var.t vector,
                         dst: Label.t}
              (* Raise implicitly raises to the caller.
@@ -149,6 +150,7 @@ signature SSA_TREE =
          sig
             datatype t =
                T of {args: (Var.t * Type.t) vector,
+               (* T of {args: (Var.t * Type.t * Mode.t) vector, *)
                      label: Label.t,
                      statements: Statement.t vector,
                      transfer: Transfer.t}

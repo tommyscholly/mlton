@@ -285,8 +285,8 @@ fun transform (prog: Program.t): Program.t =
                                      let
                                         val arg =
                                            Option.map
-                                           (arg, fn (arg, argTy) =>
-                                            (arg, transType argTy))
+                                           (arg, fn (arg, argTy, argMode) =>
+                                            (arg, transType argTy, argMode))
                                         val targs = Vector.map (targs, transType)
                                      in
                                         (Pat.T {arg = arg, con = con, targs = targs},
@@ -323,7 +323,6 @@ fun transform (prog: Program.t): Program.t =
                   targs = Vector.map (targs, transType),
                   ty = eTy}
              | Const c => return (DirectExp.const c)
-             | Exclave exp => return (DirectExp.exclave (transExp (exp, kVar, kTy, hVar, hTy), kTy))
              | Handle {catch = (cVar, _), handler, try} =>
                   let
                      val h'Var = Var.newString "h"
@@ -425,7 +424,7 @@ fun transform (prog: Program.t): Program.t =
                     hVar: Var.t, hTy: Type.t): DirectExp.t =
          let
             val {decs, result} = Exp.dest e
-            val k = DirectExp.monoVar (kVar, kTy, Mode.Undetermined)
+            val k = DirectExp.monoVar (kVar, kTy, Mode.Heap)
             val k'Body =
                DirectExp.app
                ({func = k, arg = transVarExp result, ty = ansTy}, Mode.Heap)
@@ -438,7 +437,7 @@ fun transform (prog: Program.t): Program.t =
       (* Set (original) type of each bound variable. *)
       val () =
          Exp.foreachBoundVar
-         (body, fn (v, _, ty) =>
+         (body, fn (v, _, ty, _) =>
           setVarOrigType (v, ty))
 
       (* Translate datatypes. *)

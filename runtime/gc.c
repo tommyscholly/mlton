@@ -56,6 +56,7 @@
 #include "gc/pack.c"
 #include "gc/pointer.c"
 #include "gc/profiling.c"
+#include "gc/regions.c"
 #include "gc/rusage.c"
 #include "gc/sequence-allocate.c"
 #include "gc/sequence.c"

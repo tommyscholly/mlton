@@ -9,4 +9,5 @@ signature MODE =
       val equals: t * t -> bool
       val join: t * t -> t
       val subsumes: t * t -> t option
+      val defaultToHeap: t -> t
    end

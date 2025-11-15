@@ -50,7 +50,9 @@ structure Kind =
                      maySwitchThreadsTo: bool,
                      modifiesFrontier: bool,
                      readsStackTop: bool,
-                     writesStackTop: bool}
+                     writesStackTop: bool,
+                     readsRegionTop: bool,
+                     writesRegionTop: bool}
 
       val runtimeDefault = Runtime {bytesNeeded = NONE,
                                     ensuresBytesFree = NONE,
@@ -59,7 +61,9 @@ structure Kind =
                                     maySwitchThreadsTo = false,
                                     modifiesFrontier = true,
                                     readsStackTop = true,
-                                    writesStackTop = true}
+                                    writesStackTop = true,
+                                    readsRegionTop = false,
+                                    writesRegionTop = false}
       val pure = Pure
       val impure = Impure
       val reentrant = runtimeDefault
@@ -68,9 +72,10 @@ structure Kind =
          case k of
             Impure => Layout.str "Impure"
           | Pure => Layout.str "Pure"
-          | Runtime {bytesNeeded, ensuresBytesFree, mayGC,
-                     maySwitchThreadsFrom, maySwitchThreadsTo,
-                     modifiesFrontier, readsStackTop, writesStackTop} =>
+        | Runtime {bytesNeeded, ensuresBytesFree, mayGC,
+                   maySwitchThreadsFrom, maySwitchThreadsTo,
+                   modifiesFrontier, readsStackTop, writesStackTop,
+                   readsRegionTop, writesRegionTop} =>
                Layout.namedRecord
                ("Runtime",
                 [("bytesNeeded", Option.layout Int.layout bytesNeeded),
@@ -80,7 +85,9 @@ structure Kind =
                  ("maySwitchThreadsTo", Bool.layout maySwitchThreadsTo),
                  ("modifiesFrontier", Bool.layout modifiesFrontier),
                  ("readsStackTop", Bool.layout readsStackTop),
-                 ("writesStackTop", Bool.layout writesStackTop)])
+                 ("writesStackTop", Bool.layout writesStackTop),
+                 ("readsRegionTop", Bool.layout readsRegionTop),
+                 ("writesRegionTop", Bool.layout writesRegionTop)])
 
       val toString = Layout.toString o layout
 
@@ -100,6 +107,8 @@ structure Kind =
                      nfield ("modifiesFrontier", bool) >>= (fn modifiesFrontier =>
                      nfield ("readsStackTop", bool) >>= (fn readsStackTop =>
                      nfield ("writesStackTop", bool) >>= (fn writesStackTop =>
+                     nfield ("readsRegionTop", bool) >>= (fn readsRegionTop =>
+                     nfield ("writesRegionTop", bool) >>= (fn writesRegionTop =>
                      pure {bytesNeeded = bytesNeeded,
                            ensuresBytesFree = ensuresBytesFree,
                            mayGC = mayGC,
@@ -107,7 +116,9 @@ structure Kind =
                            maySwitchThreadsTo = maySwitchThreadsTo,
                            modifiesFrontier = modifiesFrontier,
                            readsStackTop = readsStackTop,
-                           writesStackTop = writesStackTop}))))))))) >>= (fn args =>
+                           writesStackTop = writesStackTop,
+                           readsRegionTop = readsRegionTop,
+                           writesRegionTop = writesRegionTop}))))))))))) >>= (fn args =>
              pure (Runtime args))]
          end
 
@@ -128,6 +139,8 @@ structure Kind =
          val modifiesFrontier = makeBool #modifiesFrontier
          val readsStackTop = makeBool #readsStackTop
          val writesStackTop = makeBool #writesStackTop
+         val readsRegionTop = makeBool #readsRegionTop
+         val writesRegionTop = makeBool #writesRegionTop
       end
    end
 
@@ -220,13 +233,15 @@ in
    fun modifiesFrontier z = makeKind Kind.modifiesFrontier z
    fun prototype z = make #prototype z
    fun readsStackTop z = makeKind Kind.readsStackTop z
+   fun readsRegionTop z = makeKind Kind.readsRegionTop z
    fun return z = make #return z
    fun symbolScope z = make #symbolScope z
    fun target z = make #target z
    fun writesStackTop z = makeKind Kind.writesStackTop z
+   fun writesRegionTop z = makeKind Kind.writesRegionTop z
 end
 (* quell unused warnings *)
-val _ = (modifiesFrontier, readsStackTop, writesStackTop)
+val _ = (modifiesFrontier, readsStackTop, writesStackTop, readsRegionTop, writesRegionTop)
 
 fun equals (f, f') = Target.equals (target f, target f')
 

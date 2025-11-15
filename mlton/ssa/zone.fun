@@ -210,9 +210,10 @@ fun zoneFunction f =
                            val components =
                               Vector.map (components, fn x =>
                                           replaceVar (x, info))
+                           (* whats happening here? *)
                            val s =
                               Bind
-                              {exp = Object {args = components, con = NONE},
+                              {exp = Object {args = components, con = NONE, mode = Mode.Heap},
                                ty = Type.tuple (Prod.make componentTys),
                                var = SOME tuple}
                         in

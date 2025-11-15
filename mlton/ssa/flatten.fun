@@ -116,12 +116,12 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
 
       fun doitStatement (Statement.T {exp, var, ...}) =
          case exp of
-            Tuple xs =>
-               Option.app
-               (var, fn var =>
-                setVarInfo (var, {rep = Rep.new (),
-                                  tuple = ref (SOME xs)}))
-          | ConApp {con, args} => coerces (args, conArgs con)
+             Tuple {exps = xs, ...} =>
+                Option.app
+                (var, fn var =>
+                 setVarInfo (var, {rep = Rep.new (),
+                                   tuple = ref (SOME xs)}))
+           | ConApp {con, args, ...} => coerces (args, conArgs con)
           | Var x => setVarInfo (valOf var, varInfo x)
           | _ => ()
       val _ = Vector.foreach (globals, doitStatement)
@@ -233,11 +233,12 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                         else x :: xs))
       fun doitStatement (stmt as Statement.T {var, ty, exp}) =
          case exp of
-            ConApp {con, args} =>
-               Statement.T {var = var,
-                            ty = ty,
-                            exp = ConApp {con = con,
-                                          args = flattens (args, conArgs con)}}
+             ConApp {con, args, ...} =>
+                Statement.T {var = var,
+                             ty = ty,
+                             exp = ConApp {con = con,
+                                           args = flattens (args, conArgs con),
+                                           mode = Mode.Heap}}
           | _ => stmt
       val globals = Vector.map (globals, doitStatement)
       fun doitFunction f =
@@ -265,9 +266,9 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                      (x, ty) :: args)
                               in 
                                  (args,
-                                  Statement.T {var = SOME x,
-                                               ty = ty,
-                                               exp = Tuple xs}
+                                   Statement.T {var = SOME x,
+                                                ty = ty,
+                                                exp = Tuple {exps = xs, mode = Mode.Heap}}
                                   :: stmts)
                               end
                       else ((x, ty) :: args, stmts))
@@ -321,9 +322,9 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                          let
                                             val x = Var.newNoname ()
                                          in
-                                           (Statement.T {var = SOME x,
-                                                         ty = ty,
-                                                         exp = Tuple xs}
+                                            (Statement.T {var = SOME x,
+                                                          ty = ty,
+                                                          exp = Tuple {exps = xs, mode = Mode.Heap}}
                                             :: stmts,
                                             x :: actuals)
                                          end

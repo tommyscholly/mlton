@@ -45,7 +45,7 @@ fun transform (Program.T {datatypes, body, ...}): Program.t =
           | _ => Error.bug "ImplementSuffix: saw unexpected dec"
       and loopMonoVal {var, ty, mode, exp} : Dec.t =
          let
-            fun primExp e = MonoVal {var = var, ty = ty, mode = mode, exp = e}
+             fun primExp e = MonoVal {var = var, ty = ty, mode = Mode.defaultToHeap mode, exp = e}
             fun keep () = primExp exp
          in
             case exp of

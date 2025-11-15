@@ -231,6 +231,7 @@ and expNode =
 and lambda = Lam of {arg: Var.t,
                      argType: Type.t,
                      argMode: Mode.t,
+                     resultMode: Mode.t,
                      body: exp,
                      mayInline: bool}
 
@@ -361,6 +362,7 @@ structure Lambda =
       val bogus = make {arg = Var.newNoname (),
                         argType = Type.unit,
                         argMode = Mode.Heap,
+                        resultMode = Mode.Heap,
                         body = Exp {node = Seq (Vector.new0 ()),
                                     ty = Type.unit,
                                     mode = Mode.Heap},
@@ -502,6 +504,7 @@ structure Exp =
                {arg = Var.newNoname (),
                 argType = Type.unit,
                 argMode = mode,
+                resultMode = Mode.Heap,
                 body = iff (test,
                             make (Seq (Vector.new2 (expr, call)),
                                   Type.unit, mode),
@@ -622,8 +625,10 @@ structure Dec =
                                              nest = nest,
                                              pat = pat,
                                              regionPat = regionPat})}
-            and loopLambda (Lam {arg, argType, argMode, body, mayInline}) =
-               Lam {arg = arg, argType = argType, argMode = argMode, body = loopExp body, mayInline = mayInline}
+            and loopLambda (Lam {arg, argType, argMode, resultMode, body, mayInline}) =
+               Lam 
+                  {arg = arg, argType = argType, argMode = argMode, 
+                   resultMode = resultMode, body = loopExp body, mayInline = mayInline}
          in
             loopDec d
          end

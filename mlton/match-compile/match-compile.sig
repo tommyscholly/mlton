@@ -22,7 +22,7 @@ signature MATCH_COMPILE_STRUCTS =
          end
       structure Pat:
          sig
-            datatype t = T of {arg: (Var.t * Type.t) option,
+            datatype t = T of {arg: (Var.t * Type.t * Mode.t) option,
                                con: Con.t,
                                targs: Type.t vector}
          end

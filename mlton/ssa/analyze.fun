@@ -147,10 +147,9 @@ fun 'a analyze
                       | Word (s, cs) => doitWord (s, cs)
                   val _ = Option.app (default, ensureNullary)
                in ()
-               end
-          (* TODO: should we be labeling these values? *)
-          | Exclave _ => ()
-          | Goto {dst, args} => coerces ("goto", values args, labelValues dst)
+                end
+           (* TODO: should we be labeling these values? *)
+           | Goto {dst, args} => coerces ("goto", values args, labelValues dst)
           | Raise xs =>
                (case shouldRaises of
                    NONE => Error.bug "Analyze.loopTransfer (raise mismatch at Raise)"
@@ -193,7 +192,11 @@ fun 'a analyze
          let
             val v =
                case exp of
-                  ConApp {con, args} => conApp {con = con, args = values args}
+                  ConApp {con, args, mode} => 
+                      conApp {
+                          con = con, 
+                          args = values args, 
+                          mode = mode}
                 | Const c => const c
                 | PrimApp {prim, targs, args, ...} =>
                      primApp {prim = prim,
@@ -206,10 +209,10 @@ fun 'a analyze
                      select {tuple = value tuple,
                              offset = offset,
                              resultType = ty}
-                | Tuple xs =>
-                     if 1 = Vector.length xs
-                        then Error.bug "Analyze.loopStatement (unary tuple)"
-                     else tuple (values xs)
+                 | Tuple {exps = xs, ...} =>
+                      if 1 = Vector.length xs
+                         then Error.bug "Analyze.loopStatement (unary tuple)"
+                      else tuple (values xs)
                 | Var x => value x
          in
             Option.app

@@ -17,6 +17,13 @@ infix  1 <|> >>=
 infix  3 <*> <* *>
 infixr 4 <$> <$$> <$$$> <$$$$> <$ <$?>
 
+structure Option = 
+   struct
+      open Option
+      fun getOpt (SOME x, _) = x
+        | getOpt (NONE, default) = default
+   end
+
 structure Type =
    struct
       datatype t =
@@ -277,18 +284,21 @@ structure Exp =
    struct
       datatype t =
          ConApp of {con: Con.t,
-                    args: Var.t vector}
+                    args: Var.t vector,
+                    mode: Mode.t}
        | Const of Const.t
        | PrimApp of {prim: Type.t Prim.t,
                      targs: Type.t vector,
+                     mode: Mode.t option,
                      args: Var.t vector}
        | Profile of ProfileExp.t
        | Select of {tuple: Var.t,
                     offset: int}
-       | Tuple of Var.t vector
+       | Tuple of {exps: Var.t vector,
+                   mode: Mode.t}
        | Var of Var.t
 
-      val unit = Tuple (Vector.new0 ())
+      val unit = Tuple {exps = Vector.new0 (), mode = Mode.Constant}
 
       (* Vals to determine the size for inline.fun and loop optimization*)
       val size : t -> int =
@@ -297,7 +307,7 @@ structure Exp =
           | PrimApp {args, ...} => 1 + Vector.length args
           | Profile _ => 0
           | Select _ => 1 + 1
-          | Tuple xs => 1 + Vector.length xs
+          | Tuple {exps = xs, ...} => 1 + Vector.length xs
           | Var _ => 0
 
       fun foreachVar (e, v) =
@@ -310,7 +320,7 @@ structure Exp =
              | PrimApp {args, ...} => vs args
              | Profile _ => ()
              | Select {tuple, ...} => v tuple
-             | Tuple xs => vs xs
+             | Tuple {exps = xs, ...} => vs xs
              | Var x => v x
          end
 
@@ -319,14 +329,14 @@ structure Exp =
             fun fxs xs = Vector.map (xs, fx)
          in
             case e of
-               ConApp {con, args} => ConApp {con = con, args = fxs args}
+                ConApp {con, args, mode} => ConApp {con = con, args = fxs args, mode = mode}
              | Const _ => e
-             | PrimApp {prim, targs, args} =>
-                  PrimApp {prim = prim, targs = targs, args = fxs args}
+              | PrimApp {prim, targs, mode, args} =>
+                   PrimApp {prim = prim, targs = targs, mode = mode, args = fxs args}
              | Profile _ => e
              | Select {tuple, offset} =>
                   Select {tuple = fx tuple, offset = offset}
-             | Tuple xs => Tuple (fxs xs)
+              | Tuple {exps, mode} => Tuple {exps = fxs exps, mode = mode}
              | Var x => Var (fx x)
          end
 
@@ -336,27 +346,27 @@ structure Exp =
             fun layoutArgs xs = Vector.layout layoutVar xs
          in
             case e of
-               ConApp {con, args} =>
-                  seq [str "con ",
-                       Con.layout con,
-                       if Vector.isEmpty args
-                          then empty
-                          else seq [str " ", layoutArgs args]]
+                ConApp {con, args, mode} =>
+                   seq [str "con ",
+                        Con.layout con,
+                        if Vector.isEmpty args
+                           then empty
+                           else seq [str " ", layoutArgs args], Mode.layout mode]
              | Const c => Const.layout c
-             | PrimApp {prim, targs, args} =>
-                  seq [str "prim ",
-                       Prim.layoutFull (prim, Type.layout),
-                       if !Control.showTypes
-                          andalso not (Vector.isEmpty targs)
-                          then Layout.list (Vector.toListMap (targs, Type.layout))
-                          else empty,
-                       str " ",
-                       layoutArgs args]
+             | PrimApp {prim, targs, mode, args} =>
+                   seq [str "prim ",
+                        Prim.layoutFull (prim, Type.layout),
+                        if !Control.showTypes
+                           andalso not (Vector.isEmpty targs)
+                           then seq [Layout.list (Vector.toListMap (targs, Type.layout)), Option.getOpt (Option.map (mode, Mode.layout), empty)]
+                           else empty,
+                        str " ",
+                        layoutArgs args]
              | Profile p => ProfileExp.layout p
              | Select {tuple, offset} =>
                   seq [str "#", Int.layout offset, str " ",
                        paren (layoutVar tuple)]
-             | Tuple xs => layoutArgs xs
+             | Tuple {exps, mode} => seq [layoutArgs exps, Mode.layout mode]
              | Var x => layoutVar x
          end
       fun layout e = layout' (e, Var.layout)
@@ -368,25 +378,25 @@ structure Exp =
             val parseArgsOpt = vectorOpt Var.parse
          in
             mlSpaces *> any
-            [ConApp <$>
-             (kw "con" *>
-              Con.parse >>= (fn con =>
-              parseArgsOpt >>= (fn args =>
-              pure {con = con, args = args}))),
+             [ConApp <$>
+              (kw "con" *>
+               Con.parse >>= (fn con =>
+               parseArgsOpt >>= (fn args =>
+               pure {con = con, args = args, mode = Mode.Heap}))),
              Const <$> Const.parse,
-             PrimApp <$>
-             (kw "prim" *>
-              Prim.parseFull Type.parse >>= (fn prim =>
-              listOpt Type.parse >>= (fn targs =>
-              parseArgs >>= (fn args =>
-              pure {prim = prim, targs = Vector.fromList targs, args = args})))),
+              PrimApp <$>
+              (kw "prim" *>
+               Prim.parseFull Type.parse >>= (fn prim =>
+               listOpt Type.parse >>= (fn targs =>
+               parseArgs >>= (fn args =>
+               pure {prim = prim, targs = Vector.fromList targs, args = args, mode = NONE})))),
              Select <$>
              (mlSpaces *> char #"#" *>
               (peek (nextSat Char.isDigit) *>
                fromScan (Function.curry Int.scan StringCvt.DEC)) >>= (fn offset =>
               paren Var.parse >>= (fn tuple =>
               pure {tuple = tuple, offset = offset}))),
-             Tuple <$> parseArgs,
+              Tuple <$> (parseArgs >>= (fn exps => pure {exps = exps, mode = Mode.Heap})),
              Var <$> Var.parse]
          end
 
@@ -404,18 +414,20 @@ structure Exp =
 
       fun equals (e: t, e': t): bool =
          case (e, e') of
-            (ConApp {con, args}, ConApp {con = con', args = args'}) =>
-               Con.equals (con, con') andalso varsEquals (args, args')
+            (ConApp {con, args, mode}, ConApp {con = con', args = args', mode = mode'}) =>
+               Con.equals (con, con') andalso varsEquals (args, args') andalso Mode.equals (mode, mode')
           | (Const c, Const c') => Const.equals (c, c')
-          | (PrimApp {prim, targs, args},
-             PrimApp {prim = prim', targs = targs', args = args'}) =>
+          | (PrimApp {prim, targs, args, mode},
+             PrimApp {prim = prim', targs = targs', args = args', mode = mode'}) =>
                Prim.equals (prim, prim')
                andalso Vector.equals (targs, targs', Type.equals)
                andalso varsEquals (args, args')
+               andalso Option.equals (mode, mode', Mode.equals)
           | (Profile p, Profile p') => ProfileExp.equals (p, p')
           | (Select {tuple = t, offset = i}, Select {tuple = t', offset = i'}) =>
                Var.equals (t, t') andalso i = i'
-          | (Tuple xs, Tuple xs') => varsEquals (xs, xs')
+          | (Tuple {exps = xs, mode = m}, Tuple {exps = xs', mode = m'}) =>
+                varsEquals (xs, xs') andalso Mode.equals (m, m')
           | (Var x, Var x') => Var.equals (x, x')
           | _ => false
 
@@ -437,7 +449,7 @@ structure Exp =
              | Profile p => Hash.combine (profile, ProfileExp.hash p)
              | Select {tuple, offset} =>
                   Hash.combine (select, Var.hash tuple + Word.fromInt offset)
-             | Tuple xs => hashVars (xs, tuple)
+              | Tuple {exps, ...} => hashVars (exps, tuple)
              | Var x => Var.hash x
       end
 
@@ -541,7 +553,7 @@ structure Statement =
                     case exp of
                        Const _ => set ()
                      | ConApp _ => set ()
-                     | Tuple xs => if Vector.isEmpty xs then set () else ()
+                      | Tuple {exps = xs, ...} => if Vector.isEmpty xs then set () else ()
                      | _ => ()
                  end))
          in
@@ -561,7 +573,6 @@ structure Transfer =
        | Case of {test: Var.t,
                   cases: (Con.t, Label.t) Cases.t,
                   default: Label.t option} (* Must be nullary. *)
-       | Exclave of Label.t
        | Goto of {dst: Label.t,
                   args: Var.t vector}
        | Raise of Var.t vector
@@ -575,7 +586,6 @@ structure Transfer =
          fn Bug => 1
           | Call {args, ...} => 1 + Vector.length args
           | Case {cases, ...} => 1 + Cases.length cases
-          | Exclave _ => 1
           | Goto {args, ...} => 1 + Vector.length args
           | Raise xs => 1 + Vector.length xs
           | Return xs => 1 + Vector.length xs
@@ -595,7 +605,6 @@ structure Transfer =
                   (var test
                    ; Cases.foreach (cases, label)
                    ; Option.app (default, label))
-             | Exclave l => label l
              | Goto {dst, args, ...} => (vars args; label dst)
              | Raise xs => vars xs
              | Return xs => vars xs
@@ -627,7 +636,6 @@ structure Transfer =
                   Case {test = fx test,
                         cases = Cases.map(cases, fl),
                         default = Option.map(default, fl)}
-             | Exclave l => Exclave (fl l)
              | Goto {dst, args} =>
                   Goto {dst = fl dst,
                         args = fxs args}
@@ -689,7 +697,6 @@ structure Transfer =
                       | Return.Tail => seq [str "call tail ", call]
                   end
              | Case arg => layoutCase arg
-             | Exclave l => seq [str "exclave ", Label.layout l]
              | Goto {dst, args} =>
                   seq [str "goto ", Label.layout dst, str " ", layoutArgs args]
              | Raise xs => seq [str "raise ", layoutArgs xs]
@@ -786,7 +793,6 @@ structure Transfer =
       local
          val newHash = Random.word
          val bug = newHash ()
-         (* val exclave = newHash () *)
          val raisee = newHash ()
          val return = newHash ()
          fun hashVars (xs: Var.t vector, w: Word.t): Word.t =
@@ -807,7 +813,6 @@ structure Transfer =
                            hash2 (Label.hash l, w)),
                           fn (l, w) =>
                           hash2 (Label.hash l, w)))
-             | Exclave l => Label.hash l
              | Goto {dst, args} =>
                   hashVars (args, Label.hash dst)
              | Raise xs => hashVars (xs, raisee)
@@ -1212,7 +1217,6 @@ structure Function =
                                in
                                   ()
                                end
-                          | Exclave l => edge (l, "", Solid)
                           | Goto {dst, ...} => edge (dst, "", Solid)
                           | Raise _ => ()
                           | Return _ => ()

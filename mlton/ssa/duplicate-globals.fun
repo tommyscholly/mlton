@@ -56,12 +56,12 @@ struct
          (* Rewrite all globals to a new version if they're in the table of valid globals *)
          fun loopExp exp =
             case exp of
-                 Exp.ConApp {args, con} => Exp.ConApp {con=con, args=freshenVec args}
-               | Exp.PrimApp {args, prim, targs} =>
-                    Exp.PrimApp {args=freshenVec args, prim=prim, targs=targs}
+                  Exp.ConApp {args, con, ...} => Exp.ConApp {con=con, args=freshenVec args, mode = Mode.Heap}
+                | Exp.PrimApp {args, prim, targs, ...} =>
+                     Exp.PrimApp {args=freshenVec args, prim=prim, targs=targs, mode = NONE}
                | Exp.Select {offset, tuple} =>
                     Exp.Select {offset=offset, tuple=freshenIfGlobal tuple}
-               | Exp.Tuple vs => Exp.Tuple (freshenVec vs)
+                | Exp.Tuple {exps, ...} => Exp.Tuple {exps = freshenVec exps, mode = Mode.Heap}
                | Exp.Var v => Exp.Var (freshenIfGlobal v)
                | _ => exp
          fun loopStatement (Statement.T {exp, ty, var}) =
@@ -73,10 +73,9 @@ struct
                  Transfer.Bug => Transfer.Bug
                | Transfer.Call {args, func, return} =>
                     Transfer.Call {args=freshenVec args, func=func, return=return}
-               | Transfer.Case {cases, default, test} =>
-                    Transfer.Case {cases=cases, default=default, test=freshenIfGlobal test}
-               | Transfer.Exclave l => Transfer.Exclave l
-               | Transfer.Goto {args, dst} =>
+                | Transfer.Case {cases, default, test} =>
+                     Transfer.Case {cases=cases, default=default, test=freshenIfGlobal test}
+                | Transfer.Goto {args, dst} =>
                     Transfer.Goto {args=freshenVec args, dst=dst}
                | Transfer.Raise vs =>
                     Transfer.Raise (freshenVec vs)
