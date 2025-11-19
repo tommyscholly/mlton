@@ -21,7 +21,7 @@ type pass = {name: string,
              execute: bool}
 
 val xmlPassesDefault =
-   {name = "xmlRegionPops", doit = RegionPops.insertRegionPops, execute = true} ::
+   (* {name = "xmlRegionPops", doit = RegionPops.insertRegionPops, execute = true} :: *)
    {name = "xmlShrink", doit = S.shrink, execute = true} ::
    {name = "xmlSimplifyTypes", doit = SimplifyTypes.simplifyTypes, execute = true} ::
    nil

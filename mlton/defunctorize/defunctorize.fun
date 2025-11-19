@@ -210,29 +210,29 @@ fun casee {ctxt: unit -> Layout.t,
                          argMode = Mode.Heap,
                          lambdaMode = Mode.Heap,
                          resultMode = Mode.Heap,
-                         body = let
-                                    val regionPush = 
-                                       Xexp.primApp ({args = Vector.new0 (),
-                                                      prim = Prim.Region_push,
-                                                      targs = Vector.new0 (),
-                                                      ty = Xtype.unit}, Mode.Constant)
-                                 in
-                                    Xexp.toExp
-                                    (Xexp.sequence
-                                    (Vector.new2
-                                     (regionPush,
-                                      (Xexp.detupleBind'
-                                       {tuple = Xexp.monoVar (arg, argType, Mode.Heap),
-                                        components = vars,
-                                        body = e (),
-                                        mode = Mode.Heap}))))
-                                 end,
-                         (* body = (Xexp.toExp *)
-                         (*         (Xexp.detupleBind' *)
-                         (*          {tuple = Xexp.monoVar (arg, argType, Mode.Heap), *)
-                         (*           components = vars, *)
-                         (*           body = e (), *)
-                         (*           mode = Mode.Heap})), *)
+                         (* body = let *)
+                         (*            val regionPush =  *)
+                         (*               Xexp.primApp ({args = Vector.new0 (), *)
+                         (*                              prim = Prim.Region_push, *)
+                         (*                              targs = Vector.new0 (), *)
+                         (*                              ty = Xtype.unit}, Mode.Constant) *)
+                         (*         in *)
+                         (*            Xexp.toExp *)
+                         (*            (Xexp.sequence *)
+                         (*            (Vector.new2 *)
+                         (*             (regionPush, *)
+                         (*              (Xexp.detupleBind' *)
+                         (*               {tuple = Xexp.monoVar (arg, argType, Mode.Heap), *)
+                         (*                components = vars, *)
+                         (*                body = e (), *)
+                         (*                mode = Mode.Heap})))) *)
+                         (*         end, *)
+                         body = (Xexp.toExp
+                                 (Xexp.detupleBind'
+                                  {tuple = Xexp.monoVar (arg, argType, Mode.Heap),
+                                   components = vars,
+                                   body = e (),
+                                   mode = Mode.Heap})),
                          mayInline = true})}
                    fun finish np =
                       (numPats := np
@@ -1087,12 +1087,12 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                   argMode = mode,
                                   lambdaMode = mode,
                                   resultMode = mode,
-                                  body = wrappedBody,
-                                  (* body = (conApp *)
-                                  (*         {arg = Xexp.monoVar (arg, argType, mode), *)
-                                  (*          con = con, *)
-                                  (*          targs = targs, *)
-                                  (*          ty = bodyType}), *)
+                                  (* body = wrappedBody, *)
+                                  body = (conApp
+                                          {arg = Xexp.monoVar (arg, argType, mode),
+                                           con = con,
+                                           targs = targs,
+                                           ty = bodyType}),
                                   bodyType = bodyType,
                                   mayInline = true}
                               end
@@ -1229,11 +1229,11 @@ fun defunctorize (CoreML.Program.T {decs}) =
              (* Default undetermined resultMode to Heap *)
              val resultMode = Mode.defaultToHeap resultMode
             
-            val regionPush = Xexp.primApp ({args = Vector.new0 (),
-                                           prim = Prim.Region_push,
-                                           targs = Vector.new0 (),
-                                           ty = Xtype.unit}, Mode.Constant)
-            val wrappedBody = Xexp.sequence (Vector.new2 (regionPush, body))
+            (* val regionPush = Xexp.primApp ({args = Vector.new0 (), *)
+            (*                                prim = Prim.Region_push, *)
+            (*                                targs = Vector.new0 (), *)
+            (*                                ty = Xtype.unit}, Mode.Constant) *)
+            (* val wrappedBody = Xexp.sequence (Vector.new2 (regionPush, body)) *)
 
             fun analyzeCaptures (body': Cexp.t, argVar: Var.t): Mode.t =
                let
@@ -1314,7 +1314,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
               argMode = argMode,
               lambdaMode = lambdaMode,
               resultMode = resultMode,
-              body = wrappedBody,
+              body = body,
               bodyType = bodyType,
               mayInline = mayInline}
           end
