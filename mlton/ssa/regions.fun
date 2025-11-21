@@ -3,32 +3,19 @@ struct
   open S
 
   val regionPushStmt = Statement.T
-    { exp = Exp.PrimApp
-        { args = Vector.new0 ()
-        , prim = Prim.Region_push
-        , mode = NONE
-        , targs = Vector.new0 ()
-        }
+    { exp = Exp.PrimApp {args = Vector.new0 (), prim = Prim.Region_push, mode = NONE, targs = Vector.new0 ()}
     , ty = Type.unit
     , var = NONE
     }
 
   val regionPopStmt = Statement.T
-    { exp = Exp.PrimApp
-        { args = Vector.new0 ()
-        , prim = Prim.Region_pop
-        , mode = NONE
-        , targs = Vector.new0 ()
-        }
+    { exp = Exp.PrimApp {args = Vector.new0 (), prim = Prim.Region_pop, mode = NONE, targs = Vector.new0 ()}
     , ty = Type.unit
     , var = NONE
     }
 
-  val
-    { get = doesFunctionAllocateInCaller
-    , set = setFunctionAllocatesInCaller
-    , ...
-    } = Property.getSetOnce (Func.plist, Property.initConst false)
+  val {get = doesFunctionAllocateInCaller, set = setFunctionAllocatesInCaller, ...} =
+    Property.getSetOnce (Func.plist, Property.initConst false)
 
   exception AllocFound
 
@@ -41,18 +28,28 @@ struct
     case exp of
       Exp.ConApp {mode, ...} => isStackMode mode
     | Exp.Tuple {mode, ...} => isStackMode mode
-    | Exp.PrimApp {mode = mode_opt, ...} =>
-        Option.isSome mode_opt andalso isStackMode (Option.valOf mode_opt)
+    | Exp.PrimApp {mode = mode_opt, ...} => Option.isSome mode_opt andalso isStackMode (Option.valOf mode_opt)
     | _ => false
+
+  fun statementIsPrim prim (Statement.T {exp, ...}) =
+    case exp of
+      Exp.PrimApp {prim = prim', ...} => Prim.equals (prim', prim)
+    | _ => false
+
+  fun blockHasPrim prim (block: Block.t) =
+    Vector.exists (Block.statements block, statementIsPrim prim)
 
   fun transformFunction (func: Function.t) : Function.t =
     let
-      val {args, blocks, mayInline, name, raises, returns, start} =
-        Function.dest func
-      val startBlockIdx = ref 0
+      val {args, blocks, mayInline, name, raises, returns, start} = Function.dest func
+      val allocatesInCaller = doesFunctionAllocateInCaller name
+      val startBlockIdx = ref NONE
       val _ = Vector.foreachi (blocks, fn (i, block) =>
-        if Label.equals (Block.label block, start) then (startBlockIdx := i; ())
-        else ())
+        if Label.equals (Block.label block, start) then startBlockIdx := SOME i else ())
+      val startIdx =
+        case !startBlockIdx of
+          SOME i => i
+        | NONE => Error.bug "Regions.transformFunction: missing start block"
 
       val foundStackAlloc = ref false
       fun allocSearch (block: Block.t) : unit -> unit =
@@ -60,74 +57,113 @@ struct
           val stmts = Block.statements block
           val transfer = Block.transfer block
           val _ = Vector.foreach (stmts, fn stmt =>
-            if hasStackAlloc stmt then
-              (foundStackAlloc := true; raise AllocFound)
-            else
-              ())
+            if hasStackAlloc stmt then (foundStackAlloc := true; raise AllocFound) else ())
           val _ =
             case transfer of
               Transfer.Call {func, ...} =>
-                if doesFunctionAllocateInCaller func then
-                  (foundStackAlloc := true; raise AllocFound)
-                else
-                  ()
+                if doesFunctionAllocateInCaller func then (foundStackAlloc := true; raise AllocFound) else ()
             | _ => ()
         in
           fn () => ()
         end
 
-      fun insertPushesAndPops (block: Block.t) : Block.t =
+      val _ = Function.dfs (func, allocSearch) handle AllocFound => ()
+    in
+      if allocatesInCaller then
+        func
+      else if !foundStackAlloc then
+        func
+      else
         let
-          val transfer = Block.transfer block
-          val stmts = Block.statements block
-          val hasRegionPop = Vector.exists (stmts, fn stmt =>
-            case Statement.exp stmt of
-              Exp.PrimApp {prim, ...} => Prim.equals (prim, Prim.Region_pop)
-            | _ => false)
-          val stmts = Vector.toList (stmts)
-          val label = Block.label block
-          val args = Block.args block
-          val stmts =
-            if Label.equals (label, start) then
+          val numBlocks = Vector.length blocks
+          val blockHasPop =
+            Array.tabulate (numBlocks, fn i =>
+              blockHasPrim Prim.Region_pop (Vector.sub (blocks, i)))
+          val blockHasPush =
+            Array.tabulate (numBlocks, fn i =>
+              blockHasPrim Prim.Region_push (Vector.sub (blocks, i)))
+          val {destroy = destroyLabelIndex, get = labelIndex, set = setLabelIndex} =
+            Property.destGetSetOnce (Label.plist, Property.initRaise ("Regions.labelIndex", Label.layout))
+          val _ =
+            Vector.foreachi (blocks, fn (i, Block.T {label, ...}) =>
+              setLabelIndex (label, i))
+          val preds =
+            Array.tabulate (numBlocks, fn _ => ref ([]: int list))
+          val _ =
+            Vector.foreachi (blocks, fn (i, Block.T {transfer, ...}) =>
+              Transfer.foreachLabel
+                (transfer, fn dst =>
+                  let
+                    val j = labelIndex dst
+                    val r = Array.sub (preds, j)
+                  in
+                    r := i :: !r
+                  end))
+          val entryHasRegion = Array.array (numBlocks, false)
+          val exitHasRegion = Array.array (numBlocks, false)
+          val _ = Array.update (entryHasRegion, startIdx, true)
+
+          fun propagate () =
+            let
+              val changed = ref false
+              val _ =
+                Vector.foreachi
+                  (blocks, fn (i, _) =>
+                    let
+                      val predsList = !(Array.sub (preds, i))
+                      val newEntry =
+                        i = startIdx orelse
+                        List.exists (predsList, fn pred => Array.sub (exitHasRegion, pred))
+                      val newExit =
+                        newEntry andalso not (Array.sub (blockHasPop, i))
+                      val () =
+                        if Array.sub (entryHasRegion, i) <> newEntry then
+                          (Array.update (entryHasRegion, i, newEntry); changed := true)
+                        else ()
+                      val () =
+                        if Array.sub (exitHasRegion, i) <> newExit then
+                          (Array.update (exitHasRegion, i, newExit); changed := true)
+                        else ()
+                    in
+                      ()
+                    end)
+            in
+              if !changed then propagate () else ()
+            end
+          val _ = propagate ()
+
+          fun needsPopAtExit i transfer =
+            Array.sub (exitHasRegion, i) andalso
+            (case transfer of
+               Transfer.Raise _ => true
+             | Transfer.Return _ => true
+             | _ => false)
+          fun maybeAddPush (stmts, label, hasPush) =
+            if Label.equals (label, start) andalso not hasPush then
               regionPushStmt :: stmts
             else
               stmts
-
-          val regionPopBlock = Block.T
-            { args = args
-            , label = label
-            , statements = Vector.fromList (stmts @ [regionPopStmt])
-            , transfer = transfer
-            }
-          val defaultBlock = Block.T
-            { args = args
-            , label = label
-            , statements = Vector.fromList stmts
-            , transfer = transfer
-            }
-        in
-          if hasRegionPop then
-            defaultBlock
-          else
-            case transfer of
-              Transfer.Bug => defaultBlock
-            | Transfer.Call _ => defaultBlock
-            | Transfer.Case _ => defaultBlock
-            | Transfer.Goto _ => defaultBlock
-            | Transfer.Runtime _ => defaultBlock
-            | Transfer.Raise _ => regionPopBlock
-            | Transfer.Return _ => regionPopBlock
-        end
-
-      val _ = Function.dfs (func, allocSearch) handle AllocFound => ()
-    in
-      if !foundStackAlloc then
-        let
-          val blocks = Vector.map (blocks, insertPushesAndPops)
+          val newBlocks =
+            Vector.mapi
+              (blocks, fn (i, Block.T {args = blockArgs, label, statements, transfer}) =>
+                let
+                  val stmtsList0 = Vector.toList statements
+                  val stmtsList1 = maybeAddPush (stmtsList0, label, Array.sub (blockHasPush, i))
+                  val stmtsList2 =
+                    if needsPopAtExit i transfer then stmtsList1 @ [regionPopStmt] else stmtsList1
+                in
+                  Block.T
+                    { args = blockArgs
+                    , label = label
+                    , statements = Vector.fromList stmtsList2
+                    , transfer = transfer
+                    }
+                end)
+          val _ = destroyLabelIndex ()
         in
           Function.new
             { args = args
-            , blocks = blocks
+            , blocks = newBlocks
             , mayInline = mayInline
             , name = name
             , raises = raises
@@ -135,14 +171,11 @@ struct
             , start = start
             }
         end
-      else
-        func
     end
 
   fun functionAllocatesInCaller (func: Function.t) : unit =
     let
-      val {get = getVarMode, set = setVarMode, ...} =
-        Property.getSetOnce (Var.plist, Property.initConst NONE)
+      val {get = getVarMode, set = setVarMode, ...} = Property.getSetOnce (Var.plist, Property.initConst NONE)
 
       val allocatesInCaller = ref false
       val _ = Function.dfs (func, fn block =>
@@ -170,11 +203,10 @@ struct
                   let
                     val mode = getVarMode var
                   in
-                    if
-                      Option.isSome mode
-                      andalso Mode.equals (Option.valOf mode, Mode.Stack)
-                    then allocatesInCaller := true
-                    else ()
+                    if Option.isSome mode andalso Mode.equals (Option.valOf mode, Mode.Stack) then
+                      allocatesInCaller := true
+                    else
+                      ()
                   end)
             | _ => ()
         ))
@@ -189,10 +221,6 @@ struct
       val _ = List.foreach (functions, functionAllocatesInCaller)
     in
       Program.T
-        { datatypes = datatypes
-        , globals = globals
-        , functions = List.map (functions, transformFunction)
-        , main = main
-        }
+        {datatypes = datatypes, globals = globals, functions = List.map (functions, transformFunction), main = main}
     end
 end

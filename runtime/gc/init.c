@@ -340,8 +340,11 @@ int GC_init (GC_state s, int argc, char **argv) {
   s->sysvals.physMem = GC_physMem ();
   s->weaks = NULL;
   s->saveWorldStatus = true;
-  s->regionBufferSize = 4096;
-  s->regionBuffer = (pointer)GC_mmapAnon_safe(NULL, 4096);
+  s->regionBufferSize = 4 * 1024 * 1024; // 4MB
+  pointer regionBuffer = (pointer)GC_mmapAnon_safe(NULL, s->regionBufferSize);
+  // pointer regionBuffer = (pointer)calloc(1, s->regionBufferSize);
+  pointer regionBufferStart = alignFrontier (s, regionBuffer);
+  s->regionBuffer = regionBufferStart;
   if (s->regionBuffer == (void*)-1)
     die ("Cannot allocate region buffer");
   s->regionTop = s->regionBuffer;

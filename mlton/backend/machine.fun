@@ -298,7 +298,6 @@ structure Operand =
                             volatile: bool}
        | StackOffset of StackOffset.t
        | StackTop
-       | RegionTop
        | StaticHeapRef of StaticHeap.Ref.t
        | Temporary of Temporary.t
 
@@ -317,7 +316,6 @@ structure Operand =
         | SequenceOffset {ty, ...} => ty
         | StackOffset s => StackOffset.ty s
         | StackTop => Type.cpointer ()
-        | RegionTop => Type.cpointer ()
         | StaticHeapRef h => StaticHeap.Ref.ty h
         | Temporary t => Temporary.ty t
 
@@ -348,7 +346,6 @@ structure Operand =
                        constrain ty]
              | StackOffset so => StackOffset.layout so
              | StackTop => str "<StackTop>"
-             | RegionTop => str "<RegionTop>"
              | StaticHeapRef h => StaticHeap.Ref.layout h
              | Temporary t => Temporary.layout t
          end
@@ -545,28 +542,44 @@ structure Statement =
             val headerOffset = Runtime.headerOffset ()
             val header = Operand.word header
             val temp = Temporary (Temporary.new (Type.cpointer (), NONE))
+            val temp2 = Temporary (Temporary.new (Type.cpointer (), NONE))
+            val temp3 = Temporary (Temporary.new (Type.cpointer (), NONE))
+            val regionTopField = Operand.gcField Runtime.GCField.RegionTop
+            val _ = Error.warning ("Machine.Program.stackObject called: size: "
+                        ^ Bytes.toString size ^ ": metadataSize: " 
+                        ^ Bytes.toString (metaDataSize))
          in
-            Vector.new4
-            ((* tmp = RegionTop + GC_NORMAL_METADATA_SIZE; *)
-             PrimApp {args = Vector.new2 (RegionTop, bytes metaDataSize),
-                      dst = SOME temp,
+            Vector.new6
+            ((* tmp = *RegionTop; *)
+             (* Move {dst = temp, src = Offset {base = regionTopField, *)
+             (*                                 offset = Bytes.zero, *)
+             (*                                 ty = Type.cpointer (), *)
+             (*                                 volatile = false}}, *)
+             Move {dst = temp, src = regionTopField},
+             (* tmp = tmp + GC_NORMAL_METADATA_SIZE; *)
+             PrimApp {args = Vector.new2 (temp, bytes metaDataSize),
+                      dst = SOME temp2,
                       prim = Prim.CPointer_add},
              (* dst = pointerToObjptr(tmp); *)
-             Move {dst = dst, src = Cast (temp, Operand.ty dst)},
+             Move {dst = dst, src = Cast (temp2, Operand.ty dst)},
              (* OW(dst, -GC_HEADER_SIZE) = header; *)
              Move {dst = Offset {base = dst,
                                  offset = headerOffset,
                                  ty = Type.objptrHeader (),
                                  volatile = false},
                    src = header},
-             (* RegionTop += size; *)
-             PrimApp {args = Vector.new2 (RegionTop, bytes size),
-                      dst = SOME RegionTop,
-                      prim = Prim.CPointer_add})
+             (* tmp += size; *)
+             PrimApp {args = Vector.new2 (temp2, bytes size),
+                      dst = SOME temp3,
+                      prim = Prim.CPointer_add},
+             (* RegionTop = tmpRegionTop; *)
+             Move {dst = regionTopField,
+                   src = temp3})
          end
 
       fun stackSequence {dst, header, length, size} =
          let
+            val _ = Error.warning "Machine.Program.stackSequence called"
             datatype z = datatype Operand.t
             fun bytes (b: Bytes.t): Operand.t =
                Operand.word (WordX.fromBytes (b, WordSize.csize ()))
@@ -579,36 +592,42 @@ structure Statement =
                Operand.word (WordX.fromInt (length, WordSize.seqIndex ()))
             val counter = Operand.zero (WordSize.seqIndex ())
             val temp = Temporary (Temporary.new (Type.cpointer (), NONE))
+            val regionTopField = Operand.gcField Runtime.GCField.RegionTop
+            val regionTopVal = Temporary (Temporary.new (Type.cpointer (), NONE))
          in
-            Vector.new6
-            ((* tmp = RegionTop + GC_SEQUENCE_METADATA_SIZE; *)
-             PrimApp {args = Vector.new2 (RegionTop, bytes metaDataSize),
-                      dst = SOME temp,
-                      prim = Prim.CPointer_add},
-             (* dst = pointerToObjptr(tmp); *)
-             Move {dst = dst, src = Cast (temp, Operand.ty dst)},
-             (* OW(dst, -(GC_HEADER_SIZE + GC_SEQUENCE_LENGTH_SIZE + GC_SEQUENCE_COUNTER_SIZE)) = 0x0; *)
-             Move {dst = Offset {base = dst,
-                                 offset = counterOffset,
-                                 ty = Type.seqIndex (),
-                                 volatile = false},
-                   src = counter},
-             (* OW(dst, -(GC_HEADER_SIZE + GC_SEQUENCE_LENGTH_SIZE)) = length; *)
-             Move {dst = Offset {base = dst,
-                                 offset = lengthOffset,
-                                 ty = Type.seqIndex (),
-                                 volatile = false},
-                   src = length},
-             (* OW(dst, -GC_HEADER_SIZE) = header; *)
-             Move {dst = Offset {base = dst,
-                                 offset = headerOffset,
-                                 ty = Type.objptrHeader (),
-                                 volatile = false},
-                   src = header},
-             (* RegionTop += size; *)
-             PrimApp {args = Vector.new2 (RegionTop, bytes size),
-                      dst = SOME RegionTop,
-                      prim = Prim.CPointer_add})
+            (* Vector.new8 *)
+            (* ((* tmpRegionTop = RegionTop; *) *)
+            (*  Move {dst = regionTopVal, src = regionTopField}, *)
+            (*  (* tmp = tmpRegionTop + GC_SEQUENCE_METADATA_SIZE; *) *)
+            (*  PrimApp {args = Vector.new2 (regionTopVal, bytes metaDataSize), *)
+            (*           dst = SOME temp, *)
+            (*           prim = Prim.CPointer_add}, *)
+            (*  (* dst = pointerToObjptr(tmp); *) *)
+            (*  Move {dst = dst, src = Cast (temp, Operand.ty dst)}, *)
+            (*  (* OW(dst, -(GC_HEADER_SIZE + GC_SEQUENCE_LENGTH_SIZE + GC_SEQUENCE_COUNTER_SIZE)) = 0x0; *) *)
+            (*  Move {dst = Offset {base = dst, *)
+            (*                      offset = counterOffset, *)
+            (*                      ty = Type.seqIndex (), *)
+            (*                      volatile = false}, *)
+            (*        src = counter}, *)
+            (*  (* OW(dst, -(GC_HEADER_SIZE + GC_SEQUENCE_LENGTH_SIZE)) = length; *) *)
+            (*  Move {dst = Offset {base = dst, *)
+            (*                      offset = lengthOffset, *)
+            (*                      ty = Type.seqIndex (), *)
+            (*                      volatile = false}, *)
+            (*        src = length}, *)
+            (*  (* OW(dst, -GC_HEADER_SIZE) = header; *) *)
+            (*  Move {dst = Offset {base = dst, *)
+            (*                      offset = headerOffset, *)
+            (*                      ty = Type.objptrHeader (), *)
+            (*                      volatile = false}, *)
+            (*        src = header}, *)
+            (*  (* tmpRegionTop += size; *) *)
+            (*  PrimApp {args = Vector.new2 (regionTopVal, bytes size), *)
+            (*           dst = SOME regionTopVal, *)
+            (*           prim = Prim.CPointer_add}, *)
+            (*  (* RegionTop = tmpRegionTop; *) *)
+            (*  Move {dst = regionTopField, src = regionTopVal}) *)
          end
 
       fun foldOperands (s, ac, f) =
@@ -1372,7 +1391,6 @@ structure Program =
                                 scale = scale}))
                      | StaticHeapRef r => checkStaticHeapRef r
                      | StackTop => true
-                     | RegionTop => true
                      | Temporary t => Alloc.doesDefine (alloc, Live.Temporary t)
                in
                   Err.check ("operand", ok, fn () => Operand.layout x)

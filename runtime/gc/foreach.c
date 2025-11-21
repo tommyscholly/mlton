@@ -23,6 +23,7 @@ void foreachGlobalObjptr (GC_state s, GC_foreachObjptrClosure f) {
     callIfIsObjptr (s, f, &s->globals [i]);
   }
   foreachObjptrInStaticHeap (s, &s->staticHeaps.root, f, TRUE);
+  foreachObjptrInRegionBuffer (s, f, TRUE);
   if (DEBUG_DETAILED)
     fprintf (stderr, "foreachGlobal threads\n");
   callIfIsObjptr (s, f, &s->callFromCHandlerThread);
@@ -200,6 +201,12 @@ void foreachObjptrInStaticHeap (GC_state s,
                                 bool skipWeaks) {
   pointer front = alignFrontier (s, staticHeap->start);
   pointer back = staticHeap->start + staticHeap->size;
+  foreachObjptrInRange (s, front, &back, f, skipWeaks);
+}
+
+void foreachObjptrInRegionBuffer  (GC_state s, GC_foreachObjptrClosure f, bool skipWeaks) {
+  pointer front = alignFrontier (s, s->regionBuffer);
+  pointer back = s->regionTop;
   foreachObjptrInRange (s, front, &back, f, skipWeaks);
 }
 

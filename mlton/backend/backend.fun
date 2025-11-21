@@ -553,7 +553,6 @@ fun toMachine (rssa: Rssa.Program.t) =
          case field of
             GCField.Frontier => M.Operand.Frontier
           | GCField.StackTop => M.Operand.StackTop
-          | GCField.RegionTop => M.Operand.RegionTop
           | _ => M.Operand.gcField field
       val exnStackOp = runtimeOp GCField.ExnStack
       val stackBottomOp = runtimeOp GCField.StackBottom

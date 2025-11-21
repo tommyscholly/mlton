@@ -1840,7 +1840,7 @@ struct
                                val _ = Avid.checkRedefineSpecial (funcVid, {allowIt = true, ctxt = ctxtFb, keyword = "fun"})
                                val _ = checkConRedefine (funcVid, "fun", ctxtFb)
                                val var = Var.fromAst func
-                                val _ = Env.extendVar (E, func, var, Scheme.fromType funTy, Mode.Undetermined, {isRebind = false})
+                               val _ = Env.extendVar (E, func, var, Scheme.fromType funTy, Mode.Undetermined, {isRebind = false})
                                val _ = markFunc var
 
                              in
@@ -1849,7 +1849,7 @@ struct
                                , clauses = clauses
                                , ctxtFb = ctxtFb
                                , func = func
-                                , functionMode = Mode.Undetermined  (* Will be computed later *)
+                               , functionMode = Mode.Undetermined  (* Will be computed later *)
                                , funTy = funTy
                                , regionFb = regionFb
                                , resTy = resTy
@@ -2290,12 +2290,12 @@ struct
                                if Mode.equals (funcReturnMode, Mode.Undetermined) then
                                  case Cexp.mode cea of
                                    Mode.Stack => Mode.Stack
-                                 | _ => Mode.Heap
+                                 | _ => modeConstraint
                                else
                                  funcReturnMode
                              end
                          | Cexp.Lambda _ => Cexp.mode cef
-                         | _ => Mode.Heap
+                         | _ => modeConstraint
                    in
                      Cexp.make (Cexp.App (cef, cea), resultType, resultMode)
                    end
@@ -2349,7 +2349,7 @@ struct
                    end
                | Aexp.ModeConstraint (e, mode) =>
                    let
-                     val e' = elab e
+                     val e' = elab_m (e, mode)
                      val _ =
                        (* Check that the expression mode matches the constraint *)
                        case Mode.subsumes (Cexp.mode e', mode) of

@@ -1087,12 +1087,19 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                           (case toRtype ty of
                               NONE => none ()
                             | SOME dstTy =>
-                                 adds (object {args = args,
+                                  let val obj = object {args = args,
                                                con = con,
                                                dst = (valOf var, dstTy),
                                                objectTy = ty,
                                                oper = varOp,
-                                               mode = mode}))
+                                               mode = mode}
+                           val _ = if Mode.equals (mode, Mode.Stack) then
+                              Error.warning
+                              (Layout.toString (List.layout Statement.layout obj))
+                              else ()
+                           in
+                                 adds (obj)
+                           end)
                       | S.Exp.PrimApp {args, prim} =>
                            let
                               val prim = translatePrim prim
@@ -1688,10 +1695,11 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                            (case toRtype ty of
                                NONE => none ()
                              | SOME dstTy =>
-                                  adds (sequence {args = args,
-                                                  dst = (valOf var, dstTy),
-                                                  sequenceTy = ty,
-                                                  oper = varOp}))
+                                   adds (sequence {args = args,
+                                                   dst = (valOf var, dstTy),
+                                                   sequenceTy = ty,
+                                                   oper = varOp,
+                                                   mode = Mode.Heap}))
                       | S.Exp.Var y =>
                            (case toRtype ty of
                                NONE => none ()

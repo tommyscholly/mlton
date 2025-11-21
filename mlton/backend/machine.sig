@@ -119,7 +119,6 @@ signature MACHINE =
                                   volatile: bool}
              | StackOffset of StackOffset.t
              | StackTop
-             | RegionTop
              | StaticHeapRef of StaticHeap.Ref.t
              | Temporary of Temporary.t
 

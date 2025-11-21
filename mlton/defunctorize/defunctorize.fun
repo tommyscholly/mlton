@@ -111,6 +111,8 @@ fun addMatchDiagnostic (diag, mkArg) =
 fun showMatchDiagnostics () = List.foreach (!matchDiagnostics, fn th => th ())
 end
 
+fun debugPrint (s: string): unit = if Control.optFuelAvailAndUse () then Error.warning s else ()
+
 fun casee {ctxt: unit -> Layout.t,
            caseType: Xtype.t,
            cases: {exp: Xexp.t,
@@ -423,13 +425,13 @@ structure Xexp =
    struct
       open Xexp
 
-      (* ms corresponds to the modes of the elements of es *)
       (* mode is the mode of the whole list *)
       fun list (es: Xexp.t vector, mode: Mode.t, ty: Xtype.t, {forceLeftToRight: bool})
          : Xexp.t =
          let
             val targs = #2 (valOf (Xtype.deConOpt ty))
             val mode = Mode.defaultToHeap mode
+            val _ = if Mode.equals (mode, Mode.Stack) then debugPrint "Defunctorize.loopExp: List: mode Stack" else ()
             val eltTy = Vector.first targs
             val nill: Xexp.t =
                Xexp.conApp {arg = NONE,
@@ -440,33 +442,52 @@ structure Xexp =
             val consArgTy = Xtype.tuple (Vector.new2 (eltTy, ty))
             val cons: Xexp.t * Xexp.t -> Xexp.t =
                fn (e1, e2) =>
+               let val tup = Xexp.tuple {exps = Vector.new2 (e1, e2),
+                                        ty = consArgTy, mode = mode}
+                   val _ = if Mode.equals (mode, Mode.Stack) then debugPrint
+                           (Layout.toString ((Xml.Exp.layout o Xexp.toExp) tup)) else ()
+               in
                Xexp.conApp
-               {arg = SOME (Xexp.tuple {exps = Vector.new2 (e1, e2),
-                                        ty = consArgTy, mode = mode}),
+               {arg = SOME (tup),
                 con = Con.cons,
                 mode = mode,
                 targs = targs,
                 ty = ty}
+               end
          in
             if not forceLeftToRight
                then
+                  let 
+                       val _ = if Mode.equals (mode, Mode.Stack)
+                                 then debugPrint "Defunctorize.loopExp: right to left"
+                                 else ()
+                  in
                   (* Build the list right to left. *)
-                  Vector.foldri (es, nill, fn (i, e, rest) =>
+                  Vector.foldr (es, nill, fn (e, rest) =>
                                 let
                                    val var = Var.newNoname ()
+                                   val _ = if Mode.equals (mode, Mode.Stack) then
+                                       debugPrint "Defunctorize.loopExp: right to left foldri" else ()
                                 in
                                    Xexp.let1 {body = cons (e, monoVar (var, ty, mode)),
                                                exp = rest,
                                                var = var,
                                                mode = mode}
                                 end)
+                  end
             else if Vector.length es < 20
-               then Vector.foldr (es, nill, cons)
+               then 
+                  let val _ = if Mode.equals (mode, Mode.Stack) then
+                     debugPrint "Defunctorize.loopExp: left to right and sub 20" else ()
+                  in
+                     Vector.foldr (es, nill, cons)
+                  end
             else
                let
                   val revArgTy = Xtype.tuple (Vector.new2 (ty, ty))
                   val revTy = Xtype.arrow (revArgTy, ty)
                   val revVar = Var.newString "rev"
+                  val _ = if Mode.equals (mode, Mode.Stack) then debugPrint "Defunctorize.loopExp: List: mode Stack" else ()
                   fun rev (e1, e2) =
                      Xexp.app
                      ({func = Xexp.monoVar (revVar, revTy, mode),
@@ -527,11 +548,11 @@ structure Xexp =
                       tyvars = Vector.new0 ()}
                   val l = Var.newNoname ()
                   val (l, body) =
-                     Vector.foldri
+                     Vector.foldr
                      (es, (l, Xexp.lett {decs = [revDec],
                                          body = rev (Xexp.monoVar (l, ty, mode),
                                                      nill)}),
-                      fn (i, e, (l, body)) =>
+                      fn (e, (l, body)) =>
                       let
                          val l' = Var.newNoname ()
                       in
@@ -714,7 +735,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
          end
       and loopLambda (l: Clambda.t): unit =
          loopExp (#body (Clambda.dest l))
-       fun loopPat (p: Cpat.t): NestedPat.t =
+      fun loopPat (p: Cpat.t): NestedPat.t =
           let
              (* TODO: check the mode *)
              val (p, t, mode) = Cpat.dest p
@@ -1000,14 +1021,14 @@ fun defunctorize (CoreML.Program.T {decs}) =
       (* Convert vector->list to allow processed Cdecs to be GC'ed. *)
       and loopDecsList (ds: Cdec.t list, (e: Xexp.t, t: Xtype.t)): Xexp.t =
          List.foldr (ds, e, fn (d, e) => loopDec (d, e, t))
-        and loopExp (e: Cexp.t): Xexp.t * Xtype.t * Mode.t =
+      and loopExp (e: Cexp.t): Xexp.t * Xtype.t * Mode.t =
           let
-             (* TODO: erasing mode here, need to carry it through *)
-             val (n, ty, mode) = Cexp.dest e
-             (* Default undetermined expression mode to Heap *)
-             val mode = Mode.defaultToHeap mode
-             val mode_ref = ref mode
-             val ty = loopTy ty
+            (* TODO: erasing mode here, need to carry it through *)
+            val (n, ty, mode) = Cexp.dest e
+            (* Default undetermined expression mode to Heap *)
+            val mode = Mode.defaultToHeap mode
+            val mode_ref = ref mode
+            val ty = loopTy ty
             fun conApp {arg, con, targs, ty} =
                if Con.equals (con, Con.reff)
                   then Xexp.primApp ({args = Vector.new1 arg,
@@ -1016,7 +1037,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                      ty = ty}, mode)
                else Xexp.conApp {arg = SOME arg,
                                  con = con,
-                                 mode = mode,
+                                 mode = !mode_ref,
                                  targs = targs,
                                  ty = ty}
             datatype z = datatype Cexp.node
@@ -1024,14 +1045,22 @@ fun defunctorize (CoreML.Program.T {decs}) =
                case n of
                   App (e1, e2) =>
                      let
-                         val (e2, _, _) = loopExp e2
+                         val (node, ty', _) = Cexp.dest e2
+                         (* mode should be the same as the underlying application
+                          * this is at least true in a list cons :: operation *)
+                         val forceMode = Cexp.make (node, ty', mode)
+                         val (e2, _, _) = if Mode.equals (mode, Mode.Stack) then
+                            loopExp forceMode else loopExp e2
                      in
                         case Cexp.node e1 of
                            Con (con, targs) =>
-                              conApp {arg = e2,
-                                      con = con,
-                                      targs = conTargs (con, targs),
-                                      ty = ty}
+                              let 
+                              in
+                                 conApp {arg = e2,
+                                         con = con,
+                                         targs = conTargs (con, targs),
+                                         ty = ty}
+                              end
                          | _ =>
                               let val (e, _, m) = loopExp e1 in 
                                  Xexp.app ({arg = e2,
@@ -1201,7 +1230,7 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                      ty = ty, mode = mode})
                      end
                 | Seq es => Xexp.sequence (Vector.map (es, fn e => let val (e', _, _) = loopExp e in e' end))
-                 | Var (var, targs) =>
+                | Var (var, targs) =>
                       let val varMode = getVarMode (var ())
                           val mode = if varMode = NONE then mode else Option.valOf varMode
                           (* Default undetermined variable mode to Heap *)

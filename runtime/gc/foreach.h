@@ -50,6 +50,10 @@ static inline void foreachObjptrInStaticHeap (GC_state s,
                                               GC_foreachObjptrClosure f,
                                               bool skipWeaks);
 
+static inline void foreachObjptrInRegionBuffer (GC_state s,
+                                                GC_foreachObjptrClosure f,
+                                                bool skipWeaks);
+
 typedef void (*GC_foreachStackFrameFun) (GC_state s, GC_frameIndex i, GC_frameInfo frameInfo, pointer frameTop, void *env);
 
 typedef struct GC_foreachStackFrameClosure {

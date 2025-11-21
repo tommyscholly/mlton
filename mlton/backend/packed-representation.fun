@@ -941,35 +941,36 @@ structure ObjptrRep =
                   tycon = opt}
          end
 
-      fun tuple (T {components, ty, tycon, ...},
-                 {dst = dst: Var.t,
-                  src: {index: int} -> Operand.t}) =
-         let
-            val (pre, init) =
-               Vector.fold
-               (components, ([], []), fn ({component, offset}, (pre, init)) =>
-                let
-                   val tmpVar = Var.newNoname ()
-                   val tmpTy = Component.ty component
-                   val statements =
-                      Component.tuple (component,
-                                       {dst = (tmpVar, tmpTy), src = src})
-                in
-                   if List.isEmpty statements
-                      then (pre, init)
-                      else (statements :: pre,
-                            {offset = offset,
-                             src = Var {ty = tmpTy, var = tmpVar}} :: init)
-                end)
-         in
-            List.concatRev
-            ([Object {dst = (dst, ty),
-                      obj = Object.Normal
-                            {init = Vector.fromListRev init,
-                             tycon = tycon},
-                      mode = Mode.Heap}]
-             :: pre)
-         end
+       fun tuple (T {components, ty, tycon, ...},
+                  {dst = dst: Var.t,
+                   src: {index: int} -> Operand.t,
+                   mode: Mode.t}) =
+          let
+             val (pre, init) =
+                Vector.fold
+                (components, ([], []), fn ({component, offset}, (pre, init)) =>
+                 let
+                    val tmpVar = Var.newNoname ()
+                    val tmpTy = Component.ty component
+                    val statements =
+                       Component.tuple (component,
+                                        {dst = (tmpVar, tmpTy), src = src})
+                 in
+                    if List.isEmpty statements
+                       then (pre, init)
+                       else (statements :: pre,
+                             {offset = offset,
+                              src = Var {ty = tmpTy, var = tmpVar}} :: init)
+                 end)
+          in
+             List.concatRev
+             ([Object {dst = (dst, ty),
+                       obj = Object.Normal
+                             {init = Vector.fromListRev init,
+                              tycon = tycon},
+                       mode = mode}]
+              :: pre)
+          end
 
       val tuple =
          Trace.trace2
@@ -977,42 +978,43 @@ structure ObjptrRep =
           layout, Var.layout o #dst, List.layout Statement.layout)
          tuple
 
-      fun sequence (T {components, ty, tycon, ...},
-                    {dst = dst: Var.t,
-                     src: ({index: int} -> Operand.t) vector}) =
-         let
-            val (pre, init) =
-               Vector.fold
-               (src, ([], []), fn (src, (pre, init')) =>
-                let
-                   val (pre, init) =
-                      Vector.fold
-                      (components, (pre, []), fn ({component, offset}, (pre, init)) =>
-                       let
-                          val tmpVar = Var.newNoname ()
-                          val tmpTy = Component.ty component
-                          val statements =
-                             Component.tuple (component,
-                                              {dst = (tmpVar, tmpTy), src = src})
-                       in
-                          if List.isEmpty statements
-                             then (pre, init)
-                             else (statements :: pre,
-                                   {offset = offset,
-                                    src = Var {ty = tmpTy, var = tmpVar}} :: init)
-                       end)
-                in
-                   (pre, Vector.fromListRev init :: init')
-                end)
-         in
-            List.concatRev
-            ([Object {dst = (dst, ty),
-                      obj = Object.Sequence
-                            {init = Vector.fromListRev init,
-                             tycon = tycon},
-                      mode = Mode.Heap}]
-             :: pre)
-         end
+       fun sequence (T {components, ty, tycon, ...},
+                     {dst = dst: Var.t,
+                      src: ({index: int} -> Operand.t) vector,
+                      mode: Mode.t}) =
+          let
+             val (pre, init) =
+                Vector.fold
+                (src, ([], []), fn (src, (pre, init')) =>
+                 let
+                    val (pre, init) =
+                       Vector.fold
+                       (components, (pre, []), fn ({component, offset}, (pre, init)) =>
+                        let
+                           val tmpVar = Var.newNoname ()
+                           val tmpTy = Component.ty component
+                           val statements =
+                              Component.tuple (component,
+                                               {dst = (tmpVar, tmpTy), src = src})
+                        in
+                           if List.isEmpty statements
+                              then (pre, init)
+                              else (statements :: pre,
+                                    {offset = offset,
+                                     src = Var {ty = tmpTy, var = tmpVar}} :: init)
+                        end)
+                 in
+                    (pre, Vector.fromListRev init :: init')
+                 end)
+          in
+             List.concatRev
+             ([Object {dst = (dst, ty),
+                       obj = Object.Sequence
+                             {init = Vector.fromListRev init,
+                              tycon = tycon},
+                       mode = mode}]
+              :: pre)
+          end
 
       val sequence =
          Trace.trace2
@@ -1064,14 +1066,15 @@ structure TupleRep =
             Direct {selects, ...} => selects
           | Indirect (ObjptrRep.T {selects, ...}) => selects
 
-      fun tuple (tr: t,
-                 {dst: Var.t * Type.t,
-                  src: {index: int} -> Operand.t}): Statement.t list =
-         case tr of
-            Direct {component = c, ...} =>
-               Component.tuple (c, {dst = dst, src = src})
-          | Indirect pr =>
-               ObjptrRep.tuple (pr, {dst = #1 dst, src = src})
+       fun tuple (tr: t,
+                  {dst: Var.t * Type.t,
+                   src: {index: int} -> Operand.t,
+                   mode: Mode.t}): Statement.t list =
+          case tr of
+             Direct {component = c, ...} =>
+                Component.tuple (c, {dst = dst, src = src})
+           | Indirect pr =>
+                ObjptrRep.tuple (pr, {dst = #1 dst, src = src, mode = mode})
 
       val tuple =
          Trace.trace2
@@ -1405,48 +1408,49 @@ structure ConRep =
 
       val unit = Tuple TupleRep.unit
 
-      fun conApp (r: t, {dst: Var.t * Type.t,
-                         src: {index: int} -> Operand.t}): Statement.t list =
-         case r of
-            ShiftAndTag {component, tag, ...} =>
-               let
-                  val (dstVar, dstTy) = dst
-                  val shift = Operand.word (WordX.fromBits
-                                            (WordSize.bits (WordX.size tag),
-                                             WordSize.shiftArg))
-                  val tmpVar = Var.newNoname ()
-                  val tmpTy =
-                     Type.padToWidth (Component.ty component, Type.width dstTy)
-                  val tmp = Var {ty = tmpTy, var = tmpVar}
-                  val component =
-                     Component.tuple (component, {dst = (tmpVar, tmpTy),
-                                                  src = src})
-                  val (s1, tmp) = Statement.lshift (tmp, shift)
-                  val mask = Operand.word (WordX.resize
+       fun conApp (r: t, {dst: Var.t * Type.t,
+                          src: {index: int} -> Operand.t,
+                          mode: Mode.t}): Statement.t list =
+          case r of
+             ShiftAndTag {component, tag, ...} =>
+                let
+                   val (dstVar, dstTy) = dst
+                   val shift = Operand.word (WordX.fromBits
+                                             (WordSize.bits (WordX.size tag),
+                                              WordSize.shiftArg))
+                   val tmpVar = Var.newNoname ()
+                   val tmpTy =
+                      Type.padToWidth (Component.ty component, Type.width dstTy)
+                   val tmp = Var {ty = tmpTy, var = tmpVar}
+                   val component =
+                      Component.tuple (component, {dst = (tmpVar, tmpTy),
+                                                   src = src})
+                   val (s1, tmp) = Statement.lshift (tmp, shift)
+                   val mask = Operand.word (WordX.resize
+                                            (tag,
+                                             WordSize.fromBits
+                                             (Type.width
+                                              (Operand.ty tmp))))
+                   val (s2, tmp) = Statement.orb (tmp, mask)
+                   val s3 = Bind {dst = (dstVar, dstTy),
+                                  pinned = false,
+                                  src = tmp}
+                in
+                   component @ [s1, s2, s3]
+                end
+           | Tag {tag, ...} =>
+                let
+                   val (dstVar, dstTy) = dst
+                   val src = Operand.word (WordX.resize
                                            (tag,
                                             WordSize.fromBits
-                                            (Type.width
-                                             (Operand.ty tmp))))
-                  val (s2, tmp) = Statement.orb (tmp, mask)
-                  val s3 = Bind {dst = (dstVar, dstTy),
-                                 pinned = false,
-                                 src = tmp}
-               in
-                  component @ [s1, s2, s3]
-               end
-          | Tag {tag, ...} =>
-               let
-                  val (dstVar, dstTy) = dst
-                  val src = Operand.word (WordX.resize
-                                          (tag,
-                                           WordSize.fromBits
-                                           (Type.width dstTy)))
-               in
-                  [Bind {dst = (dstVar, dstTy),
-                         pinned = false,
-                         src = src}]
-               end
-          | Tuple tr => TupleRep.tuple (tr, {dst = dst, src = src})
+                                            (Type.width dstTy)))
+                in
+                   [Bind {dst = (dstVar, dstTy),
+                          pinned = false,
+                          src = src}]
+                end
+           | Tuple tr => TupleRep.tuple (tr, {dst = dst, src = src, mode = mode})
 
       val conApp =
          Trace.trace
@@ -2768,34 +2772,36 @@ fun compute (program as Ssa2.Program.T {datatypes, ...}) =
           S.Type.layout, TupleRep.layout)
          tupleRep
 
-      fun object {args, con, dst, objectTy, oper, mode} =
-         let
-            val src = makeSrc (args, oper)
-            val stmts =
-               case con of
-                  NONE => TupleRep.tuple (tupleRep objectTy, {dst = dst, src = src})
-                | SOME con => ConRep.conApp (conRep con, {dst = dst, src = src})
-            (* Override mode in Object statements if needed *)
-            val stmts =
-               if Mode.equals (mode, Mode.Heap)
-                  then stmts
-               else List.map (stmts, fn stmt =>
-                       case stmt of
-                          Statement.Object {dst, obj, ...} =>
-                             Statement.Object {dst = dst, obj = obj, mode = mode}
-                        | _ => stmt)
-         in
-            stmts
-         end
-      fun sequence {args, dst = (dst, _), sequenceTy, oper} =
-         let
-            val src = Vector.map (args, fn args => makeSrc (args, oper))
-         in
-            case sequenceRep sequenceTy of
-               TupleRep.Indirect pr =>
-                  ObjptrRep.sequence (pr, {dst = dst, src = src})
-             | _ => Error.bug "PackedRepresentation.sequence: non-Indirect"
-         end
+       fun object {args, con, dst, objectTy, oper, mode} =
+          let
+             val src = makeSrc (args, oper)
+             val stmts =
+                case con of
+                   NONE => 
+                       let val _ = if Mode.equals (mode, Mode.Stack) then
+                          Error.warning "object: stack mode tuple" else ()
+                       in
+                         TupleRep.tuple (tupleRep objectTy, {dst = dst, src = src, mode = mode})
+                       end
+                 | SOME con => 
+                       let val _ = if Mode.equals (mode, Mode.Stack) then
+                          Error.warning ("object: stack mode con: " ^
+                          (Layout.toString (ConRep.layout (conRep con)))) else ()
+                       in
+                          ConRep.conApp (conRep con, {dst = dst, src = src, mode = mode})
+                       end
+          in
+             stmts
+          end
+       fun sequence {args, dst = (dst, _), sequenceTy, oper, mode} =
+          let
+             val src = Vector.map (args, fn args => makeSrc (args, oper))
+          in
+              case sequenceRep sequenceTy of
+                 TupleRep.Indirect pr =>
+                    ObjptrRep.sequence (pr, {dst = dst, src = src, mode = mode})
+               | _ => Error.bug "PackedRepresentation.sequence: non-Indirect"
+          end
       fun getSelects (con, objectTy) =
          let
             datatype z = datatype ObjectCon.t

@@ -185,7 +185,7 @@ fun shrinkOnce (Program.T {datatypes, body}) =
       fun replace (x, i) = replaceInfo (x, monoVarInfo x, i)
       val shrinkVarExp = VarInfo.varExp o varExpInfo
       local
-         fun handleBoundVar (x, ts, _, mode) =
+         fun handleBoundVar (x, ts, _, _) =
             setVarInfo (x,
                         if Vector.isEmpty ts
                            then (InternalVarInfo.VarInfo

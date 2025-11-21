@@ -233,12 +233,12 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                         else x :: xs))
       fun doitStatement (stmt as Statement.T {var, ty, exp}) =
          case exp of
-             ConApp {con, args, ...} =>
+             ConApp {con, args, mode} =>
                 Statement.T {var = var,
                              ty = ty,
                              exp = ConApp {con = con,
                                            args = flattens (args, conArgs con),
-                                           mode = Mode.Heap}}
+                                           mode = mode}}
           | _ => stmt
       val globals = Vector.map (globals, doitStatement)
       fun doitFunction f =
