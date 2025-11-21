@@ -13,12 +13,12 @@ void GC_regionPop (GC_state s) {
     return;
   }
 
-  if (s->regionTop > s->regionStack->partitionStart) {
-    printf("We allocated something\n");
-    printf("RegionTop at %p, partitionStart at %p\n", s->regionTop, s->regionStack->partitionStart);
-  }
+  // if (s->regionTop > s->regionStack->partitionStart) {
+  //   printf("We allocated something\n");
+  //   printf("RegionTop at %p, partitionStart at %p\n", s->regionTop, s->regionStack->partitionStart);
+  // }
   
-  // printf("RegionTop at %p, partitionStart at %p\n", s->regionTop, s->regionStack->partitionStart);
+  printf("RegionTop at %p, partitionStart at %p\n", s->regionTop, s->regionStack->partitionStart);
 
   s->regionTop = s->regionStack->partitionStart;
   struct RegionStackNode* temp = s->regionStack;

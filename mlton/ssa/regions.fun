@@ -68,10 +68,11 @@ struct
         end
 
       val _ = Function.dfs (func, allocSearch) handle AllocFound => ()
+      val hasStackAlloc = !foundStackAlloc
     in
       if allocatesInCaller then
         func
-      else if !foundStackAlloc then
+      else if not hasStackAlloc then
         func
       else
         let

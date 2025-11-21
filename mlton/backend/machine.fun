@@ -595,6 +595,7 @@ structure Statement =
             val regionTopField = Operand.gcField Runtime.GCField.RegionTop
             val regionTopVal = Temporary (Temporary.new (Type.cpointer (), NONE))
          in
+            Vector.new0 ()
             (* Vector.new8 *)
             (* ((* tmpRegionTop = RegionTop; *) *)
             (*  Move {dst = regionTopVal, src = regionTopField}, *)
