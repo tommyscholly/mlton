@@ -307,10 +307,12 @@ int GC_init (GC_state s, int argc, char **argv) {
   s->cumulativeStatistics.bytesHashConsed = 0;
   s->cumulativeStatistics.bytesMarkCompacted = 0;
   s->cumulativeStatistics.bytesScannedMinor = 0;
+  s->cumulativeStatistics.bytesStackAllocated = 0;
   s->cumulativeStatistics.maxBytesLive = 0;
   s->cumulativeStatistics.maxHeapSize = 0;
   s->cumulativeStatistics.maxPauseTime = 0;
   s->cumulativeStatistics.maxStackSize = 0;
+  s->cumulativeStatistics.maxRegionBytesLive = 0;
   s->cumulativeStatistics.numCardsMarked = 0;
   s->cumulativeStatistics.numCopyingGCs = 0;
   s->cumulativeStatistics.numHashConsGCs = 0;

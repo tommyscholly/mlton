@@ -42,6 +42,14 @@ void GC_done (GC_state s) {
 
   enter (s);
   minorGC (s);
+  {
+    size_t liveBytes = (size_t)(s->regionTop - s->regionBuffer);
+    if (liveBytes > 0) {
+      s->cumulativeStatistics.bytesStackAllocated += liveBytes;
+      if (liveBytes > s->cumulativeStatistics.maxRegionBytesLive)
+        s->cumulativeStatistics.maxRegionBytesLive = liveBytes;
+    }
+  }
   out = s->controls.summaryFile;
   if (s->controls.summary) {
     struct rusage ru_total;
@@ -85,6 +93,10 @@ void GC_done (GC_state s) {
              uintmaxToCommaString (s->cumulativeStatistics.maxHeapSize));
     fprintf (out, "max stack size: %s bytes\n", 
              uintmaxToCommaString (s->cumulativeStatistics.maxStackSize));
+    fprintf (out, "total stack bytes allocated: %s bytes\n",
+             uintmaxToCommaString (s->cumulativeStatistics.bytesStackAllocated));
+    fprintf (out, "max stack-region live: %s bytes\n",
+             uintmaxToCommaString ((uintmax_t)s->cumulativeStatistics.maxRegionBytesLive));
     fprintf (out, "num cards marked: %s\n", 
              uintmaxToCommaString (s->cumulativeStatistics.numCardsMarked));
     fprintf (out, "bytes scanned: %s bytes\n",

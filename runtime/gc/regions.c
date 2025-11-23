@@ -26,6 +26,16 @@ void GC_regionPop (GC_state s) {
   // else
   //   printf("RegionPop with no new allocations (top at %p)\n", oldTop);
 
+  if (oldTop > newTop) {
+    size_t poppedBytes = (size_t)(oldTop - newTop);
+    s->cumulativeStatistics.bytesStackAllocated += poppedBytes;
+  }
+  {
+    size_t liveBytes = (size_t)(oldTop - s->regionBuffer);
+    if (liveBytes > s->cumulativeStatistics.maxRegionBytesLive)
+      s->cumulativeStatistics.maxRegionBytesLive = liveBytes;
+  }
+
   s->regionTop = newTop;
   // printf("RegionTop after pop %p\n", s->regionTop);
 

@@ -15,11 +15,13 @@ struct GC_cumulativeStatistics {
   uintmax_t bytesHashConsed;
   uintmax_t bytesMarkCompacted;
   uintmax_t bytesScannedMinor;
+  uintmax_t bytesStackAllocated;
 
   size_t maxBytesLive;
   size_t maxHeapSize;
   uintmax_t maxPauseTime;
   size_t maxStackSize;
+  size_t maxRegionBytesLive;
 
   uintmax_t numCardsMarked; /* Number of marked cards seen during minor GCs. */
 
