@@ -18,14 +18,28 @@ structure List =
 
 fun listPressure n =
     let
+        val modulus = 1000000007
+        
+        fun safeAdd (x, y) = (x + y) mod modulus
+        fun safeMul (x, y) = (x * y) mod modulus
+        
+        fun generateValue x i = 
+            let
+                val base = x mod 1000
+                val multiplier = i mod 1000
+            in
+                safeMul (base, multiplier)
+            end
+            
         fun createTempLists 0 acc = acc
           | createTempLists i acc =
             let
-                (* temporary lists that will be quickly discarded *)
-                val temp1 :- stack_ = List.tabulate_exclave n (fn x => x * i)
-                val temp2 :- stack_ = List.map_exclave (fn x => x + 1) temp1
-                (* val _ = print ("temp2\n") *)
-                val sum = List.foldl op+ 0 temp2
+                val temp1 :- stack_ = List.tabulate_exclave n (fn x => generateValue x i)
+                val temp2 :- stack_ = List.map_exclave (fn x => safeAdd (x, 1)) temp1
+                
+                val temp3 :- stack_ = List.map_exclave (fn x => safeMul (x, 2)) temp2
+                val temp4 :- stack_ = List.map_exclave (fn x => safeAdd (x, i)) temp3
+                val sum = List.foldl safeAdd 0 temp4
             in
                 createTempLists (i - 1) (sum :: acc)
             end
@@ -52,5 +66,5 @@ fun printList [] = print "\n"
       ( print (Int.toString x ^ " ")
       ; printList xs
       )
-  
+
 val _ = printList (listPressure iterations)
