@@ -56,12 +56,12 @@ struct
          (* Rewrite all globals to a new version if they're in the table of valid globals *)
          fun loopExp exp =
             case exp of
-                  Exp.ConApp {args, con, ...} => Exp.ConApp {con=con, args=freshenVec args, mode = Mode.Heap}
-                | Exp.PrimApp {args, prim, targs, ...} =>
-                     Exp.PrimApp {args=freshenVec args, prim=prim, targs=targs, mode = NONE}
+                  Exp.ConApp {args, con, mode} => Exp.ConApp {con=con, args=freshenVec args, mode = mode}
+                | Exp.PrimApp {args, prim, targs, mode} =>
+                     Exp.PrimApp {args=freshenVec args, prim=prim, targs=targs, mode = mode}
                | Exp.Select {offset, tuple} =>
                     Exp.Select {offset=offset, tuple=freshenIfGlobal tuple}
-                | Exp.Tuple {exps, ...} => Exp.Tuple {exps = freshenVec exps, mode = Mode.Heap}
+                | Exp.Tuple {exps, mode} => Exp.Tuple {exps = freshenVec exps, mode = mode}
                | Exp.Var v => Exp.Var (freshenIfGlobal v)
                | _ => exp
          fun loopStatement (Statement.T {exp, ty, var}) =
