@@ -1,3 +1,6 @@
-minimal
-minimal.0.s
-minimal.1.c
+*
+
+!*.sml
+!*.mlb
+
+!*/
