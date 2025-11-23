@@ -78,13 +78,15 @@ struct
         let
           val numBlocks = Vector.length blocks
           val blockHasPop =
-            Array.tabulate (numBlocks, fn i =>
-              blockHasPrim Prim.Region_pop (Vector.sub (blocks, i)))
+             Array.tabulate (numBlocks, fn i =>
+               blockHasPrim Prim.Region_pop (Vector.sub (blocks, i)))
           val blockHasPush =
-            Array.tabulate (numBlocks, fn i =>
-              blockHasPrim Prim.Region_push (Vector.sub (blocks, i)))
+             Array.tabulate (numBlocks, fn i =>
+               blockHasPrim Prim.Region_push (Vector.sub (blocks, i)))
+          val handlerNeedsPop = Array.array (numBlocks, false)
           val {destroy = destroyLabelIndex, get = labelIndex, set = setLabelIndex} =
-            Property.destGetSetOnce (Label.plist, Property.initRaise ("Regions.labelIndex", Label.layout))
+             Property.destGetSetOnce (Label.plist, Property.initRaise ("Regions.labelIndex", Label.layout))
+
           val _ =
             Vector.foreachi (blocks, fn (i, Block.T {label, ...}) =>
               setLabelIndex (label, i))
@@ -133,12 +135,53 @@ struct
             end
           val _ = propagate ()
 
+          val _ =
+             Vector.foreachi
+               (blocks, fn (i, Block.T {transfer, ...}) =>
+                 case transfer of
+                    Transfer.Call {return = Return.NonTail {handler, ...}, ...} =>
+                      (case handler of
+                          Handler.Handle handlerLabel =>
+                             if Array.sub (exitHasRegion, i)
+                                then let
+                                        val j = labelIndex handlerLabel
+                                     in
+                                        if not (Array.sub (blockHasPop, j))
+                                           then Array.update (handlerNeedsPop, j, true)
+                                        else ()
+                                     end
+                             else ()
+                        | _ => ())
+                  | _ => ())
+
+          fun transferCanEnterStart transfer =
+            let
+              val hitsStart = ref false
+              val _ =
+                Transfer.foreachLabel
+                  (transfer, fn dst =>
+                    if Label.equals (dst, start)
+                      then hitsStart := true
+                      else ())
+            in
+              !hitsStart
+            end
+
           fun needsPopAtExit i transfer =
-            Array.sub (exitHasRegion, i) andalso
-            (case transfer of
-               Transfer.Raise _ => true
-             | Transfer.Return _ => true
-             | _ => false)
+            let
+              val enterStart = transferCanEnterStart transfer
+              val exitNeedsPop =
+                Array.sub (exitHasRegion, i) andalso
+                (case transfer of
+                   Transfer.Raise _ => true
+                 | Transfer.Return _ => true
+                 | Transfer.Call {return = Return.Tail, ...} => true
+                 | _ => enterStart)
+              val tailRecNeedsPop =
+                enterStart andalso not (Array.sub (blockHasPop, i))
+            in
+              exitNeedsPop orelse tailRecNeedsPop
+            end
           fun maybeAddPush (stmts, label, hasPush) =
             if Label.equals (label, start) andalso not hasPush then
               regionPushStmt :: stmts
@@ -149,6 +192,10 @@ struct
               (blocks, fn (i, Block.T {args = blockArgs, label, statements, transfer}) =>
                 let
                   val stmtsList0 = Vector.toList statements
+                  val stmtsList0 =
+                    if Array.sub (handlerNeedsPop, i)
+                       then regionPopStmt :: stmtsList0
+                       else stmtsList0
                   val stmtsList1 = maybeAddPush (stmtsList0, label, Array.sub (blockHasPush, i))
                   val stmtsList2 =
                     if needsPopAtExit i transfer then stmtsList1 @ [regionPopStmt] else stmtsList1

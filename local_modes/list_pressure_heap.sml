@@ -22,11 +22,9 @@ fun listPressure n =
           | createTempLists i acc =
             let
                 (* temporary lists that will be quickly discarded *)
-                val _ = print ("tabululate\n")
                 val temp1 = List.tabulate n (fn x => x * i)
-                val _ = List.app (fn x => print (Int.toString x ^ " ")) temp1
-                (* val temp2 :- stack_ = List.map (fn x => x + 1) temp1 *)
-                val sum = List.foldl op+ 0 temp1
+                val temp2 :- stack_ = List.map (fn x => x + 1) temp1
+                val sum = List.foldl op+ 0 temp2
             in
                 createTempLists (i - 1) (sum :: acc)
             end

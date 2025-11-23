@@ -1072,8 +1072,10 @@ fun shrinkFunction {globals: Statement.t vector} =
                  | PrimApp {prim, targs, args, mode} =>
                       let
                          val args = varInfos args
-                         fun apply {prim, targs, args} =
-                            doit {sideEffect = Prim.maySideEffect prim,
+                          val hasSideEffect = Prim.maySideEffect prim
+                          fun apply {prim, targs, args} =
+
+                            doit {sideEffect = hasSideEffect,
                                   makeExp = fn () => PrimApp {prim = prim,
                                                               targs = targs,
                                                               mode = mode,
@@ -1081,28 +1083,34 @@ fun shrinkFunction {globals: Statement.t vector} =
                                   value = NONE}
                         datatype z = datatype Prim.ApplyResult.t
                      in
-                        case primApp (prim, args) of
-                           Apply (prim, args) =>
-                              apply {prim = prim, targs = Vector.new0 (),
-                                     args = Vector.fromList args}
-                         | Bool b =>
-                              let
-                                 val con = Con.fromBool b
-                              in
-                                 construct (Value.Con {con = con,
-                                                       args = Vector.new0 ()},
-                                            fn () =>
-                                             ConApp {con = con,
-                                                     args = Vector.new0 (),
-                                                     mode = Mode.Constant})
-                              end
-                         | Const c => construct (Value.Const c,
-                                                 fn () => Exp.Const c)
-                         | Var vi => setVar vi
-                         | _ => apply {prim = prim,
+                        if hasSideEffect
+                           then apply {prim = prim,
                                        targs = targs,
                                        args = args}
+                        else
+                           (case primApp (prim, args) of
+                               Apply (prim, args) =>
+                                  apply {prim = prim, targs = Vector.new0 (),
+                                         args = Vector.fromList args}
+                             | Bool b =>
+                                  let
+                                     val con = Con.fromBool b
+                                  in
+                                     construct (Value.Con {con = con,
+                                                           args = Vector.new0 ()},
+                                                fn () =>
+                                                 ConApp {con = con,
+                                                         args = Vector.new0 (),
+                                                         mode = Mode.Constant})
+                                  end
+                             | Const c => construct (Value.Const c,
+                                                     fn () => Exp.Const c)
+                             | Var vi => setVar vi
+                             | _ => apply {prim = prim,
+                                           targs = targs,
+                                           args = args})
                      end
+
                 | Select {tuple, offset} =>
                      let
                         val tuple as VarInfo.T {value, ...} = varInfo tuple

@@ -1209,9 +1209,26 @@ fun defunctorize (CoreML.Program.T {decs}) =
                                                          prim = Prim.Region_pop,
                                                          targs = Vector.new0 (),
                                                          ty = Xtype.unit}, Mode.Constant)
-                      (* eliminate exclaves by popping the region *)
-                      in Xexp.sequence (Vector.new2 (regionPop, e))
-                      (* in e *)
+                          val regionPush = Xexp.primApp ({args = Vector.new0 (),
+                                                          prim = Prim.Region_push,
+                                                          targs = Vector.new0 (),
+                                                          ty = Xtype.unit}, Mode.Constant)
+                          val resultVar = Var.newNoname ()
+                          val resultTy = loopTy ty
+                          val resultBody =
+                             Xexp.let1 {var = resultVar,
+                                        exp = e,
+                                        mode = Mode.Stack,
+                                        body = Xexp.sequence (Vector.new2
+                                                              (regionPush,
+                                                               Xexp.var ({targs = Vector.new0 (),
+                                                                          ty = resultTy,
+                                                                          var = resultVar},
+                                                                         Mode.Stack)))}
+                      (* eliminate exclaves by popping the region before evaluating
+                       * in the caller's frame and then restoring the current region
+                       * so subsequent stack allocations behave as before. *)
+                      in Xexp.sequence (Vector.new2 (regionPop, resultBody))
                       end
                 | Raise e => Xexp.raisee {exn = let val (e', _, _) = loopExp e in e' end, extend = true, ty = ty}
                 | Record r =>
