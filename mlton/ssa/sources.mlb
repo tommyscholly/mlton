@@ -73,6 +73,7 @@ local
    redundant.fun
    ref-flatten.fun
    regions.fun
+   remove-regions.fun
    remove-unused.fun
    remove-unused2.fun
    share-zero-vec.fun
