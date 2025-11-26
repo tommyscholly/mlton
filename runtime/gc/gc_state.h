@@ -57,7 +57,8 @@ struct GC_state {
   pointer regionBuffer;
   size_t regionBufferSize;
   pointer regionTop;
-  struct RegionStackNode* regionStack;
+  pointer regionBase;
+  // struct RegionStackNode* regionStack;
   GC_frameIndex (*returnAddressToFrameIndex) (GC_returnAddress ra);
   objptr savedThread; /* Result of GC_copyCurrentThread.
                        * Thread interrupted by arrival of signal.

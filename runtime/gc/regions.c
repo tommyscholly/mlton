@@ -1,45 +1,46 @@
-void GC_regionPush (GC_state s) {
-  struct RegionStackNode* node = (struct RegionStackNode*) malloc(sizeof(struct RegionStackNode));
-  if (node == NULL)
-    die ("Cannot allocate region stack node");
+void GC_regionPush(GC_state s) {
+  pointer oldBase = s->regionBase;
+  pointer oldTop  = s->regionTop;
 
+  // store previous base ptr right below the new base
+  *(pointer *)oldTop = oldBase;
 
-  // printf("Current regionStack %p ", s->regionStack);
-  // printf("Current regionTop %p\n", s->regionTop);
-  node->partitionStart = s->regionTop;
-  node->next = s->regionStack;
-  s->regionStack = node;
+  // new region's base begins just after return ptr
+  pointer newBase = oldTop + sizeof(pointer);
+
+  s->regionBase = newBase;
+  s->regionTop  = newBase;
 }
 
-void GC_regionPop (GC_state s) {
-  if (s->regionStack == NULL) {
-    // printf ("Region stack underflow");
+void GC_regionPop(GC_state s) {
+  if (s->regionTop == s->regionBuffer) {
+    // underflow
     return;
   }
 
-  pointer oldTop = s->regionTop;
-  pointer newTop = s->regionStack->partitionStart;
+  if (s->regionBase == s->regionBuffer) {
+    s->regionTop = s->regionBuffer;
+    return;
+  }
 
-  // if (oldTop > newTop)
-  //   printf("RegionPop reclaiming %zu bytes (from %p down to %p)\n",
-  //          (size_t)(oldTop - newTop), oldTop, newTop);
-  // else
-  //   printf("RegionPop with no new allocations (top at %p)\n", oldTop);
+  pointer oldTop  = s->regionTop;
+  pointer newBase = s->regionBase;
+
+  // stored return ptr/base is one pointer *before* regionBase
+  pointer newTop  = newBase - sizeof(pointer);
+  pointer oldBase = *(pointer *)newTop;
 
   if (oldTop > newTop) {
     size_t poppedBytes = (size_t)(oldTop - newTop);
     s->cumulativeStatistics.bytesStackAllocated += poppedBytes;
   }
+
   {
     size_t liveBytes = (size_t)(oldTop - s->regionBuffer);
     if (liveBytes > s->cumulativeStatistics.maxRegionBytesLive)
       s->cumulativeStatistics.maxRegionBytesLive = liveBytes;
   }
 
-  s->regionTop = newTop;
-  // printf("RegionTop after pop %p\n", s->regionTop);
-
-  struct RegionStackNode* temp = s->regionStack;
-  s->regionStack = s->regionStack->next;
-  free(temp);
+  s->regionTop  = newTop;
+  s->regionBase = oldBase;
 }
