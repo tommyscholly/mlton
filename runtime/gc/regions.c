@@ -24,20 +24,20 @@ void GC_regionPop(GC_state s) {
     return;
   }
 
-  pointer oldTop  = s->regionTop;
+  pointer currTop  = s->regionTop;
   pointer currBase = s->regionBase;
 
   // stored return ptr/base is one pointer *before* regionBase
   pointer newTop  = currBase - sizeof(pointer);
   pointer oldBase = *(pointer *)newTop;
 
-  if (oldTop > newTop) {
-    size_t poppedBytes = (size_t)(oldTop - newTop);
+  if (currTop > newTop) {
+    size_t poppedBytes = (size_t)(currTop - newTop);
     s->cumulativeStatistics.bytesStackAllocated += poppedBytes;
   }
 
   {
-    size_t liveBytes = (size_t)(oldTop - s->regionBuffer);
+    size_t liveBytes = (size_t)(currTop - s->regionBuffer);
     if (liveBytes > s->cumulativeStatistics.maxRegionBytesLive)
       s->cumulativeStatistics.maxRegionBytesLive = liveBytes;
   }
