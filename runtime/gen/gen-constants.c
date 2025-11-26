@@ -69,6 +69,8 @@ int main (__attribute__ ((unused)) int argc,
   MkGCFieldOffset (stackLimit);
   MkGCFieldOffset (stackTop);
   MkGCFieldOffset (regionTop);
+  MkGCFieldOffset (regionBase);
+  MkGCFieldOffset (regionBuffer);
 
   MkStrConst (MLton_Platform_Arch_host);
   MkStrConst (MLton_Platform_OS_host);

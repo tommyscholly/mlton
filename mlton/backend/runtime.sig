@@ -26,6 +26,8 @@ signature RUNTIME =
              | Limit (* frontier + heapSize - LIMIT_SLOP *)
              | LimitPlusSlop (* frontier + heapSize *)
              | RegionTop (* Current allocation pointer in region buffer *)
+             | RegionBase (* Start of the current region *)
+             | RegionBuffer (* Pointer to the region buffer *)
              | SignalIsPending
              | StackBottom
              | StackLimit (* Must have StackTop <= StackLimit *)

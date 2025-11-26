@@ -22,6 +22,8 @@ structure GCField =
        | Limit
        | LimitPlusSlop
        | RegionTop
+       | RegionBase
+       | RegionBuffer
        | SignalIsPending
        | StackBottom
        | StackLimit
@@ -43,6 +45,8 @@ structure GCField =
              | Limit => make "limit"
              | LimitPlusSlop => make "limitPlusSlop"
              | RegionTop => make "regionTop"
+             | RegionBase => make "regionBase"
+             | RegionBuffer => make "regionBuffer"
              | SignalIsPending => make "signalsInfo.signalIsPending"
              | StackBottom => make "stackBottom"
              | StackLimit => make "stackLimit"
@@ -58,6 +62,8 @@ structure GCField =
           | Limit => "Limit"
           | LimitPlusSlop => "LimitPlusSlop"
           | RegionTop => "RegionTop"
+          | RegionBase => "RegionBase"
+          | RegionBuffer => "RegionBuffer"
           | SignalIsPending => "SignalIsPending"
           | StackBottom => "StackBottom"
           | StackLimit => "StackLimit"

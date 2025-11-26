@@ -7,13 +7,10 @@ structure List =
           exclave_ ((f x :- stack_) :: (map_exclave f xs :- stack_))
 
     fun tabulate_exclave n f =
-      if n < 0 then
+      if n <= 0 then
         []
       else
-        if n = 0 then
-          []
-        else
-            exclave_ ((f n :- stack_) :: tabulate_exclave (n - 1) f)
+        exclave_ ((f n :- stack_) :: tabulate_exclave (n - 1) f)
   end
 
 fun listPressure n =

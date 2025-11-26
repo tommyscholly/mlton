@@ -15,6 +15,7 @@ void GC_regionPush(GC_state s) {
 void GC_regionPop(GC_state s) {
   if (s->regionTop == s->regionBuffer) {
     // underflow
+    printf("underflow");
     return;
   }
 
@@ -24,10 +25,10 @@ void GC_regionPop(GC_state s) {
   }
 
   pointer oldTop  = s->regionTop;
-  pointer newBase = s->regionBase;
+  pointer currBase = s->regionBase;
 
   // stored return ptr/base is one pointer *before* regionBase
-  pointer newTop  = newBase - sizeof(pointer);
+  pointer newTop  = currBase - sizeof(pointer);
   pointer oldBase = *(pointer *)newTop;
 
   if (oldTop > newTop) {

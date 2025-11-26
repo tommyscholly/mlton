@@ -539,12 +539,6 @@ fun mkCompile {outputC, outputLL, outputS} =
          end
       fun toRssa ssa2 =
          let
-            val () = case !Control.codegen of
-                        Control.AMD64Codegen => Error.warning "Compile.toRssa: AMD64Codegen"
-                      | Control.CCodegen => Error.warning "Compile.toRssa: CCodegen"
-                      | Control.LLVMCodegen => Error.warning "Compile.toRssa: LLVMCodegen"
-                      | Control.X86Codegen => Error.warning "Compile.toRssa: X86Codegen"
-
             val codegenImplementsPrim =
                case !Control.codegen of
                   Control.AMD64Codegen => amd64Codegen.implementsPrim
