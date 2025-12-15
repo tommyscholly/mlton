@@ -33,7 +33,13 @@ struct
     type t = Type.t CFunction.t
 
     structure CType =
-    struct open CType val gcState = CPointer val intInf = Objptr val string = Objptr val thread = CPointer (* CHECK; thread (= objptr) would be better? *) end
+    struct
+      open CType
+      val gcState = CPointer
+      val intInf = Objptr
+      val string = Objptr
+      val thread = CPointer (* CHECK; thread (= objptr) would be better? *)
+    end
 
     datatype z = datatype Convention.t
     datatype z = datatype SymbolScope.t
@@ -1471,7 +1477,7 @@ struct
                             | Prim.WordVector_subWord {eleSize, ...} => subWord eleSize
                             | Prim.World_save => simpleCCallWithGCState (CFunction.worldSave ())
                             | Prim.Region_push =>
-                                if !Control.optFuel <> NONE andalso Control.optFuelAvailAndUse () then
+                                if ! Control.optFuel <> NONE andalso Control.optFuelAvailAndUse () then
                                   simpleCCallWithGCState (CFunction.regionPush ())
                                 else
                                   let
@@ -1503,78 +1509,105 @@ struct
                                       ]
                                   end
                             | Prim.Region_pop =>
-                                if !Control.optFuel <> NONE andalso Control.optFuelAvailAndUse () then
+                                if ! Control.optFuel <> NONE andalso Control.optFuelAvailAndUse () then
                                   simpleCCallWithGCState (CFunction.regionPop ())
                                 else
-                                  split (Vector.new0 (), Kind.Jump, ss, fn continue =>
-                                    let
-                                      val ptrTy = Type.cpointer ()
-                                      val boolTy = Type.bool
-                                      fun ptrVar var = Var {var = var, ty = ptrTy}
-                                      fun boolVar var = Var {var = var, ty = boolTy}
-                                      val gotoContinue = Transfer.Goto {args = Vector.new0 (), dst = continue}
-                                      val cpointerWordSize = WordSize.cpointer ()
-                                      val pointerSizeOperand = Operand.word
-                                        (WordX.fromBytes (Runtime.cpointerSize (), cpointerWordSize))
-                                      val baseResetLabel =
-                                        let
-                                          val resetStmts = Vector.fromList
-                                            [ Move {dst = Runtime GCField.RegionTop, src = Runtime GCField.RegionBuffer}
-                                            , Move
-                                                {dst = Runtime GCField.RegionBase, src = Runtime GCField.RegionBuffer}
-                                            ]
-                                        in
-                                          newBlock
-                                            { args = Vector.new0 ()
-                                            , kind = Kind.Jump
-                                            , statements = resetStmts
-                                            , transfer = gotoContinue
-                                            }
-                                        end
-                                      val popLabel =
-                                        let
-                                          val currBase = Var.newNoname ()
-                                          val newTop = Var.newNoname ()
-                                          val restoredBase = Var.newNoname ()
-                                          val popStmts =
-                                            [ Bind
-                                                { dst = (currBase, ptrTy)
-                                                , pinned = false
-                                                , src = Runtime GCField.RegionBase
-                                                }
-                                            , PrimApp
-                                                { args = Vector.new2 (ptrVar currBase, pointerSizeOperand)
-                                                , dst = SOME (newTop, ptrTy)
-                                                , prim = Prim.CPointer_sub
-                                                }
-                                            , Bind
-                                                { dst = (restoredBase, ptrTy)
-                                                , pinned = false
-                                                , src = Offset {base = ptrVar newTop, offset = Bytes.zero, ty = ptrTy}
-                                                }
-                                            , Move {dst = Runtime GCField.RegionTop, src = ptrVar newTop}
-                                            , Move {dst = Runtime GCField.RegionBase, src = ptrVar restoredBase}
-                                            ]
-                                        in
-                                          newBlock
-                                            { args = Vector.new0 ()
-                                            , kind = Kind.Jump
-                                            , statements = Vector.fromList popStmts
-                                            , transfer = gotoContinue
-                                            }
-                                        end
-                                      val baseCmp = Var.newNoname ()
-                                      val baseCheckStmt = PrimApp
-                                        { args = Vector.new2 (Runtime GCField.RegionBase, Runtime GCField.RegionBuffer)
-                                        , dst = SOME (baseCmp, boolTy)
-                                        , prim = Prim.CPointer_equal
-                                        }
-                                    in
-                                      ( [baseCheckStmt]
-                                      , Transfer.ifBool (boolVar baseCmp, {truee = baseResetLabel, falsee = popLabel})
-
-                                      )
-                                    end)
+                                  let
+                                    val ptrTy = Type.cpointer ()
+                                    val boolTy = Type.bool
+                                    fun ptrVar var = Var {var = var, ty = ptrTy}
+                                    fun boolVar var = Var {var = var, ty = boolTy}
+                                    val cpointerWordSize = WordSize.cpointer ()
+                                    val pointerSizeOperand = Operand.word
+                                      (WordX.fromBytes (Runtime.cpointerSize (), cpointerWordSize))
+                                    val currBase = Var.newNoname ()
+                                    val newTop = Var.newNoname ()
+                                    val restoredBase = Var.newNoname ()
+                                  in
+                                    adds
+                                      [ Bind {dst = (currBase, ptrTy), pinned = false, src = Runtime GCField.RegionBase}
+                                      , PrimApp
+                                          { args = Vector.new2 (ptrVar currBase, pointerSizeOperand)
+                                          , dst = SOME (newTop, ptrTy)
+                                          , prim = Prim.CPointer_sub
+                                          }
+                                      , Bind
+                                          { dst = (restoredBase, ptrTy)
+                                          , pinned = false
+                                          , src = Offset {base = ptrVar newTop, offset = Bytes.zero, ty = ptrTy}
+                                          }
+                                      , Move {dst = Runtime GCField.RegionTop, src = ptrVar newTop}
+                                      , Move {dst = Runtime GCField.RegionBase, src = ptrVar restoredBase}
+                                      ]
+                                  end
+                            (* split (Vector.new0 (), Kind.Jump, ss, fn continue => *)
+                            (*   let *)
+                            (*     val ptrTy = Type.cpointer () *)
+                            (*     val boolTy = Type.bool *)
+                            (*     fun ptrVar var = Var {var = var, ty = ptrTy} *)
+                            (*     fun boolVar var = Var {var = var, ty = boolTy} *)
+                            (*     val gotoContinue = Transfer.Goto {args = Vector.new0 (), dst = continue} *)
+                            (*     val cpointerWordSize = WordSize.cpointer () *)
+                            (*     val pointerSizeOperand = Operand.word *)
+                            (*       (WordX.fromBytes (Runtime.cpointerSize (), cpointerWordSize)) *)
+                            (*     val baseResetLabel = *)
+                            (*       let *)
+                            (*         val resetStmts = Vector.fromList *)
+                            (*           [ Move {dst = Runtime GCField.RegionTop, src = Runtime GCField.RegionBuffer} *)
+                            (*           , Move *)
+                            (*               {dst = Runtime GCField.RegionBase, src = Runtime GCField.RegionBuffer} *)
+                            (*           ] *)
+                            (*       in *)
+                            (*         newBlock *)
+                            (*           { args = Vector.new0 () *)
+                            (*           , kind = Kind.Jump *)
+                            (*           , statements = resetStmts *)
+                            (*           , transfer = gotoContinue *)
+                            (*           } *)
+                            (*       end *)
+                            (*     val popLabel = *)
+                            (*       let *)
+                            (*         val currBase = Var.newNoname () *)
+                            (*         val newTop = Var.newNoname () *)
+                            (*         val restoredBase = Var.newNoname () *)
+                            (*         val popStmts = *)
+                            (*           [ Bind *)
+                            (*               { dst = (currBase, ptrTy) *)
+                            (*               , pinned = false *)
+                            (*               , src = Runtime GCField.RegionBase *)
+                            (*               } *)
+                            (*           , PrimApp *)
+                            (*               { args = Vector.new2 (ptrVar currBase, pointerSizeOperand) *)
+                            (*               , dst = SOME (newTop, ptrTy) *)
+                            (*               , prim = Prim.CPointer_sub *)
+                            (*               } *)
+                            (*           , Bind *)
+                            (*               { dst = (restoredBase, ptrTy) *)
+                            (*               , pinned = false *)
+                            (*               , src = Offset {base = ptrVar newTop, offset = Bytes.zero, ty = ptrTy} *)
+                            (*               } *)
+                            (*           , Move {dst = Runtime GCField.RegionTop, src = ptrVar newTop} *)
+                            (*           , Move {dst = Runtime GCField.RegionBase, src = ptrVar restoredBase} *)
+                            (*           ] *)
+                            (*       in *)
+                            (*         newBlock *)
+                            (*           { args = Vector.new0 () *)
+                            (*           , kind = Kind.Jump *)
+                            (*           , statements = Vector.fromList popStmts *)
+                            (*           , transfer = gotoContinue *)
+                            (*           } *)
+                            (*       end *)
+                            (*     val baseCmp = Var.newNoname () *)
+                            (*     val baseCheckStmt = PrimApp *)
+                            (*       { args = Vector.new2 (Runtime GCField.RegionBase, Runtime GCField.RegionBuffer) *)
+                            (*       , dst = SOME (baseCmp, boolTy) *)
+                            (*       , prim = Prim.CPointer_equal *)
+                            (*       } *)
+                            (*   in *)
+                            (*     ( [baseCheckStmt] *)
+                            (*     , Transfer.ifBool (boolVar baseCmp, {truee = baseResetLabel, falsee = popLabel}) *)
+                            (*     ) *)
+                            (*   end) *)
                             | _ => simpleCodegenOrC prim
                           end
                       | S.Exp.Select {base, offset} =>

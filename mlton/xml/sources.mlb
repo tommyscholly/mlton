@@ -21,8 +21,6 @@ local
    shrink.sig
    shrink.fun
    xml-transform.sig
-   insert-region-pops.sig
-   insert-region-pops.fun
    simplify-types.sig
    simplify-types.fun
    xml-simplify.sig

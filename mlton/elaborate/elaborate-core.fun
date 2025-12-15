@@ -2464,11 +2464,15 @@ struct
                                in
                                  ty
                                end
+                         fun isExclave e = case Cexp.node e of Cexp.Exclave _ => true | _ => false
                          val () =
                            case Cexp.mode e' of
                              Mode.Stack =>
-                               Control.error (region, str "let expression would escape stack-allocated data", align
-                                 [seq [str "expression has stack mode and would escape let binding scope"], ctxt ()])
+                               if isExclave e' then
+                                 ()
+                               else
+                                 Control.error (region, str "let expression would escape stack-allocated data", align
+                                   [seq [str "expression has stack mode and would escape let binding scope"], ctxt ()])
                            | _ => ()
                        in
                          Cexp.make (Cexp.Let (d', e'), ty, Cexp.mode e')
